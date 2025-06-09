@@ -246,15 +246,21 @@ export default function DesignerMode({
   };
 
   const resetLayout = () => {
-    // Reset layout to defaults
+    // Reset layout to defaults with centralized main content and detached components positioned above sidebar
     onLayoutChange({
-      sidebar: { x: 0, y: 1, width: 3, height: 15, zIndex: 1 },
-      mainContent: { x: 3, y: 1, width: 15, height: 12, zIndex: 1 },
+      sidebar: { x: 0, y: 4, width: 3, height: 9, zIndex: 1 }, // Moved down for buttons above
+      mainContent: { x: 5, y: 2, width: 10, height: 12, zIndex: 1 }, // Centralized 10x12
       themeToggle: { x: 17, y: 0, width: 1, height: 1, zIndex: 4 },
       topBar: { x: 0, y: 0, width: 20, height: 1, zIndex: 2 },
-      inputBox: { x: 4, y: 13, width: 12, height: 3, zIndex: 1 },
+      inputBox: { x: 4, y: 14, width: 12, height: 2, zIndex: 1 },
       designerButton: { x: 19, y: 0, width: 1, height: 1, zIndex: 999 },
-      settingsButton: { x: 18, y: 0, width: 1, height: 1, zIndex: 4 }
+      settingsButton: { x: 18, y: 0, width: 1, height: 1, zIndex: 4 },
+      // Detached sidebar components - positioned above sidebar
+      appLogo: { x: 0, y: 1, width: 3, height: 1, zIndex: 3 },
+      newGameButton: { x: 0, y: 2, width: 3, height: 1, zIndex: 3 }, // Above sidebar
+      newChatButton: { x: 0, y: 3, width: 3, height: 1, zIndex: 3 }, // Above sidebar
+      searchButton: { x: 0, y: 13, width: 3, height: 1, zIndex: 3 },
+      accountPanel: { x: 0, y: 15, width: 3, height: 1, zIndex: 3 }
     });
     
     // Reset customization to defaults
@@ -386,7 +392,13 @@ export default function DesignerMode({
     topBar: isDark ? 'bg-purple-600/90' : 'bg-purple-500/90',
     inputBox: isDark ? 'bg-orange-600/90' : 'bg-orange-500/90',
     designerButton: isDark ? 'bg-pink-600/90' : 'bg-pink-500/90',
-    settingsButton: isDark ? 'bg-teal-600/90' : 'bg-teal-500/90'
+    settingsButton: isDark ? 'bg-teal-600/90' : 'bg-teal-500/90',
+    // New detached components
+    appLogo: isDark ? 'bg-indigo-600/90' : 'bg-indigo-500/90',
+    newChatButton: isDark ? 'bg-emerald-600/90' : 'bg-emerald-500/90',
+    newGameButton: isDark ? 'bg-rose-600/90' : 'bg-rose-500/90',
+    searchButton: isDark ? 'bg-cyan-600/90' : 'bg-cyan-500/90',
+    accountPanel: isDark ? 'bg-amber-600/90' : 'bg-amber-500/90'
   };
 
   const selectedColors = {
@@ -396,7 +408,13 @@ export default function DesignerMode({
     topBar: isDark ? 'bg-purple-500' : 'bg-purple-600',
     inputBox: isDark ? 'bg-orange-500' : 'bg-orange-600',
     designerButton: isDark ? 'bg-pink-500' : 'bg-pink-600',
-    settingsButton: isDark ? 'bg-teal-500' : 'bg-teal-600'
+    settingsButton: isDark ? 'bg-teal-500' : 'bg-teal-600',
+    // New detached components
+    appLogo: isDark ? 'bg-indigo-500' : 'bg-indigo-600',
+    newChatButton: isDark ? 'bg-emerald-500' : 'bg-emerald-600',
+    newGameButton: isDark ? 'bg-rose-500' : 'bg-rose-600',
+    searchButton: isDark ? 'bg-cyan-500' : 'bg-cyan-600',
+    accountPanel: isDark ? 'bg-amber-500' : 'bg-amber-600'
   };
 
   const getElementDisplayName = (key: string) => {
@@ -408,6 +426,11 @@ export default function DesignerMode({
       case 'mainContent': return 'Main Content';
       case 'sidebar': return 'Sidebar';
       case 'settingsButton': return 'Settings Button';
+      case 'appLogo': return 'App Logo';
+      case 'newChatButton': return 'New Chat Button';
+      case 'newGameButton': return 'New Game Button';
+      case 'searchButton': return 'Search Button';
+      case 'accountPanel': return 'Account Panel';
       default: return key.replace(/([A-Z])/g, ' $1').trim();
     }
   };
@@ -585,51 +608,52 @@ export default function DesignerMode({
           </div>
         </div>
 
-        {/* Control Panel */}
+        {/* Control Panel - Enhanced with all customization options */}
         <div className={`w-80 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-l p-6 overflow-y-auto`}>
-          <h3 className={`font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: customization.fontFamily }}>
-            Controls
+          <h3 className={`font-semibold mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: customization.fontFamily }}>
+            Designer Controls
           </h3>
 
-          {/* Customization Section */}
+          {/* Customization Section - Complete from Account Menu */}
           <div className="space-y-6 mb-8">
             <h4 className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`} style={{ fontFamily: customization.fontFamily }}>
-              Customization
+              Appearance Settings
             </h4>
             
             {/* Show Questions Toggle */}
-            <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+            <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Eye className="w-4 h-4" />
-                  <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`} style={{ fontFamily: customization.fontFamily }}>
-                    Show Questions
-                  </span>
+                <div>
+                  <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: customization.fontFamily }}>
+                    Show Sample Questions
+                  </h4>
+                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`} style={{ fontFamily: customization.fontFamily }}>
+                    Display sample questions on the main page
+                  </p>
                 </div>
                 <button
                   onClick={() => onCustomizationChange({ showQuestions: !customization.showQuestions })}
-                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                     customization.showQuestions ? 'bg-purple-600' : isDark ? 'bg-gray-600' : 'bg-gray-300'
                   }`}
                 >
                   <span
-                    className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
-                      customization.showQuestions ? 'translate-x-5' : 'translate-x-1'
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      customization.showQuestions ? 'translate-x-6' : 'translate-x-1'
                     }`}
                   />
                 </button>
               </div>
             </div>
 
-            {/* Color Presets */}
-            <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
-              <div className="flex items-center gap-2 mb-3">
-                <Palette className="w-4 h-4" />
-                <span className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`} style={{ fontFamily: customization.fontFamily }}>
-                  Color Theme
-                </span>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
+            {/* Color Theme */}
+            <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+              <h4 className={`font-medium mb-4 flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: customization.fontFamily }}>
+                <Palette className="w-5 h-5" />
+                Color Theme
+              </h4>
+              
+              <div className="grid grid-cols-3 gap-3 mb-4">
                 {colorPresets.map((preset) => (
                   <button
                     key={preset.name}
@@ -637,37 +661,62 @@ export default function DesignerMode({
                       primaryColor: preset.primary, 
                       secondaryColor: preset.secondary 
                     })}
-                    className={`p-2 rounded text-white text-xs font-medium transition-all ${
+                    className={`p-3 rounded-lg border-2 transition-all ${
                       customization.primaryColor === preset.primary
-                        ? 'ring-2 ring-white/50 scale-105'
-                        : 'hover:scale-105'
+                        ? 'border-white shadow-lg'
+                        : 'border-transparent hover:border-gray-300'
                     }`}
                     style={{ 
                       background: customization.gradientEnabled 
                         ? `linear-gradient(135deg, ${preset.primary}, ${preset.secondary})`
-                        : preset.primary,
-                      fontFamily: customization.fontFamily 
+                        : preset.primary 
                     }}
                   >
-                    {preset.name}
+                    <div className="text-white text-sm font-medium" style={{ fontFamily: customization.fontFamily }}>
+                      {preset.name}
+                    </div>
                   </button>
                 ))}
+              </div>
+
+              {/* Custom Color Inputs */}
+              <div className="space-y-3">
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`} style={{ fontFamily: customization.fontFamily }}>
+                    Primary Color
+                  </label>
+                  <input
+                    type="color"
+                    value={customization.primaryColor}
+                    onChange={(e) => onCustomizationChange({ primaryColor: e.target.value })}
+                    className="w-full h-10 rounded border"
+                  />
+                </div>
+                <div>
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`} style={{ fontFamily: customization.fontFamily }}>
+                    Secondary Color
+                  </label>
+                  <input
+                    type="color"
+                    value={customization.secondaryColor}
+                    onChange={(e) => onCustomizationChange({ secondaryColor: e.target.value })}
+                    className="w-full h-10 rounded border"
+                  />
+                </div>
               </div>
             </div>
 
             {/* Font Selection */}
-            <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
-              <div className="flex items-center gap-2 mb-3">
-                <Type className="w-4 h-4" />
-                <span className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`} style={{ fontFamily: customization.fontFamily }}>
-                  Font Family
-                </span>
-              </div>
+            <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+              <h4 className={`font-medium mb-4 flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: customization.fontFamily }}>
+                <Type className="w-5 h-5" />
+                Font Family
+              </h4>
               
               <select
                 value={customization.fontFamily}
                 onChange={(e) => onCustomizationChange({ fontFamily: e.target.value })}
-                className={`w-full p-2 text-sm rounded border ${
+                className={`w-full p-3 rounded-lg border ${
                   isDark 
                     ? 'bg-gray-600 border-gray-500 text-white' 
                     : 'bg-white border-gray-300 text-gray-900'
@@ -683,7 +732,7 @@ export default function DesignerMode({
             </div>
 
             {/* Gradient Toggle */}
-            <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+            <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
               <div className="flex items-center justify-between">
                 <div>
                   <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: customization.fontFamily }}>
@@ -741,7 +790,7 @@ export default function DesignerMode({
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => adjustElementSize(selectedElement, 'width', -1)}
-                        className={`p-1 rounded ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
+                        className={`p-1 rounded ${isDark ? 'bg-gray-600 hover:bg-gray-500 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
                       >
                         <Minus className="w-4 h-4" />
                       </button>
@@ -750,7 +799,7 @@ export default function DesignerMode({
                       </span>
                       <button
                         onClick={() => adjustElementSize(selectedElement, 'width', 1)}
-                        className={`p-1 rounded ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
+                        className={`p-1 rounded ${isDark ? 'bg-gray-600 hover:bg-gray-500 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
                       >
                         <Plus className="w-4 h-4" />
                       </button>
@@ -764,7 +813,7 @@ export default function DesignerMode({
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => adjustElementSize(selectedElement, 'height', -1)}
-                        className={`p-1 rounded ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
+                        className={`p-1 rounded ${isDark ? 'bg-gray-600 hover:bg-gray-500 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
                       >
                         <Minus className="w-4 h-4" />
                       </button>
@@ -773,7 +822,7 @@ export default function DesignerMode({
                       </span>
                       <button
                         onClick={() => adjustElementSize(selectedElement, 'height', 1)}
-                        className={`p-1 rounded ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
+                        className={`p-1 rounded ${isDark ? 'bg-gray-600 hover:bg-gray-500 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
                       >
                         <Plus className="w-4 h-4" />
                       </button>
@@ -789,7 +838,7 @@ export default function DesignerMode({
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => adjustZIndex(selectedElement, -1)}
-                          className={`p-1 rounded ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
+                          className={`p-1 rounded ${isDark ? 'bg-gray-600 hover:bg-gray-500 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
                           title="Send to back"
                         >
                           <ChevronDown className="w-4 h-4" />
@@ -799,7 +848,7 @@ export default function DesignerMode({
                         </span>
                         <button
                           onClick={() => adjustZIndex(selectedElement, 1)}
-                          className={`p-1 rounded ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
+                          className={`p-1 rounded ${isDark ? 'bg-gray-600 hover:bg-gray-500 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
                           title="Bring to front"
                         >
                           <ChevronUp className="w-4 h-4" />
@@ -819,7 +868,7 @@ export default function DesignerMode({
                           ...layout,
                           [selectedElement]: { ...layout[selectedElement], width: 2, height: 2 }
                         })}
-                        className={`px-2 py-1 text-xs rounded ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
+                        className={`px-2 py-1 text-xs rounded ${isDark ? 'bg-gray-600 hover:bg-gray-500 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
                         style={{ fontFamily: customization.fontFamily }}
                       >
                         Small
@@ -829,7 +878,7 @@ export default function DesignerMode({
                           ...layout,
                           [selectedElement]: { ...layout[selectedElement], width: 6, height: 6 }
                         })}
-                        className={`px-2 py-1 text-xs rounded ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
+                        className={`px-2 py-1 text-xs rounded ${isDark ? 'bg-gray-600 hover:bg-gray-500 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
                         style={{ fontFamily: customization.fontFamily }}
                       >
                         Medium
@@ -839,7 +888,7 @@ export default function DesignerMode({
                           ...layout,
                           [selectedElement]: { ...layout[selectedElement], width: 12, height: 8 }
                         })}
-                        className={`px-2 py-1 text-xs rounded ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
+                        className={`px-2 py-1 text-xs rounded ${isDark ? 'bg-gray-600 hover:bg-gray-500 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
                         style={{ fontFamily: customization.fontFamily }}
                       >
                         Large
@@ -870,11 +919,11 @@ export default function DesignerMode({
                       : 'cursor-move'
                   } ${
                     selectedElement === key 
-                      ? isDark ? 'bg-gray-700' : 'bg-gray-200'
+                      ? isDark ? 'bg-gray-600' : 'bg-gray-200'
                       : isDark ? 'hover:bg-gray-700/50' : 'hover:bg-gray-100'
                   } ${
                     layerDragState.dragOverElement === key && layerDragState.draggedElement !== key
-                      ? isDark ? 'bg-gray-600' : 'bg-gray-300'
+                      ? isDark ? 'bg-gray-500' : 'bg-gray-300'
                       : ''
                   }`}
                   onClick={() => setSelectedElement(key)}

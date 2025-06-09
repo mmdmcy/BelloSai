@@ -15,9 +15,10 @@
  * - Dual rendering modes (full content or input-only)
  * - Auto-resizing textarea for message input
  * - Model selection dropdown
+ * - Dynamic scaling based on container size
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, Compass, Code, GraduationCap, ChevronDown, Search, Paperclip, ArrowUp } from 'lucide-react';
 import ActionButton from './ActionButton';
 import ModelSelector from './ModelSelector';
@@ -47,6 +48,8 @@ export default function MainContent({
   // Input state management
   const [inputValue, setInputValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
 
   // Sample questions for user interaction
   const questions = [
@@ -55,6 +58,41 @@ export default function MainContent({
     "How many Rs are in the word \"strawberry\"?",
     "What is the meaning of life?"
   ];
+
+  /**
+   * Monitor container size changes for responsive scaling
+   */
+  useEffect(() => {
+    const updateContainerWidth = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.offsetWidth);
+      }
+    };
+
+    updateContainerWidth();
+    window.addEventListener('resize', updateContainerWidth);
+    
+    // Use ResizeObserver for more accurate container size tracking
+    const resizeObserver = new ResizeObserver(updateContainerWidth);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', updateContainerWidth);
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+  /**
+   * Calculate responsive max width based on container size
+   */
+  const getResponsiveMaxWidth = () => {
+    if (containerWidth < 600) return '95%';
+    if (containerWidth < 800) return '90%';
+    if (containerWidth < 1200) return '80%';
+    return '70%';
+  };
 
   /**
    * Helper function to get appropriate text color in dark mode
@@ -111,10 +149,10 @@ export default function MainContent({
     }
   };
 
-  // Input-only mode - renders just the message input interface
+  // Input-only mode - renders just the message input interface with responsive sizing
   if (inputOnly) {
     return (
-      <div className="h-full flex items-end">
+      <div className="h-full flex items-end\" ref={containerRef}>
         <div className="w-full">
           <form onSubmit={handleSubmit}>
             {/* Message Input Container */}
@@ -186,9 +224,10 @@ export default function MainContent({
     );
   }
 
-  // Full main content layout
+  // Full main content layout with responsive scaling
   return (
     <div 
+      ref={containerRef}
       className={`flex-1 h-full flex flex-col ${isDark ? 'bg-gray-900' : 'bg-purple-50'}`}
       style={{
         background: customization.gradientEnabled && !isDark 
@@ -196,12 +235,12 @@ export default function MainContent({
           : undefined
       }}
     >
-      {/* Main Content Area */}
+      {/* Main Content Area - Responsive scaling */}
       <div className="flex-1 flex flex-col items-center justify-center px-8">
-        <div className="max-w-2xl w-full text-center">
-          {/* Main Heading */}
+        <div className="w-full text-center" style={{ maxWidth: getResponsiveMaxWidth() }}>
+          {/* Main Heading - Responsive text size */}
           <h1 
-            className={`text-4xl font-semibold mb-10 ${isDark ? 'text-white' : 'text-purple-800'}`}
+            className={`${containerWidth < 600 ? 'text-2xl' : containerWidth < 1200 ? 'text-3xl' : 'text-4xl'} font-semibold mb-10 ${isDark ? 'text-white' : 'text-purple-800'}`}
             style={{ 
               fontFamily: customization.fontFamily,
               color: isDark 
@@ -212,17 +251,17 @@ export default function MainContent({
             How can I help you?
           </h1>
 
-          {/* Action Buttons */}
-          <div className="flex flex-wrap justify-center gap-3 mb-12">
+          {/* Action Buttons - Responsive layout */}
+          <div className={`flex flex-wrap justify-center gap-3 mb-12 ${containerWidth < 600 ? 'gap-2' : 'gap-3'}`}>
             <ActionButton icon={Sparkles} label="Create" isDark={isDark} customization={customization} />
             <ActionButton icon={Compass} label="Explore" isDark={isDark} customization={customization} />
             <ActionButton icon={Code} label="Code" isDark={isDark} customization={customization} />
             <ActionButton icon={GraduationCap} label="Learn" isDark={isDark} customization={customization} />
           </div>
 
-          {/* Sample Questions - Only show if enabled in customization */}
+          {/* Sample Questions - Only show if enabled in customization, responsive spacing */}
           {customization.showQuestions && (
-            <div className="space-y-3 mb-16">
+            <div className={`space-y-3 ${containerWidth < 600 ? 'mb-8' : 'mb-16'}`}>
               {questions.map((question, index) => (
                 <button
                   key={index}
@@ -231,7 +270,7 @@ export default function MainContent({
                     isDark 
                       ? 'text-gray-300 hover:bg-gray-700 hover:text-white' 
                       : 'hover:text-purple-800'
-                  }`}
+                  } ${containerWidth < 600 ? 'text-sm px-4 py-3' : 'px-6 py-3.5'}`}
                   style={{ 
                     fontFamily: customization.fontFamily,
                     color: getTextColor(customization.primaryColor + 'CC', isDark)
@@ -257,10 +296,10 @@ export default function MainContent({
         </div>
       </div>
 
-      {/* Footer Section with Input */}
+      {/* Footer Section with Input - Responsive sizing */}
       {!hideInput && (
         <div className="px-8 pb-6">
-          <div className="max-w-2xl mx-auto">
+          <div className="w-full mx-auto" style={{ maxWidth: getResponsiveMaxWidth() }}>
             {/* Terms and Privacy Links */}
             <p 
               className={`text-xs text-center mb-6 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
@@ -285,7 +324,7 @@ export default function MainContent({
             </p>
 
             <form onSubmit={handleSubmit}>
-              {/* Message Input */}
+              {/* Message Input - Responsive sizing */}
               <div className={`relative rounded-2xl border ${
                 isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-purple-200'
               } shadow-sm`}>

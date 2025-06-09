@@ -12,6 +12,8 @@
  * - Responsive design with proper message alignment
  * - Auto-resizing textarea for input
  * - Model selection and additional controls
+ * - Dynamic scaling based on container size
+ * - Compact user message bubbles
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -47,6 +49,65 @@ export default function ChatView({
   const [inputValue, setInputValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  /**
+   * Monitor container size changes for responsive scaling
+   */
+  useEffect(() => {
+    const updateContainerWidth = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.offsetWidth);
+      }
+    };
+
+    updateContainerWidth();
+    window.addEventListener('resize', updateContainerWidth);
+    
+    // Use ResizeObserver for more accurate container size tracking
+    const resizeObserver = new ResizeObserver(updateContainerWidth);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    return () => {
+      window.removeEventListener('resize', updateContainerWidth);
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+  /**
+   * Calculate responsive max width for AI messages based on container size
+   * Scales from 400px (small) to 1000px (large) based on container width
+   */
+  const getResponsiveMaxWidth = () => {
+    if (containerWidth < 600) return '90%';
+    if (containerWidth < 800) return '85%';
+    if (containerWidth < 1200) return '80%';
+    if (containerWidth < 1600) return '75%';
+    return '70%'; // For very large containers
+  };
+
+  /**
+   * Calculate responsive max width for user messages (much smaller)
+   * User messages should be more compact and not take up too much space
+   */
+  const getUserMessageMaxWidth = () => {
+    if (containerWidth < 600) return '75%';
+    if (containerWidth < 800) return '65%';
+    if (containerWidth < 1200) return '55%';
+    return '45%'; // Much smaller for larger containers
+  };
+
+  /**
+   * Calculate responsive padding based on container size
+   */
+  const getResponsivePadding = () => {
+    if (containerWidth < 600) return 'px-4';
+    if (containerWidth < 1200) return 'px-8';
+    return 'px-12';
+  };
 
   /**
    * Auto-scroll to bottom when new messages arrive
@@ -98,19 +159,25 @@ export default function ChatView({
   };
 
   /**
-   * Render individual message with proper styling and features
+   * Render individual message with proper scaling and responsive design
    * Handles both user and AI messages with different layouts
    */
   const renderMessage = (message: Message) => {
+    const aiMessageMaxWidth = getResponsiveMaxWidth();
+    const userMessageMaxWidth = getUserMessageMaxWidth();
+    
     if (message.type === 'user') {
-      // User message - right-aligned with custom color
+      // User message - right-aligned with custom color and compact sizing
       return (
         <div key={message.id} className="flex justify-end mb-6">
           <div 
-            className="max-w-md px-4 py-2.5 rounded-2xl text-white"
+            className="px-4 py-2.5 rounded-2xl text-white break-words"
             style={{ 
               backgroundColor: customization.primaryColor,
-              fontFamily: customization.fontFamily 
+              fontFamily: customization.fontFamily,
+              maxWidth: userMessageMaxWidth,
+              wordWrap: 'break-word',
+              overflowWrap: 'break-word'
             }}
           >
             {message.content}
@@ -118,7 +185,7 @@ export default function ChatView({
         </div>
       );
     } else {
-      // AI message - left-aligned with code block support
+      // AI message - left-aligned with code block support and responsive sizing
       const hasCode = message.content.includes('```');
       
       if (hasCode) {
@@ -135,7 +202,7 @@ export default function ChatView({
 
         return (
           <div key={message.id} className="flex justify-start mb-6">
-            <div className="max-w-2xl w-full">
+            <div className="w-full" style={{ maxWidth: aiMessageMaxWidth }}>
               {/* Text before code block */}
               {beforeCode && (
                 <p 
@@ -146,7 +213,7 @@ export default function ChatView({
                 </p>
               )}
               
-              {/* Code Block Container */}
+              {/* Code Block Container - Scales with container */}
               <div className={`rounded-xl overflow-hidden ${
                 isDark ? 'bg-gray-900' : 'bg-white'
               } border ${isDark ? 'border-gray-700' : 'border-purple-200'}`}>
@@ -171,10 +238,10 @@ export default function ChatView({
                   </div>
                 </div>
                 
-                {/* Code Content */}
+                {/* Code Content - Responsive text size */}
                 <div className="p-4">
                   <pre 
-                    className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}
+                    className={`${containerWidth < 600 ? 'text-xs' : 'text-sm'} ${isDark ? 'text-gray-200' : 'text-gray-800'} overflow-x-auto`}
                     style={{ fontFamily: 'Monaco, Consolas, monospace' }}
                   >
                     <code>{code}</code>
@@ -242,10 +309,10 @@ export default function ChatView({
           </div>
         );
       } else {
-        // Regular text message without code
+        // Regular text message without code - Responsive sizing
         return (
           <div key={message.id} className="flex justify-start mb-6">
-            <div className="max-w-2xl">
+            <div style={{ maxWidth: aiMessageMaxWidth }}>
               <p 
                 className={`mb-4 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}
                 style={{ fontFamily: customization.fontFamily }}
@@ -306,10 +373,10 @@ export default function ChatView({
     }
   };
 
-  // Input-only mode - renders just the message input interface
+  // Input-only mode - renders just the message input interface with responsive sizing
   if (inputOnly) {
     return (
-      <div className="h-full flex items-end">
+      <div className="h-full flex items-end" ref={containerRef}>
         <div className="w-full">
           <form onSubmit={handleSubmit}>
             {/* Message Input */}
@@ -373,12 +440,15 @@ export default function ChatView({
     );
   }
 
-  // Full chat view layout
+  // Full chat view layout with responsive scaling
   return (
-    <div className={`flex-1 h-full flex flex-col ${isDark ? 'bg-gray-900' : 'bg-purple-50'}`}>
-      {/* Chat Messages Area */}
-      <div className="flex-1 overflow-y-auto px-8 py-6">
-        <div className="max-w-3xl mx-auto">
+    <div 
+      ref={containerRef}
+      className={`flex-1 h-full flex flex-col ${isDark ? 'bg-gray-900' : 'bg-purple-50'}`}
+    >
+      {/* Chat Messages Area - Responsive padding */}
+      <div className={`flex-1 overflow-y-auto py-6 ${getResponsivePadding()}`}>
+        <div className="w-full mx-auto">
           {messages.map(renderMessage)}
           <div ref={messagesEndRef} />
           
@@ -406,10 +476,10 @@ export default function ChatView({
         </div>
       </div>
 
-      {/* Message Input Footer */}
+      {/* Message Input Footer - Responsive sizing */}
       {!hideInput && (
-        <div className="px-8 pb-6">
-          <div className="max-w-3xl mx-auto">
+        <div className={`pb-6 ${getResponsivePadding()}`}>
+          <div className="w-full mx-auto" style={{ maxWidth: getResponsiveMaxWidth() }}>
             <form onSubmit={handleSubmit}>
               {/* Message Input */}
               <div className={`relative rounded-2xl border ${
