@@ -176,9 +176,23 @@ function App() {
     setAuthError(null);
 
     try {
-      await authManager.signUp(signupForm.email, signupForm.password, signupForm.fullName);
-      setShowSignupModal(false);
-      setSignupForm({ email: '', password: '', fullName: '' });
+      const result = await authService.signUp({
+        email: signupForm.email,
+        password: signupForm.password,
+        full_name: signupForm.fullName
+      });
+      
+      // Check if email confirmation is required
+      if (result.user && !result.session) {
+        // Email confirmation required
+        setAuthError(`Please check your email (${signupForm.email}) and click the confirmation link to complete your registration.`);
+        // Clear the form but keep modal open to show the message
+        setSignupForm({ email: '', password: '', fullName: '' });
+      } else {
+        // User is immediately signed in (email confirmation disabled)
+        setShowSignupModal(false);
+        setSignupForm({ email: '', password: '', fullName: '' });
+      }
     } catch (error: any) {
       setAuthError(error.message || 'Sign up failed');
     } finally {
@@ -687,7 +701,16 @@ function App() {
 
               {/* Login Button - Shows when not authenticated */}
               {elementKey === 'loginButton' && !authState.user && (
-                <div className="h-full w-full flex items-center justify-center">
+                <div 
+                  className="h-full w-full flex items-center justify-center"
+                  style={{
+                    background: isDesignerMode 
+                      ? (isDark ? '#1f2937' : '#f3f4f6') 
+                      : (customization.gradientEnabled && !isDark 
+                          ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
+                          : undefined)
+                  }}
+                >
                   <button
                     onClick={() => setShowLoginModal(true)}
                     className={`p-2.5 rounded-lg transition-colors ${
@@ -695,9 +718,14 @@ function App() {
                         ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
                         : 'bg-white text-gray-800 hover:bg-gray-50 border border-gray-200'
                     }`}
+                    style={{
+                      background: isDesignerMode 
+                        ? '#3b82f6' 
+                        : undefined
+                    }}
                     title="Login"
                   >
-                    {authState.loading ? (
+                    {authModalLoading ? (
                       <Loader2 className="w-5 h-5 animate-spin" />
                     ) : (
                       <LogIn className="w-5 h-5" />
@@ -708,7 +736,16 @@ function App() {
 
               {/* Signup Button - Shows when not authenticated */}
               {elementKey === 'signupButton' && !authState.user && (
-                <div className="h-full w-full flex items-center justify-center">
+                <div 
+                  className="h-full w-full flex items-center justify-center"
+                  style={{
+                    background: isDesignerMode 
+                      ? (isDark ? '#1f2937' : '#f3f4f6') 
+                      : (customization.gradientEnabled && !isDark 
+                          ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
+                          : undefined)
+                  }}
+                >
                   <button
                     onClick={() => setShowSignupModal(true)}
                     className={`p-2.5 rounded-lg transition-colors ${
@@ -716,16 +753,34 @@ function App() {
                         ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
                         : 'bg-white text-gray-800 hover:bg-gray-50 border border-gray-200'
                     }`}
+                    style={{
+                      background: isDesignerMode 
+                        ? '#10b981' 
+                        : undefined
+                    }}
                     title="Sign Up"
                   >
-                    <UserPlus className="w-5 h-5" />
+                    {authModalLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <UserPlus className="w-5 h-5" />
+                    )}
                   </button>
                 </div>
               )}
 
               {/* Account Button - Shows when authenticated */}
               {elementKey === 'accountButton' && authState.user && (
-                <div className="h-full w-full flex items-center justify-center">
+                <div 
+                  className="h-full w-full flex items-center justify-center"
+                  style={{
+                    background: isDesignerMode 
+                      ? (isDark ? '#1f2937' : '#f3f4f6') 
+                      : (customization.gradientEnabled && !isDark 
+                          ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
+                          : undefined)
+                  }}
+                >
                   <button
                     onClick={toggleAccountMenu}
                     className={`p-2.5 rounded-lg transition-colors ${
@@ -733,6 +788,11 @@ function App() {
                         ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
                         : 'bg-white text-gray-800 hover:bg-gray-50 border border-gray-200'
                     }`}
+                    style={{
+                      background: isDesignerMode 
+                        ? '#f59e0b' 
+                        : undefined
+                    }}
                     title={`Account: ${authState.user.email}`}
                   >
                     <User className="w-5 h-5" />
@@ -944,7 +1004,11 @@ function App() {
               Join BelloSai
             </h3>
             {authError && (
-              <div className="mb-4 p-3 rounded-lg bg-red-100 border border-red-300 text-red-700 text-sm">
+              <div className={`mb-4 p-3 rounded-lg text-sm ${
+                authError.includes('check your email') 
+                  ? 'bg-blue-100 border border-blue-300 text-blue-700'
+                  : 'bg-red-100 border border-red-300 text-red-700'
+              }`}>
                 {authError}
               </div>
             )}
@@ -996,38 +1060,40 @@ function App() {
                 required
               />
               <div className="flex gap-3">
-                <button
-                  type="submit"
-                  disabled={authModalLoading || !signupForm.email || !signupForm.password}
-                  className="flex-1 py-3 px-4 rounded-lg text-white transition-colors hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  style={{ 
-                    background: customization.gradientEnabled 
-                      ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                      : customization.primaryColor
-                  }}
-                >
-                  {authModalLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Creating Account...
-                    </>
-                  ) : (
-                    'Create Account'
-                  )}
-                </button>
+                {!authError?.includes('check your email') && (
+                  <button
+                    type="submit"
+                    disabled={authModalLoading || !signupForm.email || !signupForm.password}
+                    className="flex-1 py-3 px-4 rounded-lg text-white transition-colors hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    style={{ 
+                      background: customization.gradientEnabled 
+                        ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                        : customization.primaryColor
+                    }}
+                  >
+                    {authModalLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Creating Account...
+                      </>
+                    ) : (
+                      'Create Account'
+                    )}
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => {
                     setShowSignupModal(false);
                     setAuthError(null);
                   }}
-                  className={`px-4 py-3 rounded-lg transition-colors ${
+                  className={`${authError?.includes('check your email') ? 'flex-1' : ''} px-4 py-3 rounded-lg transition-colors ${
                     isDark 
                       ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
                 >
-                  Cancel
+                  {authError?.includes('check your email') ? 'Close' : 'Cancel'}
                 </button>
               </div>
               <div className="mt-4 text-center">
