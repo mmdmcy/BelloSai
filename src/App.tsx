@@ -22,7 +22,7 @@
  * - UI state (modals, sidebars, etc.)
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatView from './components/ChatView';
 import MainContent from './components/MainContent';
@@ -30,6 +30,10 @@ import ThemeToggle from './components/ThemeToggle';
 import DesignerMode from './components/DesignerMode';
 import AccountMenu from './components/AccountMenu';
 import GameSection from './components/GameSection';
+import { authService } from './lib/auth';
+import type { AuthUser } from './lib/auth';
+import { authManager, layoutManager, ExtendedLayoutConfig, AuthState } from './lib/auth-integration'
+import { LogIn, UserPlus, User, Loader2 } from 'lucide-react'
 
 /**
  * Message Interface
@@ -44,25 +48,9 @@ export interface Message {
 
 /**
  * Layout Configuration Interface
- * Defines the grid-based layout system for UI components
- * Each component has position (x, y), size (width, height), and layer (zIndex)
- * Now includes detached sidebar components for maximum customization
+ * Using ExtendedLayoutConfig from auth-integration for consistency
  */
-export interface LayoutConfig {
-  sidebar: { x: number; y: number; width: number; height: number; zIndex: number };
-  mainContent: { x: number; y: number; width: number; height: number; zIndex: number };
-  themeToggle: { x: number; y: number; width: number; height: number; zIndex: number };
-  topBar: { x: number; y: number; width: number; height: number; zIndex: number };
-  inputBox: { x: number; y: number; width: number; height: number; zIndex: number };
-  designerButton: { x: number; y: number; width: number; height: number; zIndex: number };
-  settingsButton: { x: number; y: number; width: number; height: number; zIndex: number };
-  // Detached sidebar components
-  appLogo: { x: number; y: number; width: number; height: number; zIndex: number };
-  newChatButton: { x: number; y: number; width: number; height: number; zIndex: number };
-  newGameButton: { x: number; y: number; width: number; height: number; zIndex: number };
-  searchButton: { x: number; y: number; width: number; height: number; zIndex: number };
-  accountPanel: { x: number; y: number; width: number; height: number; zIndex: number };
-}
+export type LayoutConfig = ExtendedLayoutConfig;
 
 /**
  * Customization Settings Interface
@@ -116,23 +104,95 @@ function App() {
     gradientColors: ['#7c3aed', '#a855f7']
   });
 
-  // Layout configuration - defines grid positions for all UI components
-  // Main content moved up 1 row (y: 1), input box moved up 1 row (y: 13), search button moved above sidebar
-  const [layout, setLayout] = useState<LayoutConfig>({
-    sidebar: { x: 0, y: 5, width: 3, height: 9, zIndex: 1 }, // Moved down to make room for search button
-    mainContent: { x: 5, y: 1, width: 10, height: 12, zIndex: 1 }, // Moved up 1 row
-    themeToggle: { x: 17, y: 0, width: 1, height: 1, zIndex: 4 },
-    topBar: { x: 0, y: 0, width: 20, height: 1, zIndex: 2 },
-    inputBox: { x: 4, y: 13, width: 12, height: 2, zIndex: 1 }, // Moved up 1 row
-    designerButton: { x: 19, y: 0, width: 1, height: 1, zIndex: 999 },
-    settingsButton: { x: 18, y: 0, width: 1, height: 1, zIndex: 4 },
-    // Detached sidebar components - search button moved above sidebar
-    appLogo: { x: 0, y: 1, width: 3, height: 1, zIndex: 3 },
-    newGameButton: { x: 0, y: 2, width: 3, height: 1, zIndex: 3 },
-    newChatButton: { x: 0, y: 3, width: 3, height: 1, zIndex: 3 },
-    searchButton: { x: 0, y: 4, width: 3, height: 1, zIndex: 3 }, // Moved above sidebar
-    accountPanel: { x: 0, y: 15, width: 3, height: 1, zIndex: 3 }
-  });
+  // Authentication state
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  // Authentication state management
+  const [authState, setAuthState] = useState<AuthState>(authManager.getState());
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSignupModal, setShowSignupModal] = useState(false);
+  const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+  const [signupForm, setSignupForm] = useState({ email: '', password: '', fullName: '' });
+  const [authModalLoading, setAuthModalLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  // Layout configuration - uses the auth-integrated layout manager
+  const [layout, setLayout] = useState<ExtendedLayoutConfig>(layoutManager.getLayout());
+
+  // Initialize authentication and layout sync
+  useEffect(() => {
+    const unsubscribe = authManager.subscribe((newAuthState) => {
+      setAuthState(newAuthState);
+      setUser(newAuthState.user);
+      setAuthLoading(newAuthState.loading);
+      
+      // Sync layout when user logs in
+      if (newAuthState.user && !authState.user) {
+        // User just logged in, sync their layout from cloud
+        const syncLayout = async () => {
+          try {
+            const cloudLayout = await authService.getUserProfile();
+            if (cloudLayout?.api_keys?.layout_config) {
+              const parsedLayout = JSON.parse(cloudLayout.api_keys.layout_config as string);
+              setLayout(parsedLayout);
+              layoutManager.saveLayout(parsedLayout);
+            }
+          } catch (error) {
+            console.log('No cloud layout found, using current layout');
+          }
+        };
+        syncLayout();
+      }
+    });
+
+    return unsubscribe;
+  }, [authState.user]);
+
+  // Authentication handlers
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginForm.email || !loginForm.password) return;
+
+    setAuthModalLoading(true);
+    setAuthError(null);
+
+    try {
+      await authManager.signIn(loginForm.email, loginForm.password);
+      setShowLoginModal(false);
+      setLoginForm({ email: '', password: '' });
+    } catch (error: any) {
+      setAuthError(error.message || 'Login failed');
+    } finally {
+      setAuthModalLoading(false);
+    }
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!signupForm.email || !signupForm.password) return;
+
+    setAuthModalLoading(true);
+    setAuthError(null);
+
+    try {
+      await authManager.signUp(signupForm.email, signupForm.password, signupForm.fullName);
+      setShowSignupModal(false);
+      setSignupForm({ email: '', password: '', fullName: '' });
+    } catch (error: any) {
+      setAuthError(error.message || 'Sign up failed');
+    } finally {
+      setAuthModalLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await authManager.signOut();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
   /**
    * Toggle between light and dark themes
@@ -232,9 +292,9 @@ function App() {
 
   /**
    * Update layout configuration
-   * Ensures designer button always stays at top layer
+   * Ensures designer button always stays at top layer and saves to cloud
    */
-  const updateLayout = (newLayout: LayoutConfig) => {
+  const updateLayout = (newLayout: ExtendedLayoutConfig) => {
     const updatedLayout = {
       ...newLayout,
       designerButton: {
@@ -243,6 +303,17 @@ function App() {
       }
     };
     setLayout(updatedLayout);
+    layoutManager.saveLayout(updatedLayout);
+    
+    // Save to cloud if user is authenticated
+    if (authState.user) {
+      authService.updateProfile({
+        api_keys: {
+          ...authState.user.api_keys,
+          layout_config: JSON.stringify(updatedLayout)
+        }
+      }).catch(error => console.error('Failed to save layout to cloud:', error));
+    }
   };
 
   /**
@@ -329,7 +400,7 @@ function App() {
       >
         {/* Render elements in z-index order (lowest to highest) */}
         {getSortedElements().map(([key, config]) => {
-          const elementKey = key as keyof LayoutConfig;
+          const elementKey = key as keyof ExtendedLayoutConfig;
           
           return (
             <div
@@ -613,6 +684,61 @@ function App() {
                   </button>
                 </div>
               )}
+
+              {/* Login Button - Shows when not authenticated */}
+              {elementKey === 'loginButton' && !authState.user && (
+                <div className="h-full w-full flex items-center justify-center">
+                  <button
+                    onClick={() => setShowLoginModal(true)}
+                    className={`p-2.5 rounded-lg transition-colors ${
+                      isDark 
+                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                        : 'bg-white text-gray-800 hover:bg-gray-50 border border-gray-200'
+                    }`}
+                    title="Login"
+                  >
+                    {authState.loading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <LogIn className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Signup Button - Shows when not authenticated */}
+              {elementKey === 'signupButton' && !authState.user && (
+                <div className="h-full w-full flex items-center justify-center">
+                  <button
+                    onClick={() => setShowSignupModal(true)}
+                    className={`p-2.5 rounded-lg transition-colors ${
+                      isDark 
+                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                        : 'bg-white text-gray-800 hover:bg-gray-50 border border-gray-200'
+                    }`}
+                    title="Sign Up"
+                  >
+                    <UserPlus className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+
+              {/* Account Button - Shows when authenticated */}
+              {elementKey === 'accountButton' && authState.user && (
+                <div className="h-full w-full flex items-center justify-center">
+                  <button
+                    onClick={toggleAccountMenu}
+                    className={`p-2.5 rounded-lg transition-colors ${
+                      isDark 
+                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                        : 'bg-white text-gray-800 hover:bg-gray-50 border border-gray-200'
+                    }`}
+                    title={`Account: ${authState.user.email}`}
+                  >
+                    <User className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}
@@ -686,6 +812,246 @@ function App() {
         </div>
       )}
 
+      {/* Login Modal */}
+      {showLoginModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center"
+          style={{ zIndex: 9999 }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowLoginModal(false);
+              setAuthError(null);
+            }
+          }}
+        >
+          <div 
+            className={`w-96 max-w-[90vw] p-6 rounded-lg shadow-xl ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className={`text-xl font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Sign In to BelloSai
+            </h3>
+            {authError && (
+              <div className="mb-4 p-3 rounded-lg bg-red-100 border border-red-300 text-red-700 text-sm">
+                {authError}
+              </div>
+            )}
+            <form onSubmit={handleLogin}>
+              <input
+                type="email"
+                value={loginForm.email}
+                onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="Email address"
+                className={`w-full p-3 rounded-lg border mb-3 ${
+                  isDark 
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                } focus:outline-none focus:ring-2 focus:border-transparent`}
+                style={{ 
+                  '--tw-ring-color': customization.primaryColor 
+                } as React.CSSProperties}
+                required
+              />
+              <input
+                type="password"
+                value={loginForm.password}
+                onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
+                placeholder="Password"
+                className={`w-full p-3 rounded-lg border mb-4 ${
+                  isDark 
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                } focus:outline-none focus:ring-2 focus:border-transparent`}
+                style={{ 
+                  '--tw-ring-color': customization.primaryColor 
+                } as React.CSSProperties}
+                required
+              />
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={authModalLoading || !loginForm.email || !loginForm.password}
+                  className="flex-1 py-3 px-4 rounded-lg text-white transition-colors hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  style={{ 
+                    background: customization.gradientEnabled 
+                      ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                      : customization.primaryColor
+                  }}
+                >
+                  {authModalLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Signing In...
+                    </>
+                  ) : (
+                    'Sign In'
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowLoginModal(false);
+                    setAuthError(null);
+                  }}
+                  className={`px-4 py-3 rounded-lg transition-colors ${
+                    isDark 
+                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Cancel
+                </button>
+              </div>
+              <div className="mt-4 text-center">
+                <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Don't have an account?{' '}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowLoginModal(false);
+                    setShowSignupModal(true);
+                    setAuthError(null);
+                  }}
+                  className="text-sm font-medium"
+                  style={{ color: customization.primaryColor }}
+                >
+                  Sign up
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Signup Modal */}
+      {showSignupModal && (
+        <div 
+          className="fixed inset-0 bg-black/50 flex items-center justify-center"
+          style={{ zIndex: 9999 }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowSignupModal(false);
+              setAuthError(null);
+            }
+          }}
+        >
+          <div 
+            className={`w-96 max-w-[90vw] p-6 rounded-lg shadow-xl ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className={`text-xl font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Join BelloSai
+            </h3>
+            {authError && (
+              <div className="mb-4 p-3 rounded-lg bg-red-100 border border-red-300 text-red-700 text-sm">
+                {authError}
+              </div>
+            )}
+            <form onSubmit={handleSignup}>
+              <input
+                type="text"
+                value={signupForm.fullName}
+                onChange={(e) => setSignupForm(prev => ({ ...prev, fullName: e.target.value }))}
+                placeholder="Full name"
+                className={`w-full p-3 rounded-lg border mb-3 ${
+                  isDark 
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                } focus:outline-none focus:ring-2 focus:border-transparent`}
+                style={{ 
+                  '--tw-ring-color': customization.primaryColor 
+                } as React.CSSProperties}
+                required
+              />
+              <input
+                type="email"
+                value={signupForm.email}
+                onChange={(e) => setSignupForm(prev => ({ ...prev, email: e.target.value }))}
+                placeholder="Email address"
+                className={`w-full p-3 rounded-lg border mb-3 ${
+                  isDark 
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                } focus:outline-none focus:ring-2 focus:border-transparent`}
+                style={{ 
+                  '--tw-ring-color': customization.primaryColor 
+                } as React.CSSProperties}
+                required
+              />
+              <input
+                type="password"
+                value={signupForm.password}
+                onChange={(e) => setSignupForm(prev => ({ ...prev, password: e.target.value }))}
+                placeholder="Password (min 6 characters)"
+                className={`w-full p-3 rounded-lg border mb-4 ${
+                  isDark 
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                } focus:outline-none focus:ring-2 focus:border-transparent`}
+                style={{ 
+                  '--tw-ring-color': customization.primaryColor 
+                } as React.CSSProperties}
+                minLength={6}
+                required
+              />
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  disabled={authModalLoading || !signupForm.email || !signupForm.password}
+                  className="flex-1 py-3 px-4 rounded-lg text-white transition-colors hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  style={{ 
+                    background: customization.gradientEnabled 
+                      ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                      : customization.primaryColor
+                  }}
+                >
+                  {authModalLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Creating Account...
+                    </>
+                  ) : (
+                    'Create Account'
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSignupModal(false);
+                    setAuthError(null);
+                  }}
+                  className={`px-4 py-3 rounded-lg transition-colors ${
+                    isDark 
+                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  Cancel
+                </button>
+              </div>
+              <div className="mt-4 text-center">
+                <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Already have an account?{' '}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowSignupModal(false);
+                    setShowLoginModal(true);
+                    setAuthError(null);
+                  }}
+                  className="text-sm font-medium"
+                  style={{ color: customization.primaryColor }}
+                >
+                  Sign in
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Account Menu Overlay - Modal that appears over everything with highest z-index */}
       {isAccountMenuOpen && (
         <div 
@@ -704,6 +1070,8 @@ function App() {
               onClose={() => setIsAccountMenuOpen(false)}
               customization={customization}
               onCustomizationChange={updateCustomization}
+              user={authState.user}
+              onLogout={handleLogout}
             />
           </div>
         </div>

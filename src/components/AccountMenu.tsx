@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
-import { X, ChevronLeft, Palette, Type, Eye, EyeOff, Sparkles, Save, Check, RotateCcw } from 'lucide-react';
+import { X, ChevronLeft, Palette, Type, Eye, EyeOff, Sparkles, Save, Check, RotateCcw, LogOut } from 'lucide-react';
 import { CustomizationSettings } from '../App';
+import type { AuthUser } from '../lib/auth';
 
 interface AccountMenuProps {
   isDark: boolean;
   onClose: () => void;
   customization: CustomizationSettings;
   onCustomizationChange: (settings: Partial<CustomizationSettings>) => void;
+  user?: AuthUser | null;
+  onLogout?: () => void;
 }
 
-export default function AccountMenu({ isDark, onClose, customization, onCustomizationChange }: AccountMenuProps) {
+export default function AccountMenu({ isDark, onClose, customization, onCustomizationChange, user, onLogout }: AccountMenuProps) {
   const [activeTab, setActiveTab] = useState('Account');
   const [tempCustomization, setTempCustomization] = useState<CustomizationSettings>(customization);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -77,20 +80,38 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
     <div className="space-y-6" style={{ fontFamily: customization.fontFamily }}>
       {/* Profile Section */}
       <div className="flex items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-teal-600 flex items-center justify-center text-white text-2xl font-bold">
-          D
+        <div className="w-16 h-16 rounded-full flex items-center justify-center text-white text-2xl font-bold"
+             style={{ 
+               background: customization.gradientEnabled 
+                 ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                 : customization.primaryColor
+             }}>
+          {user ? user.full_name?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase() : 'U'}
         </div>
-        <div>
+        <div className="flex-1">
           <h2 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            Dmitry Ivanov
+            {user?.full_name || 'User'}
           </h2>
           <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            myazovy@gmail.com
+            {user?.email || 'Not logged in'}
           </p>
           <span className="inline-block px-3 py-1 bg-gray-700 text-white text-sm rounded-full mt-2">
             Free Plan
           </span>
         </div>
+        {user && onLogout && (
+          <button
+            onClick={onLogout}
+            className={`p-2 rounded-lg transition-colors ${
+              isDark 
+                ? 'text-gray-400 hover:text-red-400 hover:bg-gray-700' 
+                : 'text-gray-600 hover:text-red-600 hover:bg-gray-100'
+            }`}
+            title="Sign Out"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* Upgrade Section */}
