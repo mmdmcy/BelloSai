@@ -1,3 +1,17 @@
+/**
+ * ModelSelector Component
+ * 
+ * A dropdown component for selecting AI models in the chat interface.
+ * Provides a clean interface for switching between different AI models.
+ * 
+ * Features:
+ * - Dropdown interface with smooth animations
+ * - Click outside to close functionality
+ * - Customizable theming and colors
+ * - Keyboard navigation support
+ * - Model highlighting for current selection
+ */
+
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { CustomizationSettings } from '../App';
@@ -17,9 +31,13 @@ export default function ModelSelector({
   isDark,
   customization
 }: ModelSelectorProps) {
+  // Dropdown state management
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  /**
+   * Handle clicking outside the dropdown to close it
+   */
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -33,6 +51,9 @@ export default function ModelSelector({
     };
   }, []);
 
+  /**
+   * Handle model selection and close dropdown
+   */
   const handleModelSelect = (model: string) => {
     onModelChange(model);
     setIsOpen(false);
@@ -40,6 +61,7 @@ export default function ModelSelector({
 
   return (
     <div className="relative" ref={dropdownRef}>
+      {/* Dropdown Trigger Button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -55,6 +77,7 @@ export default function ModelSelector({
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
+      {/* Dropdown Menu */}
       {isOpen && (
         <div className={`absolute bottom-full left-0 mb-2 min-w-48 rounded-lg border shadow-lg z-50 ${
           isDark 
@@ -78,10 +101,12 @@ export default function ModelSelector({
                 }`}
                 style={{ 
                   fontFamily: customization.fontFamily,
+                  // Highlight selected model with custom color
                   backgroundColor: model === selectedModel 
                     ? (isDark ? customization.primaryColor : customization.primaryColor + '20')
                     : undefined
                 }}
+                // Dynamic hover effects
                 onMouseEnter={(e) => {
                   if (!isDark && model !== selectedModel) {
                     e.currentTarget.style.backgroundColor = customization.primaryColor + '10';

@@ -1,3 +1,25 @@
+/**
+ * Main Application Component
+ * 
+ * This is the root component of the BelloSai AI Chat Assistant application.
+ * It manages the overall application state, layout configuration, and routing
+ * between different views (chat, game, designer mode).
+ * 
+ * Key Features:
+ * - Dynamic grid-based layout system with drag-and-drop designer mode
+ * - Theme switching (light/dark mode)
+ * - Customizable UI (colors, fonts, gradients)
+ * - Chat functionality with AI responses
+ * - Gaming section integration
+ * - Account management and settings
+ * 
+ * State Management:
+ * - Layout configuration for responsive grid system
+ * - Theme and customization settings
+ * - Chat messages and conversation history
+ * - UI state (modals, sidebars, etc.)
+ */
+
 import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatView from './components/ChatView';
@@ -7,6 +29,10 @@ import DesignerMode from './components/DesignerMode';
 import AccountMenu from './components/AccountMenu';
 import GameSection from './components/GameSection';
 
+/**
+ * Message Interface
+ * Defines the structure of chat messages in the application
+ */
 export interface Message {
   id: string;
   type: 'user' | 'ai';
@@ -14,6 +40,11 @@ export interface Message {
   timestamp: Date;
 }
 
+/**
+ * Layout Configuration Interface
+ * Defines the grid-based layout system for UI components
+ * Each component has position (x, y), size (width, height), and layer (zIndex)
+ */
 export interface LayoutConfig {
   sidebar: { x: number; y: number; width: number; height: number; zIndex: number };
   mainContent: { x: number; y: number; width: number; height: number; zIndex: number };
@@ -24,6 +55,10 @@ export interface LayoutConfig {
   settingsButton: { x: number; y: number; width: number; height: number; zIndex: number };
 }
 
+/**
+ * Customization Settings Interface
+ * Defines user-customizable appearance settings
+ */
 export interface CustomizationSettings {
   showQuestions: boolean;
   primaryColor: string;
@@ -34,15 +69,31 @@ export interface CustomizationSettings {
 }
 
 function App() {
+  // Theme state - controls light/dark mode
   const [isDark, setIsDark] = useState(false);
+  
+  // Designer mode state - enables/disables layout editing
   const [isDesignerMode, setIsDesignerMode] = useState(false);
+  
+  // Account menu visibility state
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  
+  // Sidebar collapse state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  
+  // Current view state - switches between chat and game modes
   const [currentView, setCurrentView] = useState<'chat' | 'game'>('chat');
+  
+  // Chat messages array
   const [messages, setMessages] = useState<Message[]>([]);
+  
+  // AI model selection
   const [selectedModel, setSelectedModel] = useState('Gemini 2.5 Flash');
+  
+  // Message counter for AI response logic
   const [messageCount, setMessageCount] = useState(0);
 
+  // User customization settings with default values
   const [customization, setCustomization] = useState<CustomizationSettings>({
     showQuestions: true,
     primaryColor: '#7c3aed',
@@ -52,6 +103,7 @@ function App() {
     gradientColors: ['#7c3aed', '#a855f7']
   });
 
+  // Layout configuration - defines grid positions for all UI components
   const [layout, setLayout] = useState<LayoutConfig>({
     sidebar: { x: 0, y: 1, width: 3, height: 15, zIndex: 1 },
     mainContent: { x: 3, y: 1, width: 15, height: 12, zIndex: 1 },
@@ -62,22 +114,38 @@ function App() {
     settingsButton: { x: 18, y: 0, width: 1, height: 1, zIndex: 4 }
   });
 
+  /**
+   * Toggle between light and dark themes
+   */
   const toggleTheme = () => {
     setIsDark(!isDark);
   };
 
+  /**
+   * Toggle designer mode for layout editing
+   */
   const toggleDesignerMode = () => {
     setIsDesignerMode(!isDesignerMode);
   };
 
+  /**
+   * Toggle account menu visibility
+   */
   const toggleAccountMenu = () => {
     setIsAccountMenuOpen(!isAccountMenuOpen);
   };
 
+  /**
+   * Toggle sidebar collapsed state
+   */
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
+  /**
+   * Handle sending a new message
+   * Creates user message and simulates AI response
+   */
   const sendMessage = (content: string) => {
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -115,6 +183,7 @@ function App() {
     }, 500);
   };
 
+  // Available AI models for selection
   const availableModels = [
     'Gemini 2.5 Flash',
     'GPT-4 Turbo',
@@ -123,8 +192,11 @@ function App() {
     'Mistral Large'
   ];
 
+  /**
+   * Update layout configuration
+   * Ensures designer button always stays at top layer
+   */
   const updateLayout = (newLayout: LayoutConfig) => {
-    // Ensure designer button always stays at top layer
     const updatedLayout = {
       ...newLayout,
       designerButton: {
@@ -135,18 +207,28 @@ function App() {
     setLayout(updatedLayout);
   };
 
+  /**
+   * Update customization settings
+   */
   const updateCustomization = (newSettings: Partial<CustomizationSettings>) => {
     setCustomization(prev => ({ ...prev, ...newSettings }));
   };
 
+  /**
+   * Navigate back to chat view from game section
+   */
   const handleBackToChat = () => {
     setCurrentView('chat');
   };
 
+  /**
+   * Navigate to game section
+   */
   const handleNewGame = () => {
     setCurrentView('game');
   };
 
+  // Render designer mode if active
   if (isDesignerMode) {
     return (
       <DesignerMode
@@ -161,7 +243,7 @@ function App() {
     );
   }
 
-  // Show game section
+  // Render game section if selected
   if (currentView === 'game') {
     return (
       <GameSection
@@ -173,7 +255,10 @@ function App() {
     );
   }
 
-  // Calculate the actual used grid area to eliminate empty space
+  /**
+   * Calculate the actual used grid area to eliminate empty space
+   * This optimizes the grid layout by only using necessary columns/rows
+   */
   const getUsedGridArea = () => {
     const elements = Object.values(layout);
     const maxX = Math.max(...elements.map(el => el.x + el.width));
@@ -209,7 +294,7 @@ function App() {
           }}
         ></div>
         
-        {/* Sidebar */}
+        {/* Sidebar Component */}
         <div 
           style={{
             gridColumn: `${layout.sidebar.x + 1} / ${Math.min(layout.sidebar.x + layout.sidebar.width + 1, maxX + 1)}`,
@@ -228,7 +313,7 @@ function App() {
           />
         </div>
 
-        {/* Main Content */}
+        {/* Main Content Area - Shows either welcome screen or chat */}
         <div 
           className={isDark ? 'bg-gray-900' : 'bg-purple-50'}
           style={{
@@ -261,7 +346,7 @@ function App() {
           )}
         </div>
 
-        {/* Input Box */}
+        {/* Input Box - Separate component for message input */}
         <div 
           className={`${isDark ? 'bg-gray-900' : 'bg-purple-50'} p-4`}
           style={{
@@ -294,7 +379,7 @@ function App() {
           )}
         </div>
 
-        {/* Theme Toggle - with top bar background */}
+        {/* Theme Toggle Button */}
         <div 
           className="flex items-center justify-center"
           style={{
@@ -336,7 +421,7 @@ function App() {
           </button>
         </div>
 
-        {/* Designer Mode Toggle - with top bar background and locked to top layer */}
+        {/* Designer Mode Toggle - Always on top layer */}
         <div 
           className="flex items-center justify-center"
           style={{
@@ -364,7 +449,7 @@ function App() {
         </div>
       </div>
 
-      {/* Account Menu Overlay */}
+      {/* Account Menu Overlay - Modal that appears over everything */}
       {isAccountMenuOpen && (
         <div 
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"

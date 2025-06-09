@@ -1,3 +1,22 @@
+/**
+ * MainContent Component
+ * 
+ * This component renders the main welcome screen of the application when no chat is active.
+ * It displays the application's primary interface including:
+ * - Welcome message and branding
+ * - Action buttons for common tasks
+ * - Sample questions for user interaction
+ * - Message input interface
+ * 
+ * Features:
+ * - Responsive design with centered layout
+ * - Customizable theming and colors
+ * - Sample questions that can be toggled on/off
+ * - Dual rendering modes (full content or input-only)
+ * - Auto-resizing textarea for message input
+ * - Model selection dropdown
+ */
+
 import React, { useState, useRef } from 'react';
 import { Sparkles, Compass, Code, GraduationCap, ChevronDown, Search, Paperclip, ArrowUp } from 'lucide-react';
 import ActionButton from './ActionButton';
@@ -25,9 +44,11 @@ export default function MainContent({
   inputOnly = false,
   customization
 }: MainContentProps) {
+  // Input state management
   const [inputValue, setInputValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Sample questions for user interaction
   const questions = [
     "How does AI work?",
     "Are black holes real?",
@@ -35,7 +56,10 @@ export default function MainContent({
     "What is the meaning of life?"
   ];
 
-  // Helper function to get appropriate text color in dark mode
+  /**
+   * Helper function to get appropriate text color in dark mode
+   * Adapts colors based on theme and customization settings
+   */
   const getTextColor = (baseColor: string, isDark: boolean) => {
     if (isDark) {
       // In dark mode, use custom secondary color if it's not default, otherwise use gray
@@ -44,6 +68,9 @@ export default function MainContent({
     return baseColor;
   };
 
+  /**
+   * Handle form submission for message input
+   */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputValue.trim()) {
@@ -52,10 +79,18 @@ export default function MainContent({
     }
   };
 
+  /**
+   * Handle clicking on sample questions
+   * Sends the question as a message to start conversation
+   */
   const handleQuestionClick = (question: string) => {
     onSendMessage(question);
   };
 
+  /**
+   * Handle keyboard shortcuts in textarea
+   * Enter submits, Shift+Enter creates new line
+   */
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -63,23 +98,26 @@ export default function MainContent({
     }
   };
 
+  /**
+   * Handle input changes and auto-resize textarea
+   */
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputValue(e.target.value);
     
-    // Auto-resize textarea
+    // Auto-resize textarea based on content
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
   };
 
-  // If inputOnly is true, only render the input section
+  // Input-only mode - renders just the message input interface
   if (inputOnly) {
     return (
       <div className="h-full flex items-end">
         <div className="w-full">
           <form onSubmit={handleSubmit}>
-            {/* Message Input */}
+            {/* Message Input Container */}
             <div className={`relative rounded-2xl border ${
               isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-purple-200'
             } shadow-sm`}>
@@ -101,6 +139,7 @@ export default function MainContent({
               {/* Bottom Controls */}
               <div className="flex items-center justify-between px-6 pb-4">
                 <div className="flex items-center gap-4">
+                  {/* Model Selector */}
                   <ModelSelector
                     selectedModel={selectedModel}
                     onModelChange={onModelChange}
@@ -108,6 +147,7 @@ export default function MainContent({
                     isDark={isDark}
                     customization={customization}
                   />
+                  {/* Search Button */}
                   <button 
                     type="button"
                     className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
@@ -115,6 +155,7 @@ export default function MainContent({
                   >
                     <Search className="w-4 h-4" />
                   </button>
+                  {/* Attachment Button */}
                   <button 
                     type="button"
                     className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
@@ -124,6 +165,7 @@ export default function MainContent({
                   </button>
                 </div>
                 
+                {/* Send Button */}
                 <button 
                   type="submit"
                   disabled={!inputValue.trim()}
@@ -144,6 +186,7 @@ export default function MainContent({
     );
   }
 
+  // Full main content layout
   return (
     <div 
       className={`flex-1 h-full flex flex-col ${isDark ? 'bg-gray-900' : 'bg-purple-50'}`}
@@ -156,6 +199,7 @@ export default function MainContent({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col items-center justify-center px-8">
         <div className="max-w-2xl w-full text-center">
+          {/* Main Heading */}
           <h1 
             className={`text-4xl font-semibold mb-10 ${isDark ? 'text-white' : 'text-purple-800'}`}
             style={{ 
@@ -176,7 +220,7 @@ export default function MainContent({
             <ActionButton icon={GraduationCap} label="Learn" isDark={isDark} customization={customization} />
           </div>
 
-          {/* Sample Questions */}
+          {/* Sample Questions - Only show if enabled in customization */}
           {customization.showQuestions && (
             <div className="space-y-3 mb-16">
               {questions.map((question, index) => (
@@ -213,10 +257,11 @@ export default function MainContent({
         </div>
       </div>
 
-      {/* Footer */}
+      {/* Footer Section with Input */}
       {!hideInput && (
         <div className="px-8 pb-6">
           <div className="max-w-2xl mx-auto">
+            {/* Terms and Privacy Links */}
             <p 
               className={`text-xs text-center mb-6 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
               style={{ fontFamily: customization.fontFamily }}
