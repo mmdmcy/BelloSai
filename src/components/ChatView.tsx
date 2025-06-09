@@ -1,3 +1,19 @@
+/**
+ * ChatView Component
+ * 
+ * This component renders the chat interface when there are active conversations.
+ * It displays the conversation history and provides input functionality for new messages.
+ * 
+ * Features:
+ * - Message rendering with support for code blocks
+ * - Syntax highlighting for code snippets
+ * - Auto-scrolling to latest messages
+ * - Copy and regenerate functionality for AI responses
+ * - Responsive design with proper message alignment
+ * - Auto-resizing textarea for input
+ * - Model selection and additional controls
+ */
+
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Search, Paperclip, ArrowUp, Copy, RotateCcw } from 'lucide-react';
 import { Message } from '../App';
@@ -27,10 +43,14 @@ export default function ChatView({
   inputOnly = false,
   customization
 }: ChatViewProps) {
+  // Input state management
   const [inputValue, setInputValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  /**
+   * Auto-scroll to bottom when new messages arrive
+   */
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -39,17 +59,24 @@ export default function ChatView({
     scrollToBottom();
   }, [messages]);
 
+  /**
+   * Handle form submission for new messages
+   */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (inputValue.trim()) {
       onSendMessage(inputValue.trim());
       setInputValue('');
+      // Reset textarea height after sending
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
       }
     }
   };
 
+  /**
+   * Handle keyboard shortcuts in textarea
+   */
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -57,18 +84,26 @@ export default function ChatView({
     }
   };
 
+  /**
+   * Handle input changes and auto-resize textarea
+   */
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputValue(e.target.value);
     
-    // Auto-resize textarea
+    // Auto-resize textarea based on content
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
   };
 
+  /**
+   * Render individual message with proper styling and features
+   * Handles both user and AI messages with different layouts
+   */
   const renderMessage = (message: Message) => {
     if (message.type === 'user') {
+      // User message - right-aligned with custom color
       return (
         <div key={message.id} className="flex justify-end mb-6">
           <div 
@@ -83,10 +118,11 @@ export default function ChatView({
         </div>
       );
     } else {
-      // Check if message contains code
+      // AI message - left-aligned with code block support
       const hasCode = message.content.includes('```');
       
       if (hasCode) {
+        // Parse code blocks from message content
         const parts = message.content.split('```');
         const beforeCode = parts[0];
         const codeContent = parts[1];
@@ -100,6 +136,7 @@ export default function ChatView({
         return (
           <div key={message.id} className="flex justify-start mb-6">
             <div className="max-w-2xl w-full">
+              {/* Text before code block */}
               {beforeCode && (
                 <p 
                   className={`mb-4 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}
@@ -109,11 +146,11 @@ export default function ChatView({
                 </p>
               )}
               
-              {/* Code Block */}
+              {/* Code Block Container */}
               <div className={`rounded-xl overflow-hidden ${
                 isDark ? 'bg-gray-900' : 'bg-white'
               } border ${isDark ? 'border-gray-700' : 'border-purple-200'}`}>
-                {/* Code Header */}
+                {/* Code Header with Language and Copy Button */}
                 <div 
                   className="flex items-center justify-between px-4 py-3 border-b text-white"
                   style={{ 
@@ -145,6 +182,7 @@ export default function ChatView({
                 </div>
               </div>
 
+              {/* Text after code block */}
               {afterCode && (
                 <p 
                   className={`mt-4 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}
@@ -204,6 +242,7 @@ export default function ChatView({
           </div>
         );
       } else {
+        // Regular text message without code
         return (
           <div key={message.id} className="flex justify-start mb-6">
             <div className="max-w-2xl">
@@ -267,7 +306,7 @@ export default function ChatView({
     }
   };
 
-  // If inputOnly is true, only render the input section
+  // Input-only mode - renders just the message input interface
   if (inputOnly) {
     return (
       <div className="h-full flex items-end">
@@ -334,6 +373,7 @@ export default function ChatView({
     );
   }
 
+  // Full chat view layout
   return (
     <div className={`flex-1 h-full flex flex-col ${isDark ? 'bg-gray-900' : 'bg-purple-50'}`}>
       {/* Chat Messages Area */}
@@ -342,7 +382,7 @@ export default function ChatView({
           {messages.map(renderMessage)}
           <div ref={messagesEndRef} />
           
-          {/* Scroll to bottom indicator */}
+          {/* Scroll to bottom indicator - only show for longer conversations */}
           {messages.length > 3 && (
             <div className="flex justify-center py-4">
               <button 

@@ -1,5 +1,24 @@
+/**
+ * Sidebar Component
+ * 
+ * This component renders the left sidebar of the application containing:
+ * - Application branding and logo
+ * - New chat button
+ * - Search functionality for chat history
+ * - Chat history list
+ * - User account information
+ * - Collapsible functionality for space optimization
+ * 
+ * Features:
+ * - Responsive design with collapse/expand functionality
+ * - Search overlay with modal interface
+ * - Customizable theming and colors
+ * - Chat history organization by time periods
+ * - Quick actions when collapsed
+ */
+
 import React, { useState } from 'react';
-import { Search, Plus, Menu, ChevronLeft, ChevronRight, Gamepad2 } from 'lucide-react';
+import { Search, Plus, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import { CustomizationSettings } from '../App';
 
 interface SidebarProps {
@@ -9,7 +28,6 @@ interface SidebarProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   onSendMessage: (message: string) => void;
-  onNewGame: () => void;
 }
 
 export default function Sidebar({ 
@@ -18,13 +36,16 @@ export default function Sidebar({
   customization, 
   isCollapsed, 
   onToggleCollapse,
-  onSendMessage,
-  onNewGame
+  onSendMessage 
 }: SidebarProps) {
+  // Search functionality state
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
-  // Helper function to get appropriate text color in dark mode
+  /**
+   * Helper function to get appropriate text color in dark mode
+   * Adapts colors based on theme and customization settings
+   */
   const getTextColor = (baseColor: string, isDark: boolean) => {
     if (isDark) {
       // In dark mode, use a lighter version of the custom color or fallback to gray
@@ -33,6 +54,9 @@ export default function Sidebar({
     return baseColor;
   };
 
+  /**
+   * Helper function for secondary text colors
+   */
   const getSecondaryTextColor = (baseColor: string, isDark: boolean) => {
     if (isDark) {
       // In dark mode, use secondary color if it's custom, otherwise use gray
@@ -41,10 +65,18 @@ export default function Sidebar({
     return baseColor;
   };
 
+  /**
+   * Handle new chat creation
+   * Sends a default greeting message to start a new conversation
+   */
   const handleNewChat = () => {
     onSendMessage('Hello! I\'d like to start a new conversation.');
   };
 
+  /**
+   * Handle search form submission
+   * Sends search query as a message to the chat
+   */
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -77,22 +109,6 @@ export default function Sidebar({
             title="Expand Sidebar"
           >
             <ChevronRight className="w-5 h-5" />
-          </button>
-
-          {/* Quick New Game Button */}
-          <button
-            onClick={onNewGame}
-            className={`p-3 rounded-lg transition-colors ${
-              isDark 
-                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-                : 'bg-white text-gray-700 hover:bg-gray-100 border border-purple-200'
-            }`}
-            style={{ 
-              color: isDark ? undefined : customization.primaryColor
-            }}
-            title="New Game"
-          >
-            <Gamepad2 className="w-5 h-5" />
           </button>
 
           {/* Quick New Chat Button */}
@@ -218,7 +234,7 @@ export default function Sidebar({
     );
   }
 
-  // Full sidebar
+  // Full sidebar layout
   return (
     <div 
       className={`w-full h-full ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-purple-50 border-purple-100'} border-r flex flex-col`}
@@ -228,13 +244,15 @@ export default function Sidebar({
           : undefined
       }}
     >
-      {/* Header */}
+      {/* Header Section */}
       <div className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-purple-100'}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
+            {/* App Icon */}
             <div className={`p-1 rounded ${isDark ? 'bg-gray-700' : 'bg-purple-200'}`}>
               <Menu className={`w-4 h-4 ${isDark ? 'text-white' : 'text-purple-700'}`} />
             </div>
+            {/* App Name */}
             <span 
               className={`font-semibold text-lg ${isDark ? 'text-white' : 'text-purple-700'}`}
               style={{ 
@@ -261,36 +279,8 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* New Game Button */}
+      {/* New Chat Button */}
       <div className="p-4">
-        <button 
-          onClick={onNewGame}
-          className={`w-full py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors mb-3 ${
-            isDark 
-              ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white' 
-              : 'hover:text-purple-800'
-          }`}
-          style={{ 
-            fontFamily: customization.fontFamily,
-            backgroundColor: isDark ? undefined : customization.primaryColor + '20',
-            color: isDark ? undefined : customization.primaryColor
-          }}
-          onMouseEnter={(e) => {
-            if (!isDark) {
-              e.currentTarget.style.backgroundColor = customization.primaryColor + '30';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isDark) {
-              e.currentTarget.style.backgroundColor = customization.primaryColor + '20';
-            }
-          }}
-        >
-          <Gamepad2 className="w-4 h-4" />
-          New Game
-        </button>
-
-        {/* New Chat Button */}
         <button 
           onClick={handleNewChat}
           className="w-full py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors text-white hover:opacity-90"
@@ -306,7 +296,7 @@ export default function Sidebar({
         </button>
       </div>
 
-      {/* Search */}
+      {/* Search Section */}
       <div className="px-4 pb-4">
         <form onSubmit={handleSearchSubmit}>
           <div className="relative">
@@ -335,8 +325,9 @@ export default function Sidebar({
         </form>
       </div>
 
-      {/* Chat History */}
+      {/* Chat History Section */}
       <div className="px-4 pb-4 flex-1">
+        {/* Today Section */}
         <div className={`text-xs font-medium mb-2`}
              style={{ 
                fontFamily: customization.fontFamily,
@@ -365,6 +356,7 @@ export default function Sidebar({
           Greeting
         </button>
         
+        {/* Last 30 Days Section */}
         <div className={`text-xs font-medium mb-2 mt-4`}
              style={{ 
                fontFamily: customization.fontFamily,
@@ -408,6 +400,7 @@ export default function Sidebar({
           }`}
           style={{ fontFamily: customization.fontFamily }}
         >
+          {/* User Avatar */}
           <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold`}
                style={{ 
                  background: customization.gradientEnabled 
@@ -416,6 +409,7 @@ export default function Sidebar({
                }}>
             D
           </div>
+          {/* User Info */}
           <div className="flex-1 text-left">
             <div className="text-sm font-medium"
                  style={{ color: isDark 

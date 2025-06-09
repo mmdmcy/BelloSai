@@ -1,3 +1,17 @@
+/**
+ * ActionButton Component
+ * 
+ * A reusable button component for action items on the main page.
+ * Features customizable styling based on theme and user preferences.
+ * 
+ * Features:
+ * - Icon and label display
+ * - Theme-aware styling (light/dark mode)
+ * - Customizable colors and gradients
+ * - Hover effects with smooth transitions
+ * - Responsive design
+ */
+
 import React from 'react';
 import { DivideIcon as LucideIcon } from 'lucide-react';
 import { CustomizationSettings } from '../App';
@@ -19,6 +33,7 @@ export default function ActionButton({ icon: Icon, label, isDark, customization 
       }`}
       style={{ 
         fontFamily: customization.fontFamily,
+        // Apply custom colors and gradients for light mode
         background: isDark 
           ? undefined 
           : customization.gradientEnabled
@@ -26,6 +41,7 @@ export default function ActionButton({ icon: Icon, label, isDark, customization 
             : customization.primaryColor + '20',
         color: isDark ? undefined : customization.primaryColor
       }}
+      // Dynamic hover effects for light mode
       onMouseEnter={(e) => {
         if (!isDark) {
           e.currentTarget.style.background = customization.gradientEnabled
