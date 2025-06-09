@@ -246,20 +246,20 @@ export default function DesignerMode({
   };
 
   const resetLayout = () => {
-    // Reset layout to defaults with centralized main content and detached components positioned above sidebar
+    // Reset layout to defaults with updated positioning
     onLayoutChange({
-      sidebar: { x: 0, y: 4, width: 3, height: 9, zIndex: 1 }, // Moved down for buttons above
-      mainContent: { x: 5, y: 2, width: 10, height: 12, zIndex: 1 }, // Centralized 10x12
+      sidebar: { x: 0, y: 5, width: 3, height: 9, zIndex: 1 },
+      mainContent: { x: 5, y: 1, width: 10, height: 12, zIndex: 1 }, // Moved up 1 row
       themeToggle: { x: 17, y: 0, width: 1, height: 1, zIndex: 4 },
       topBar: { x: 0, y: 0, width: 20, height: 1, zIndex: 2 },
-      inputBox: { x: 4, y: 14, width: 12, height: 2, zIndex: 1 },
+      inputBox: { x: 4, y: 13, width: 12, height: 2, zIndex: 1 }, // Moved up 1 row
       designerButton: { x: 19, y: 0, width: 1, height: 1, zIndex: 999 },
       settingsButton: { x: 18, y: 0, width: 1, height: 1, zIndex: 4 },
-      // Detached sidebar components - positioned above sidebar
+      // Detached sidebar components with updated positioning
       appLogo: { x: 0, y: 1, width: 3, height: 1, zIndex: 3 },
-      newGameButton: { x: 0, y: 2, width: 3, height: 1, zIndex: 3 }, // Above sidebar
-      newChatButton: { x: 0, y: 3, width: 3, height: 1, zIndex: 3 }, // Above sidebar
-      searchButton: { x: 0, y: 13, width: 3, height: 1, zIndex: 3 },
+      newGameButton: { x: 0, y: 2, width: 3, height: 1, zIndex: 3 },
+      newChatButton: { x: 0, y: 3, width: 3, height: 1, zIndex: 3 },
+      searchButton: { x: 0, y: 4, width: 3, height: 1, zIndex: 3 }, // Moved above sidebar
       accountPanel: { x: 0, y: 15, width: 3, height: 1, zIndex: 3 }
     });
     
