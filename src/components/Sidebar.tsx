@@ -4,6 +4,7 @@
  * This component renders the left sidebar of the application containing:
  * - Application branding and logo
  * - New chat button
+ * - New game button (for gaming features)
  * - Search functionality for chat history
  * - Chat history list
  * - User account information
@@ -18,7 +19,7 @@
  */
 
 import React, { useState } from 'react';
-import { Search, Plus, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, Menu, ChevronLeft, ChevronRight, Gamepad2 } from 'lucide-react';
 import { CustomizationSettings } from '../App';
 
 interface SidebarProps {
@@ -28,6 +29,7 @@ interface SidebarProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   onSendMessage: (message: string) => void;
+  onNewGame: () => void; // Added for game functionality
 }
 
 export default function Sidebar({ 
@@ -36,7 +38,8 @@ export default function Sidebar({
   customization, 
   isCollapsed, 
   onToggleCollapse,
-  onSendMessage 
+  onSendMessage,
+  onNewGame // Added for game functionality
 }: SidebarProps) {
   // Search functionality state
   const [searchQuery, setSearchQuery] = useState('');
@@ -109,6 +112,22 @@ export default function Sidebar({
             title="Expand Sidebar"
           >
             <ChevronRight className="w-5 h-5" />
+          </button>
+
+          {/* Quick New Game Button */}
+          <button
+            onClick={onNewGame}
+            className={`p-3 rounded-lg transition-colors ${
+              isDark 
+                ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
+                : 'bg-white text-gray-700 hover:bg-gray-100 border border-purple-200'
+            }`}
+            style={{ 
+              color: isDark ? undefined : customization.primaryColor
+            }}
+            title="New Game"
+          >
+            <Gamepad2 className="w-5 h-5" />
           </button>
 
           {/* Quick New Chat Button */}
@@ -279,8 +298,23 @@ export default function Sidebar({
         </div>
       </div>
 
-      {/* New Chat Button */}
+      {/* New Game Button */}
       <div className="p-4">
+        <button 
+          onClick={onNewGame}
+          className="w-full py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors mb-3 text-white hover:opacity-90"
+          style={{ 
+            background: customization.gradientEnabled 
+              ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+              : customization.primaryColor,
+            fontFamily: customization.fontFamily
+          }}
+        >
+          <Gamepad2 className="w-4 h-4" />
+          New Game
+        </button>
+        
+        {/* New Chat Button */}
         <button 
           onClick={handleNewChat}
           className="w-full py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors text-white hover:opacity-90"
