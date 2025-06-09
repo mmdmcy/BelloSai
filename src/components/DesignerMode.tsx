@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { X, RotateCcw, Save, Sun, Moon, Plus, Minus, ChevronUp, ChevronDown, GripVertical, Palette, Type, Eye, EyeOff } from 'lucide-react';
 import { LayoutConfig, CustomizationSettings } from '../App';
+import { defaultLayoutWithAuth } from '../lib/auth-integration';
 
 interface DesignerModeProps {
   isDark: boolean;
@@ -246,22 +247,8 @@ export default function DesignerMode({
   };
 
   const resetLayout = () => {
-    // Reset layout to defaults with updated positioning
-    onLayoutChange({
-      sidebar: { x: 0, y: 5, width: 3, height: 9, zIndex: 1 },
-      mainContent: { x: 5, y: 1, width: 10, height: 12, zIndex: 1 }, // Moved up 1 row
-      themeToggle: { x: 17, y: 0, width: 1, height: 1, zIndex: 4 },
-      topBar: { x: 0, y: 0, width: 20, height: 1, zIndex: 2 },
-      inputBox: { x: 4, y: 13, width: 12, height: 2, zIndex: 1 }, // Moved up 1 row
-      designerButton: { x: 19, y: 0, width: 1, height: 1, zIndex: 999 },
-      settingsButton: { x: 18, y: 0, width: 1, height: 1, zIndex: 4 },
-      // Detached sidebar components with updated positioning
-      appLogo: { x: 0, y: 1, width: 3, height: 1, zIndex: 3 },
-      newGameButton: { x: 0, y: 2, width: 3, height: 1, zIndex: 3 },
-      newChatButton: { x: 0, y: 3, width: 3, height: 1, zIndex: 3 },
-      searchButton: { x: 0, y: 4, width: 3, height: 1, zIndex: 3 }, // Moved above sidebar
-      accountPanel: { x: 0, y: 15, width: 3, height: 1, zIndex: 3 }
-    });
+    // Reset layout to defaults with auth buttons included
+    onLayoutChange(defaultLayoutWithAuth);
     
     // Reset customization to defaults
     onCustomizationChange({
@@ -398,7 +385,11 @@ export default function DesignerMode({
     newChatButton: isDark ? 'bg-emerald-600/90' : 'bg-emerald-500/90',
     newGameButton: isDark ? 'bg-rose-600/90' : 'bg-rose-500/90',
     searchButton: isDark ? 'bg-cyan-600/90' : 'bg-cyan-500/90',
-    accountPanel: isDark ? 'bg-amber-600/90' : 'bg-amber-500/90'
+    accountPanel: isDark ? 'bg-amber-600/90' : 'bg-amber-500/90',
+    // Authentication buttons
+    loginButton: isDark ? 'bg-blue-700/90' : 'bg-blue-600/90',
+    signupButton: isDark ? 'bg-green-700/90' : 'bg-green-600/90',
+    accountButton: isDark ? 'bg-orange-700/90' : 'bg-orange-600/90'
   };
 
   const selectedColors = {
@@ -414,7 +405,11 @@ export default function DesignerMode({
     newChatButton: isDark ? 'bg-emerald-500' : 'bg-emerald-600',
     newGameButton: isDark ? 'bg-rose-500' : 'bg-rose-600',
     searchButton: isDark ? 'bg-cyan-500' : 'bg-cyan-600',
-    accountPanel: isDark ? 'bg-amber-500' : 'bg-amber-600'
+    accountPanel: isDark ? 'bg-amber-500' : 'bg-amber-600',
+    // Authentication buttons
+    loginButton: isDark ? 'bg-blue-600' : 'bg-blue-700',
+    signupButton: isDark ? 'bg-green-600' : 'bg-green-700',
+    accountButton: isDark ? 'bg-orange-600' : 'bg-orange-700'
   };
 
   const getElementDisplayName = (key: string) => {
@@ -431,6 +426,9 @@ export default function DesignerMode({
       case 'newGameButton': return 'New Game Button';
       case 'searchButton': return 'Search Button';
       case 'accountPanel': return 'Account Panel';
+      case 'loginButton': return 'Login Button';
+      case 'signupButton': return 'Signup Button';
+      case 'accountButton': return 'Account Button';
       default: return key.replace(/([A-Z])/g, ' $1').trim();
     }
   };
