@@ -274,6 +274,9 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
           <span className="text-xs opacity-90" style={{ fontFamily: customization.fontFamily }}>
             Tap to select • Drag to move • Hold 0.25s & drag to resize
           </span>
+          <span className="text-xs bg-white/20 px-2 py-1 rounded">
+            {Object.keys(mobileLayout).length} elements
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
@@ -305,43 +308,37 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
         {/* Mobile Preview Container */}
         <div 
           ref={gridRef}
-          className={`relative w-full h-full overflow-auto ${isDark ? 'bg-gray-800' : 'bg-gray-50'}`}
+          className={`relative w-full h-full ${isDark ? 'bg-gray-800' : 'bg-gray-50'}`}
           style={{
-            background: `
-              ${isDark ? '#1f2937' : '#f9fafb'},
-              linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px),
-              linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px)
-            `,
-            backgroundSize: `auto, ${100/GRID_COLS}% ${100/GRID_ROWS}%`,
             minHeight: '100%'
           }}
-          onTouchStart={(e) => {
-            // Only clear selection if touching the grid background
-            if (e.target === e.currentTarget) {
-              setSelectedElement(null);
-              setMobileInteraction({ mode: null, startTime: 0, longPressTimer: null });
-            }
-          }}
         >
-          {/* Grid Lines */}
-          <div className="absolute inset-0 pointer-events-none">
-            {Array.from({ length: GRID_COLS + 1 }).map((_, i) => (
+          {/* Simple test to see if anything renders */}
+          <div className="absolute top-4 left-4 w-32 h-16 bg-blue-500 text-white p-2 rounded">
+            Test Element
+          </div>
+
+          {/* Grid Lines - Simple version */}
+          <div className="absolute inset-0 pointer-events-none opacity-20">
+            {/* Vertical lines */}
+            {Array.from({ length: 21 }).map((_, i) => (
               <div
                 key={`v-${i}`}
-                className="absolute top-0 bottom-0 border-l border-gray-200 dark:border-gray-700"
-                style={{ left: `${(i / GRID_COLS) * 100}%` }}
+                className={`absolute top-0 bottom-0 w-px ${isDark ? 'bg-gray-400' : 'bg-gray-400'}`}
+                style={{ left: `${(i / 20) * 100}%` }}
               />
             ))}
-            {Array.from({ length: GRID_ROWS + 1 }).map((_, i) => (
+            {/* Horizontal lines */}
+            {Array.from({ length: 16 }).map((_, i) => (
               <div
                 key={`h-${i}`}
-                className="absolute left-0 right-0 border-t border-gray-200 dark:border-gray-700"
-                style={{ top: `${(i / GRID_ROWS) * 100}%` }}
+                className={`absolute left-0 right-0 h-px ${isDark ? 'bg-gray-400' : 'bg-gray-400'}`}
+                style={{ top: `${(i / 15) * 100}%` }}
               />
             ))}
           </div>
 
-          {/* Preview Elements */}
+          {/* Mobile Layout Elements - Simplified */}
           {Object.entries(mobileLayout).map(([elementKey, elementConfig]) => {
             if (!elementConfig) return null;
 
@@ -351,118 +348,35 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
             return (
               <div
                 key={elementKey}
-                ref={el => elementRefs.current[elementKey2] = el}
-                className={`absolute border-2 transition-all ${
+                className={`absolute border-2 transition-all cursor-move ${
                   isSelected 
-                    ? (isResizeMode ? 'border-yellow-400' : 'border-blue-400')
-                    : 'border-transparent hover:border-gray-400'
-                } ${isSelected ? 'shadow-lg' : ''}`}
+                    ? (isResizeMode ? 'border-yellow-400 bg-yellow-100' : 'border-blue-400 bg-blue-100')
+                    : 'border-gray-300 hover:border-blue-300'
+                } ${isDark ? 'bg-gray-700' : 'bg-white'}`}
                 style={{
-                  left: `${(elementConfig.x / GRID_COLS) * 100}%`,
-                  top: `${(elementConfig.y / GRID_ROWS) * 100}%`,
-                  width: `${(elementConfig.width / GRID_COLS) * 100}%`,
-                  height: `${(elementConfig.height / GRID_ROWS) * 100}%`,
+                  left: `${(elementConfig.x / 20) * 100}%`,
+                  top: `${(elementConfig.y / 15) * 100}%`,
+                  width: `${(elementConfig.width / 20) * 100}%`,
+                  height: `${(elementConfig.height / 15) * 100}%`,
                   zIndex: isSelected ? 1000 : elementConfig.zIndex,
                   minHeight: '40px',
-                  minWidth: '40px'
+                  minWidth: '80px'
                 }}
                 onTouchStart={(e) => handleTouchStart(e, elementKey2)}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
               >
-                {/* Element Preview Content */}
-                <div className={`w-full h-full overflow-hidden ${
-                  isDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'
-                } ${elementKey2.includes('Button') || elementKey2.includes('Toggle') || elementKey2.includes('Logo') ? 'flex items-center justify-center' : ''}`}>
-                  
-                  {/* Header */}
-                  {elementKey2 === 'mobileHeader' && (
-                    <div className={`w-full h-full ${isDark ? 'bg-gray-800' : 'bg-white'} border-b ${isDark ? 'border-gray-700' : 'border-gray-200'} flex items-center justify-center px-2`}>
-                      <span className="text-sm font-medium">Header Area</span>
+                {/* Simple element content */}
+                <div className="w-full h-full flex items-center justify-center p-2">
+                  <div className="text-center">
+                    <div className="text-xs font-bold text-gray-900 dark:text-white">
+                      {getElementDisplayName(elementKey2)}
                     </div>
-                  )}
-
-                  {/* Menu Button */}
-                  {elementKey2 === 'mobileMenuButton' && (
-                    <div className="p-2">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                      </svg>
+                    <div className="text-xs text-gray-500 mt-1">
+                      {elementConfig.width}×{elementConfig.height}
                     </div>
-                  )}
-
-                  {/* App Logo */}
-                  {elementKey2 === 'mobileAppLogo' && (
-                    <span className="text-sm font-bold text-center px-1">BelloSai</span>
-                  )}
-
-                  {/* Theme Toggle */}
-                  {elementKey2 === 'mobileThemeToggle' && (
-                    <div className="p-2">
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12,9c1.65,0 3,1.35 3,3s-1.35,3 -3,3s-3,-1.35 -3,-3S10.35,9 12,9M12,7c-2.76,0 -5,2.24 -5,5s2.24,5 5,5s5,-2.24 5,-5S14.76,7 12,7L12,7z"/>
-                      </svg>
-                    </div>
-                  )}
-
-                  {/* Auth Button */}
-                  {elementKey2 === 'mobileAuthButton' && (
-                    <div className="px-3 py-1 text-xs text-white rounded" style={{ backgroundColor: customization.primaryColor }}>
-                      Login
-                    </div>
-                  )}
-
-                  {/* Main Content */}
-                  {elementKey2 === 'mobileMainContent' && (
-                    <div className={`w-full h-full ${isDark ? 'bg-gray-900' : 'bg-gray-50'} flex items-center justify-center`}>
-                      <div className="text-center p-4">
-                        <h2 className="text-lg font-semibold mb-2">Main Content Area</h2>
-                        <p className="text-xs opacity-70">Your main interface will appear here</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Chat Area */}
-                  {elementKey2 === 'mobileChatArea' && (
-                    <div className={`w-full h-full ${isDark ? 'bg-gray-900' : 'bg-gray-50'} p-2 overflow-hidden`}>
-                      <div className="space-y-2">
-                        <div className={`p-2 rounded text-xs ${isDark ? 'bg-gray-700' : 'bg-white'}`}>
-                          <span className="opacity-70">Sample message</span>
-                        </div>
-                        <div className="flex justify-end">
-                          <div className="p-2 rounded text-xs text-white" style={{ backgroundColor: customization.primaryColor }}>
-                            <span>Your message</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Input Box */}
-                  {elementKey2 === 'mobileInputBox' && (
-                    <div className="p-2 h-full flex items-end">
-                      <div className={`w-full p-2 rounded border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'} text-xs`}>
-                        <span className="opacity-50">Type a message...</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Action Buttons */}
-                  {(elementKey2 === 'mobileNewChat' || elementKey2 === 'mobileNewGame' || elementKey2 === 'mobileSearch' || elementKey2 === 'mobileDesignerMode') && (
-                    <div className="p-1">
-                      <div className="text-xs text-white px-2 py-1 rounded" style={{ backgroundColor: customization.primaryColor }}>
-                        {getElementDisplayName(elementKey2)}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Element Label */}
-                {isSelected && (
-                  <div className="absolute -top-6 left-0 bg-black text-white text-xs px-2 py-1 rounded z-50">
-                    {getElementDisplayName(elementKey2)}
                   </div>
-                )}
+                </div>
               </div>
             );
           })}
