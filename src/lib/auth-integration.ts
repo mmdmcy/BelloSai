@@ -80,8 +80,8 @@ export const defaultMobileLayout: MobileLayoutConfig = {
   mobileThemeToggle: { x: 14, y: 0, width: 3, height: 1, zIndex: 11 },
   mobileAuthButton: { x: 17, y: 0, width: 3, height: 1, zIndex: 11 },
   mobileMainContent: { x: 0, y: 1, width: 20, height: 11, zIndex: 1 },
-  mobileChatArea: { x: 0, y: 1, width: 20, height: 11, zIndex: 2 },
-  mobileInputBox: { x: 0, y: 12, width: 20, height: 3, zIndex: 1 },
+  mobileChatArea: { x: 0, y: 1, width: 20, height: 10, zIndex: 2 },
+  mobileInputBox: { x: 0, y: 12, width: 20, height: 3, zIndex: 15 },
   // Menu items (these appear in the slide-out menu)
   mobileNewChat: { x: 0, y: 3, width: 8, height: 2, zIndex: 50 },
   mobileNewGame: { x: 0, y: 5, width: 8, height: 2, zIndex: 50 },
