@@ -29,11 +29,11 @@ import ChatView from './components/ChatView';
 import MainContent from './components/MainContent';
 import ThemeToggle from './components/ThemeToggle';
 import DesignerMode from './components/DesignerMode';
+import MobileDesignerMode from './components/MobileDesignerMode';
 import AccountMenu from './components/AccountMenu';
 import GameSection from './components/GameSection';
-import { authService } from './lib/auth';
-import type { AuthUser } from './lib/auth';
-import { authManager, layoutManager, ExtendedLayoutConfig, AuthState } from './lib/auth-integration'
+import { authService, AuthUser } from './lib/auth';
+import { authManager, layoutManager, ExtendedLayoutConfig, AuthState, defaultLayoutWithAuth, MobileLayoutConfig, defaultMobileLayout } from './lib/auth-integration'
 import { LogIn, UserPlus, User, Loader2, Menu, X } from 'lucide-react'
 
 /**
@@ -130,6 +130,13 @@ function App() {
     const loadedLayout = layoutManager.getLayout();
     console.log('App - Initial layout loaded:', loadedLayout);
     return loadedLayout;
+  });
+
+  // Mobile layout configuration - separate from desktop
+  const [mobileLayout, setMobileLayout] = useState<MobileLayoutConfig>(() => {
+    const loadedMobileLayout = layoutManager.getMobileLayout();
+    console.log('App - Initial mobile layout loaded:', loadedMobileLayout);
+    return loadedMobileLayout;
   });
 
   // Available models for AI
@@ -344,8 +351,7 @@ function App() {
   };
 
   /**
-   * Update layout configuration
-   * Ensures designer button always stays at top layer and saves to cloud
+   * Update layout configuration with automatic saving
    */
   const updateLayout = (newLayout: ExtendedLayoutConfig) => {
     console.log('App - Updating layout:', newLayout);
@@ -372,6 +378,25 @@ function App() {
   };
 
   /**
+   * Update mobile layout configuration with automatic saving
+   */
+  const updateMobileLayout = (newMobileLayout: MobileLayoutConfig) => {
+    console.log('App - Updating mobile layout:', newMobileLayout);
+    setMobileLayout(newMobileLayout);
+    layoutManager.saveMobileLayout(newMobileLayout);
+    
+    // Save to cloud if user is authenticated
+    if (authState.user) {
+      authService.updateProfile({
+        api_keys: {
+          ...authState.user.api_keys,
+          mobile_layout_config: JSON.stringify(newMobileLayout)
+        }
+      }).catch(error => console.error('Failed to save mobile layout to cloud:', error));
+    }
+  };
+
+  /**
    * Update customization settings
    */
   const updateCustomization = (newSettings: Partial<CustomizationSettings>) => {
@@ -394,20 +419,38 @@ function App() {
 
   // Render designer mode if active
   if (isDesignerMode) {
-    return (
-      <DesignerMode
-        isDark={isDark}
-        layout={layout}
-        onLayoutChange={updateLayout}
-        onExitDesigner={() => {
-          console.log('App - Exiting designer mode, current layout:', layout);
-          setIsDesignerMode(false);
-        }}
-        onToggleTheme={toggleTheme}
-        customization={customization}
-        onCustomizationChange={updateCustomization}
-      />
-    );
+    if (isMobile) {
+      return (
+        <MobileDesignerMode
+          isDark={isDark}
+          mobileLayout={mobileLayout}
+          onMobileLayoutChange={updateMobileLayout}
+          onExitDesigner={() => {
+            console.log('App - Exiting mobile designer mode, current mobile layout:', mobileLayout);
+            setIsDesignerMode(false);
+          }}
+          onToggleTheme={toggleTheme}
+          customization={customization}
+          onCustomizationChange={updateCustomization}
+          isAuthenticated={!!authState.user}
+        />
+      );
+    } else {
+      return (
+        <DesignerMode
+          isDark={isDark}
+          layout={layout}
+          onLayoutChange={updateLayout}
+          onExitDesigner={() => {
+            console.log('App - Exiting desktop designer mode, current layout:', layout);
+            setIsDesignerMode(false);
+          }}
+          onToggleTheme={toggleTheme}
+          customization={customization}
+          onCustomizationChange={updateCustomization}
+        />
+      );
+    }
   }
 
   // Render game section if selected

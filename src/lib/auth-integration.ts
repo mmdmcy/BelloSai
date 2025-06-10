@@ -36,6 +36,20 @@ export interface ExtendedLayoutConfig {
   accountButton: { x: number; y: number; width: number; height: number; zIndex: number }
 }
 
+// Mobile-specific layout configuration
+export interface MobileLayoutConfig {
+  mobileHeader: { x: number; y: number; width: number; height: number; zIndex: number }
+  mobileMenuButton: { x: number; y: number; width: number; height: number; zIndex: number }
+  mobileAppLogo: { x: number; y: number; width: number; height: number; zIndex: number }
+  mobileThemeToggle: { x: number; y: number; width: number; height: number; zIndex: number }
+  mobileAuthButton: { x: number; y: number; width: number; height: number; zIndex: number }
+  mobileMainContent: { x: number; y: number; width: number; height: number; zIndex: number }
+  mobileNewChat: { x: number; y: number; width: number; height: number; zIndex: number }
+  mobileNewGame: { x: number; y: number; width: number; height: number; zIndex: number }
+  mobileSearch: { x: number; y: number; width: number; height: number; zIndex: number }
+  mobileDesignerMode: { x: number; y: number; width: number; height: number; zIndex: number }
+}
+
 // Default layout with authentication buttons
 export const defaultLayoutWithAuth: ExtendedLayoutConfig = {
   sidebar: { x: 0, y: 5, width: 3, height: 9, zIndex: 1 },
@@ -54,6 +68,21 @@ export const defaultLayoutWithAuth: ExtendedLayoutConfig = {
   loginButton: { x: 14, y: 0, width: 1, height: 1, zIndex: 4 },
   signupButton: { x: 15, y: 0, width: 1, height: 1, zIndex: 4 },
   accountButton: { x: 16, y: 0, width: 1, height: 1, zIndex: 4 }
+}
+
+// Default mobile layout configuration (20x15 grid like desktop)
+export const defaultMobileLayout: MobileLayoutConfig = {
+  mobileHeader: { x: 0, y: 0, width: 20, height: 2, zIndex: 10 },
+  mobileMenuButton: { x: 0, y: 0, width: 2, height: 2, zIndex: 11 },
+  mobileAppLogo: { x: 8, y: 0, width: 4, height: 2, zIndex: 11 },
+  mobileThemeToggle: { x: 16, y: 0, width: 2, height: 2, zIndex: 11 },
+  mobileAuthButton: { x: 18, y: 0, width: 2, height: 2, zIndex: 11 },
+  mobileMainContent: { x: 0, y: 2, width: 20, height: 13, zIndex: 1 },
+  // Menu items (these appear in the slide-out menu)
+  mobileNewChat: { x: 0, y: 3, width: 8, height: 2, zIndex: 50 },
+  mobileNewGame: { x: 0, y: 5, width: 8, height: 2, zIndex: 50 },
+  mobileSearch: { x: 0, y: 7, width: 8, height: 2, zIndex: 50 },
+  mobileDesignerMode: { x: 0, y: 9, width: 8, height: 2, zIndex: 50 }
 }
 
 // Authentication service wrapper
@@ -184,6 +213,7 @@ export class AuthManager {
 // Layout persistence utilities
 export class LayoutManager {
   private static STORAGE_KEY = 'bellosai_layout_config'
+  private static MOBILE_STORAGE_KEY = 'bellosai_mobile_layout_config'
 
   // Save layout to localStorage (syncs across tabs)
   static saveLayout(layout: ExtendedLayoutConfig): void {
@@ -191,6 +221,15 @@ export class LayoutManager {
       localStorage.setItem(this.STORAGE_KEY, JSON.stringify(layout))
     } catch (error) {
       console.error('Failed to save layout:', error)
+    }
+  }
+
+  // Save mobile layout to localStorage
+  static saveMobileLayout(layout: MobileLayoutConfig): void {
+    try {
+      localStorage.setItem(this.MOBILE_STORAGE_KEY, JSON.stringify(layout))
+    } catch (error) {
+      console.error('Failed to save mobile layout:', error)
     }
   }
 
@@ -205,9 +244,25 @@ export class LayoutManager {
     }
   }
 
+  // Load mobile layout from localStorage
+  static loadMobileLayout(): MobileLayoutConfig | null {
+    try {
+      const saved = localStorage.getItem(this.MOBILE_STORAGE_KEY)
+      return saved ? JSON.parse(saved) : null
+    } catch (error) {
+      console.error('Failed to load mobile layout:', error)
+      return null
+    }
+  }
+
   // Get layout (saved or default)
   static getLayout(): ExtendedLayoutConfig {
     return this.loadLayout() || defaultLayoutWithAuth
+  }
+
+  // Get mobile layout (saved or default)
+  static getMobileLayout(): MobileLayoutConfig {
+    return this.loadMobileLayout() || defaultMobileLayout
   }
 
   // Update and save layout
@@ -218,10 +273,24 @@ export class LayoutManager {
     return newLayout
   }
 
+  // Update and save mobile layout
+  static updateMobileLayout(updates: Partial<MobileLayoutConfig>): MobileLayoutConfig {
+    const currentLayout = this.getMobileLayout()
+    const newLayout = { ...currentLayout, ...updates }
+    this.saveMobileLayout(newLayout)
+    return newLayout
+  }
+
   // Reset to default layout
   static resetLayout(): ExtendedLayoutConfig {
     this.saveLayout(defaultLayoutWithAuth)
     return defaultLayoutWithAuth
+  }
+
+  // Reset to default mobile layout
+  static resetMobileLayout(): MobileLayoutConfig {
+    this.saveMobileLayout(defaultMobileLayout)
+    return defaultMobileLayout
   }
 }
 
