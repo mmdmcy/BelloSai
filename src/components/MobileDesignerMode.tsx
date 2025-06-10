@@ -47,9 +47,125 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
   isAuthenticated
 }) => {
   const [selectedElement, setSelectedElement] = useState<keyof MobileLayoutConfig | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0, elementX: 0, elementY: 0 });
+  const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, elementWidth: 0, elementHeight: 0 });
+  const [longPressTimer, setLongPressTimer] = useState<NodeJS.Timeout | null>(null);
 
   const resetLayout = () => {
     onMobileLayoutChange(defaultMobileLayout);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent, elementKey: keyof MobileLayoutConfig) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const touch = e.touches[0];
+    const element = mobileLayout[elementKey];
+    
+    setSelectedElement(elementKey);
+    
+    // Clear any existing timer
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+    }
+    
+    // Set up for dragging
+    setDragStart({
+      x: touch.clientX,
+      y: touch.clientY,
+      elementX: element.x,
+      elementY: element.y
+    });
+    
+    setResizeStart({
+      x: touch.clientX,
+      y: touch.clientY,
+      elementWidth: element.width,
+      elementHeight: element.height
+    });
+    
+    // Long press timer for resize mode (500ms)
+    const timer = setTimeout(() => {
+      setIsResizing(true);
+      if (navigator.vibrate) {
+        navigator.vibrate(100); // Vibration feedback
+      }
+    }, 500);
+    
+    setLongPressTimer(timer);
+    setIsDragging(true);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging || !selectedElement) return;
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const touch = e.touches[0];
+    const element = mobileLayout[selectedElement];
+    
+    // Clear long press timer if user moves (prevents accidental resize)
+    const deltaX = Math.abs(touch.clientX - dragStart.x);
+    const deltaY = Math.abs(touch.clientY - dragStart.y);
+    if ((deltaX > 10 || deltaY > 10) && longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+    
+    if (isResizing) {
+      // RESIZE MODE
+      const widthDelta = Math.round((touch.clientX - resizeStart.x) / 20); // Rough grid calculation
+      const heightDelta = Math.round((touch.clientY - resizeStart.y) / 20);
+      
+      const newWidth = Math.max(1, Math.min(20, resizeStart.elementWidth + widthDelta));
+      const newHeight = Math.max(1, Math.min(15, resizeStart.elementHeight + heightDelta));
+      
+      // Make sure element doesn't go out of bounds
+      const maxWidth = 20 - element.x;
+      const maxHeight = 15 - element.y;
+      
+      const updatedLayout = {
+        ...mobileLayout,
+        [selectedElement]: {
+          ...element,
+          width: Math.min(newWidth, maxWidth),
+          height: Math.min(newHeight, maxHeight)
+        }
+      };
+      
+      onMobileLayoutChange(updatedLayout);
+    } else {
+      // MOVE MODE
+      const gridDeltaX = Math.round((touch.clientX - dragStart.x) / 20); // Rough grid calculation
+      const gridDeltaY = Math.round((touch.clientY - dragStart.y) / 20);
+      
+      const newX = Math.max(0, Math.min(20 - element.width, dragStart.elementX + gridDeltaX));
+      const newY = Math.max(0, Math.min(15 - element.height, dragStart.elementY + gridDeltaY));
+      
+      const updatedLayout = {
+        ...mobileLayout,
+        [selectedElement]: {
+          ...element,
+          x: newX,
+          y: newY
+        }
+      };
+      
+      onMobileLayoutChange(updatedLayout);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
+    }
+    
+    setIsDragging(false);
+    setIsResizing(false);
   };
 
   return (
@@ -66,6 +182,7 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
         <div className="flex items-center gap-4">
           <h1 className="text-xl font-bold">Mobile Designer</h1>
           <span className="text-xs">Elements: {Object.keys(mobileLayout).length}</span>
+          {isResizing && <span className="text-xs bg-yellow-500 px-2 py-1 rounded">RESIZE MODE</span>}
         </div>
 
         <div className="flex items-center gap-2">
@@ -87,32 +204,9 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
       {/* Main Content Area */}
       <div className="h-full bg-red-200 relative" style={{ height: 'calc(100vh - 64px)' }}>
         
-        {/* Test Box - Should Always Be Visible */}
-        <div 
-          className="absolute bg-blue-500 text-white p-4 rounded"
-          style={{ 
-            top: '20px', 
-            left: '20px', 
-            width: '120px', 
-            height: '80px',
-            zIndex: 999 
-          }}
-        >
-          TEST BOX
-        </div>
-
-        {/* Another Test Box */}
-        <div 
-          className="absolute bg-green-500 text-white p-4 rounded"
-          style={{ 
-            top: '120px', 
-            left: '20px', 
-            width: '120px', 
-            height: '80px',
-            zIndex: 998 
-          }}
-        >
-          TEST 2
+        {/* Instructions */}
+        <div className="absolute top-2 right-2 bg-black/80 text-white p-2 rounded text-xs z-50">
+          Tap to select • Drag to move • Hold 0.5s + drag to resize
         </div>
 
         {/* Grid Background */}
@@ -134,29 +228,44 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
         </div>
 
         {/* Mobile Elements */}
-        {Object.entries(mobileLayout).map(([key, config]) => (
-          <div
-            key={key}
-            className="absolute bg-white border-2 border-gray-400 p-2 cursor-move"
-            style={{
-              left: `${(config.x / 20) * 100}%`,
-              top: `${(config.y / 15) * 100}%`,
-              width: `${(config.width / 20) * 100}%`,
-              height: `${(config.height / 15) * 100}%`,
-              minWidth: '60px',
-              minHeight: '40px',
-              zIndex: config.zIndex
-            }}
-            onClick={() => setSelectedElement(key as keyof MobileLayoutConfig)}
-          >
-            <div className="text-xs font-bold text-center">
-              {key}
+        {Object.entries(mobileLayout).map(([key, config]) => {
+          const isSelected = selectedElement === key;
+          const elementKey = key as keyof MobileLayoutConfig;
+          
+          return (
+            <div
+              key={key}
+              className={`absolute p-2 cursor-move border-2 ${
+                isSelected 
+                  ? (isResizing ? 'border-yellow-400 bg-yellow-100' : 'border-blue-400 bg-blue-100')
+                  : 'border-gray-400 bg-white hover:border-blue-300'
+              }`}
+              style={{
+                left: `${(config.x / 20) * 100}%`,
+                top: `${(config.y / 15) * 100}%`,
+                width: `${(config.width / 20) * 100}%`,
+                height: `${(config.height / 15) * 100}%`,
+                minWidth: '60px',
+                minHeight: '40px',
+                zIndex: isSelected ? 999 : config.zIndex,
+                touchAction: 'none' // Prevent default touch behaviors
+              }}
+              onTouchStart={(e) => handleTouchStart(e, elementKey)}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              <div className="text-xs font-bold text-center truncate">
+                {key.replace('mobile', '')}
+              </div>
+              <div className="text-xs text-gray-500 text-center">
+                {config.width}×{config.height}
+              </div>
+              {isSelected && (
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full"></div>
+              )}
             </div>
-            <div className="text-xs text-gray-500 text-center">
-              {config.width}×{config.height}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
