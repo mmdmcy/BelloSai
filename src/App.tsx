@@ -551,59 +551,134 @@ function App() {
           )}
 
           {/* Mobile Header */}
-          <div 
-            className="flex items-center justify-between px-4 text-white z-10"
-            style={{
-              gridColumn: `${mobileLayout.mobileHeader.x + 1} / ${mobileLayout.mobileHeader.x + mobileLayout.mobileHeader.width + 1}`,
-              gridRow: `${mobileLayout.mobileHeader.y + 1} / ${mobileLayout.mobileHeader.y + mobileLayout.mobileHeader.height + 1}`,
-              background: customization.gradientEnabled 
-                ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                : customization.primaryColor
-            }}
-          >
-            {/* Mobile Menu Button */}
-            <button
-              onClick={toggleMobileMenu}
-              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+          {mobileLayout.mobileHeader && (
+            <div 
+              className={`w-full ${isDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'} border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
+              style={{
+                gridColumn: `${mobileLayout.mobileHeader.x + 1} / ${mobileLayout.mobileHeader.x + mobileLayout.mobileHeader.width + 1}`,
+                gridRow: `${mobileLayout.mobileHeader.y + 1} / ${mobileLayout.mobileHeader.y + mobileLayout.mobileHeader.height + 1}`,
+                zIndex: mobileLayout.mobileHeader.zIndex,
+                background: customization.gradientEnabled && !isDark 
+                  ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
+                  : undefined
+              }}
             >
-              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </button>
-
-            {/* App Logo */}
-            <div className="flex items-center gap-2">
-              <div className="p-1 rounded bg-white/20">
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/>
-                </svg>
+              <div className="flex items-center justify-between h-full px-4">
+                <div className="flex items-center gap-4">
+                  <h1 className="text-xl font-bold" style={{ fontFamily: customization.fontFamily }}>
+                    BelloSai
+                  </h1>
+                </div>
               </div>
-              <span className="font-semibold text-lg" style={{ fontFamily: customization.fontFamily }}>
-                BelloSai
-              </span>
             </div>
+          )}
 
-            {/* Mobile Actions */}
-            <div className="flex items-center gap-2">
-              {/* Theme Toggle */}
-              <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
-              
-              {/* Account/Auth Button */}
-              {authState.user ? (
-                <button
-                  onClick={toggleAccountMenu}
-                  className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
-                >
-                  <User className="w-5 h-5" />
-                </button>
-              ) : (
-                <button
-                  onClick={() => setShowLoginModal(true)}
-                  className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
-                >
-                  <LogIn className="w-5 h-5" />
-                </button>
-              )}
+          {/* Mobile Menu Button - Now separate draggable */}
+          {mobileLayout.mobileMenuButton && (
+            <div 
+              style={{
+                gridColumn: `${mobileLayout.mobileMenuButton.x + 1} / ${mobileLayout.mobileMenuButton.x + mobileLayout.mobileMenuButton.width + 1}`,
+                gridRow: `${mobileLayout.mobileMenuButton.y + 1} / ${mobileLayout.mobileMenuButton.y + mobileLayout.mobileMenuButton.height + 1}`,
+                zIndex: mobileLayout.mobileMenuButton.zIndex
+              }}
+              className="flex items-center justify-center"
+            >
+              <button
+                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                className={`p-3 rounded-lg transition-colors ${
+                  isDark 
+                    ? 'text-gray-300 hover:text-white hover:bg-gray-700' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
             </div>
-          </div>
+          )}
+
+          {/* Mobile App Logo - Now separate draggable */}
+          {mobileLayout.mobileAppLogo && (
+            <div 
+              style={{
+                gridColumn: `${mobileLayout.mobileAppLogo.x + 1} / ${mobileLayout.mobileAppLogo.x + mobileLayout.mobileAppLogo.width + 1}`,
+                gridRow: `${mobileLayout.mobileAppLogo.y + 1} / ${mobileLayout.mobileAppLogo.y + mobileLayout.mobileAppLogo.height + 1}`,
+                zIndex: mobileLayout.mobileAppLogo.zIndex
+              }}
+              className="flex items-center justify-center"
+            >
+              <h1 
+                className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}
+                style={{ 
+                  fontFamily: customization.fontFamily,
+                  color: isDark 
+                    ? (customization.primaryColor !== '#7c3aed' ? customization.primaryColor : undefined)
+                    : customization.primaryColor 
+                }}
+              >
+                BelloSai
+              </h1>
+            </div>
+          )}
+
+          {/* Mobile Theme Toggle - Now separate draggable */}
+          {mobileLayout.mobileThemeToggle && (
+            <div 
+              style={{
+                gridColumn: `${mobileLayout.mobileThemeToggle.x + 1} / ${mobileLayout.mobileThemeToggle.x + mobileLayout.mobileThemeToggle.width + 1}`,
+                gridRow: `${mobileLayout.mobileThemeToggle.y + 1} / ${mobileLayout.mobileThemeToggle.y + mobileLayout.mobileThemeToggle.height + 1}`,
+                zIndex: mobileLayout.mobileThemeToggle.zIndex
+              }}
+              className="flex items-center justify-center"
+            >
+              <button
+                onClick={() => setIsDark(!isDark)}
+                className={`p-3 rounded-lg transition-colors ${
+                  isDark 
+                    ? 'text-yellow-400 hover:text-yellow-300 hover:bg-gray-700' 
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                {isDark ? (
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12,9c1.65,0 3,1.35 3,3s-1.35,3 -3,3s-3,-1.35 -3,-3S10.35,9 12,9M12,7c-2.76,0 -5,2.24 -5,5s2.24,5 5,5s5,-2.24 5,-5S14.76,7 12,7L12,7z"/>
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.4 6.35,17.41C9.37,20.43 14,20.54 17.33,17.97Z"/>
+                  </svg>
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* Mobile Auth Button - Now separate draggable */}
+          {mobileLayout.mobileAuthButton && (
+            <div 
+              style={{
+                gridColumn: `${mobileLayout.mobileAuthButton.x + 1} / ${mobileLayout.mobileAuthButton.x + mobileLayout.mobileAuthButton.width + 1}`,
+                gridRow: `${mobileLayout.mobileAuthButton.y + 1} / ${mobileLayout.mobileAuthButton.y + mobileLayout.mobileAuthButton.height + 1}`,
+                zIndex: mobileLayout.mobileAuthButton.zIndex
+              }}
+              className="flex items-center justify-center"
+            >
+              <button
+                onClick={() => user ? setIsAccountMenuOpen(true) : setShowLoginModal(true)}
+                className={`px-4 py-2 rounded-lg transition-colors text-white ${
+                  user ? 'hover:opacity-80' : 'hover:opacity-90'
+                }`}
+                style={{ 
+                  background: customization.gradientEnabled 
+                    ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                    : customization.primaryColor,
+                  fontFamily: customization.fontFamily
+                }}
+              >
+                {user ? 'Account' : 'Login'}
+              </button>
+            </div>
+          )}
 
           {/* Mobile Menu Overlay */}
           {isMobileMenuOpen && (
@@ -764,37 +839,103 @@ function App() {
           {/* Mobile Input Box - Separate draggable element */}
           {mobileLayout.mobileInputBox && (
             <div 
-              className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4"
+              className=""
               style={{
                 gridColumn: `${mobileLayout.mobileInputBox.x + 1} / ${mobileLayout.mobileInputBox.x + mobileLayout.mobileInputBox.width + 1}`,
                 gridRow: `${mobileLayout.mobileInputBox.y + 1} / ${mobileLayout.mobileInputBox.y + mobileLayout.mobileInputBox.height + 1}`,
                 zIndex: mobileLayout.mobileInputBox.zIndex
               }}
             >
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Type a message..."
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                      sendMessage(e.currentTarget.value);
-                      e.currentTarget.value = '';
-                    }
-                  }}
-                />
-                <button
-                  onClick={() => {
-                    const input = document.querySelector('input[type="text"]') as HTMLInputElement;
+              <div className="h-full flex items-end p-4">
+                <div className="w-full">
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    const input = e.currentTarget.querySelector('textarea') as HTMLTextAreaElement;
                     if (input?.value.trim()) {
                       sendMessage(input.value);
                       input.value = '';
                     }
-                  }}
-                  className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                  Send
-                </button>
+                  }}>
+                    {/* Message Input Container - Exact PC styling */}
+                    <div className={`relative rounded-2xl border ${
+                      isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-purple-200'
+                    } shadow-sm`}>
+                      <textarea
+                        placeholder="Type your message here..."
+                        className={`w-full px-6 py-4 pr-32 rounded-2xl resize-none focus:outline-none min-h-[60px] max-h-32 ${
+                          isDark 
+                            ? 'bg-gray-700 text-white placeholder-gray-400' 
+                            : 'bg-white text-gray-900 placeholder-gray-500'
+                        }`}
+                        style={{ fontFamily: customization.fontFamily }}
+                        rows={1}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey && e.currentTarget.value.trim()) {
+                            e.preventDefault();
+                            sendMessage(e.currentTarget.value);
+                            e.currentTarget.value = '';
+                          }
+                        }}
+                      />
+                      
+                      {/* Bottom Controls - Exact PC styling */}
+                      <div className="flex items-center justify-between px-6 pb-4">
+                        <div className="flex items-center gap-4">
+                          {/* Model Selector */}
+                          <select
+                            value={selectedModel}
+                            onChange={(e) => setSelectedModel(e.target.value)}
+                            className={`text-xs px-2 py-1 rounded-md border ${
+                              isDark 
+                                ? 'bg-gray-600 border-gray-500 text-gray-300' 
+                                : 'bg-white border-gray-300 text-gray-700'
+                            }`}
+                            style={{ fontFamily: customization.fontFamily }}
+                          >
+                            {availableModels.map(model => (
+                              <option key={model} value={model}>{model}</option>
+                            ))}
+                          </select>
+                          {/* Search Button */}
+                          <button 
+                            type="button"
+                            className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
+                            style={{ color: isDark ? undefined : customization.primaryColor }}
+                          >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/>
+                            </svg>
+                          </button>
+                          {/* Attachment Button */}
+                          <button 
+                            type="button"
+                            className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
+                            style={{ color: isDark ? undefined : customization.primaryColor }}
+                          >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M16.5,6V17.5A4,4 0 0,1 12.5,21.5A4,4 0 0,1 8.5,17.5V5A2.5,2.5 0 0,1 11,2.5A2.5,2.5 0 0,1 13.5,5V15.5A1,1 0 0,1 12.5,16.5A1,1 0 0,1 11.5,15.5V6H10V15.5A2.5,2.5 0 0,0 12.5,18A2.5,2.5 0 0,0 15,15.5V5A4,4 0 0,0 11,1A4,4 0 0,0 7,5V17.5A5.5,5.5 0 0,0 12.5,23A5.5,5.5 0 0,0 18,17.5V6H16.5Z"/>
+                            </svg>
+                          </button>
+                        </div>
+                        
+                        {/* Send Button - Exact PC styling */}
+                        <button 
+                          type="submit"
+                          className="text-white p-2.5 rounded-xl transition-colors hover:opacity-90"
+                          style={{ 
+                            background: customization.gradientEnabled 
+                              ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                              : customization.primaryColor 
+                          }}
+                        >
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M4,12l1.41,1.41L11,7.83V20h2V7.83l5.58,5.59L20,12l-8-8L4,12z"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  </form>
+                </div>
               </div>
             </div>
           )}
