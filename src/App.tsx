@@ -7,12 +7,13 @@
  * 
  * Key Features:
  * - Dynamic grid-based layout system with drag-and-drop designer mode
+ * - Responsive mobile-first design with adaptive layouts
  * - Theme switching (light/dark mode)
  * - Customizable UI (colors, fonts, gradients)
  * - Chat functionality with AI responses
  * - Gaming section integration
  * - Account management and settings
- * - Detached components for maximum customization
+ * - Mobile-optimized touch interactions
  * - Clean icon buttons without background colors
  * 
  * State Management:
@@ -33,7 +34,7 @@ import GameSection from './components/GameSection';
 import { authService } from './lib/auth';
 import type { AuthUser } from './lib/auth';
 import { authManager, layoutManager, ExtendedLayoutConfig, AuthState } from './lib/auth-integration'
-import { LogIn, UserPlus, User, Loader2 } from 'lucide-react'
+import { LogIn, UserPlus, User, Loader2, Menu, X } from 'lucide-react'
 
 /**
  * Message Interface
@@ -78,6 +79,9 @@ function App() {
   // Sidebar collapse state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   
+  // Mobile navigation state
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  
   // Current view state - switches between chat and game modes
   const [currentView, setCurrentView] = useState<'chat' | 'game'>('chat');
   
@@ -93,6 +97,10 @@ function App() {
   // Search state for detached search functionality
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  // Mobile responsive state
+  const [isMobile, setIsMobile] = useState(false);
+  const [screenWidth, setScreenWidth] = useState(0);
 
   // User customization settings with default values
   const [customization, setCustomization] = useState<CustomizationSettings>({
@@ -119,6 +127,33 @@ function App() {
 
   // Layout configuration - uses the auth-integrated layout manager
   const [layout, setLayout] = useState<ExtendedLayoutConfig>(layoutManager.getLayout());
+
+  // Available models for AI
+  const availableModels = ['Gemini 2.5 Flash', 'GPT-4o', 'Claude 3.5 Sonnet'];
+
+  // Mobile responsive detection
+  useEffect(() => {
+    const checkMobile = () => {
+      const width = window.innerWidth;
+      setScreenWidth(width);
+      setIsMobile(width < 768); // Tablet and mobile breakpoint
+    };
+
+    // Initial check
+    checkMobile();
+    
+    // Listen for resize events
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Close mobile menu when switching to desktop
+  useEffect(() => {
+    if (!isMobile) {
+      setIsMobileMenuOpen(false);
+    }
+  }, [isMobile]);
 
   // Initialize authentication and layout sync
   useEffect(() => {
@@ -203,6 +238,8 @@ function App() {
   const handleLogout = async () => {
     try {
       await authManager.signOut();
+      setIsAccountMenuOpen(false);
+      setIsMobileMenuOpen(false);
     } catch (error) {
       console.error('Logout failed:', error);
     }
@@ -234,6 +271,13 @@ function App() {
    */
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+
+  /**
+   * Toggle mobile menu visibility
+   */
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
   /**
@@ -294,15 +338,6 @@ function App() {
       setIsSearchFocused(false);
     }
   };
-
-  // Available AI models for selection
-  const availableModels = [
-    'Gemini 2.5 Flash',
-    'GPT-4 Turbo',
-    'Claude 3.5 Sonnet',
-    'Llama 3.1 70B',
-    'Mistral Large'
-  ];
 
   /**
    * Update layout configuration
@@ -404,14 +439,192 @@ function App() {
       className={`h-screen overflow-hidden ${isDark ? 'dark bg-gray-900' : 'bg-purple-50'}`}
       style={{ fontFamily: customization.fontFamily }}
     >
-      {/* Dynamic Grid Container - only uses necessary space */}
-      <div 
-        className="h-full w-full grid relative"
-        style={{
-          gridTemplateColumns: `repeat(${maxX}, 1fr)`,
-          gridTemplateRows: `repeat(${maxY}, 1fr)`
-        }}
-      >
+      {/* Mobile Layout */}
+      {isMobile ? (
+        <div className="h-full flex flex-col">
+          {/* Mobile Header */}
+          <div 
+            className="h-16 flex items-center justify-between px-4 text-white"
+            style={{
+              background: customization.gradientEnabled 
+                ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                : customization.primaryColor
+            }}
+          >
+            {/* Mobile Menu Button */}
+            <button
+              onClick={toggleMobileMenu}
+              className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+            >
+              {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+
+            {/* App Logo */}
+            <div className="flex items-center gap-2">
+              <div className="p-1 rounded bg-white/20">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/>
+                </svg>
+              </div>
+              <span className="font-semibold text-lg" style={{ fontFamily: customization.fontFamily }}>
+                BelloSai
+              </span>
+            </div>
+
+            {/* Mobile Actions */}
+            <div className="flex items-center gap-2">
+              {/* Theme Toggle */}
+              <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
+              
+              {/* Account/Auth Button */}
+              {authState.user ? (
+                <button
+                  onClick={toggleAccountMenu}
+                  className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                >
+                  <User className="w-5 h-5" />
+                </button>
+              ) : (
+                <button
+                  onClick={() => setShowLoginModal(true)}
+                  className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors"
+                >
+                  <LogIn className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Mobile Menu Overlay */}
+          {isMobileMenuOpen && (
+            <div 
+              className="absolute inset-0 bg-black/50 z-40"
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              <div 
+                className={`w-80 max-w-[85vw] h-full ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-xl`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="p-6 space-y-4">
+                  {/* Menu Header */}
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      Menu
+                    </h3>
+                    <button
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`p-2 rounded-lg ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Menu Items */}
+                  <button
+                    onClick={() => {
+                      handleNewChat();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full p-4 rounded-lg text-left transition-colors ${
+                      isDark ? 'hover:bg-gray-700 text-white' : 'hover:bg-gray-100 text-gray-900'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                      </svg>
+                      <span className="font-medium">New Chat</span>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      handleNewGame();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full p-4 rounded-lg text-left transition-colors ${
+                      isDark ? 'hover:bg-gray-700 text-white' : 'hover:bg-gray-100 text-gray-900'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M7.5,4A5.5,5.5 0 0,0 2,9.5C2,10.82 2.5,12 3.3,12.9L12,21.5L20.7,12.9C21.5,12 22,10.82 22,9.5A5.5,5.5 0 0,0 16.5,4C14.64,4 13,4.93 12,6.34C11,4.93 9.36,4 7.5,4V4Z"/>
+                      </svg>
+                      <span className="font-medium">New Game</span>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsSearchFocused(true);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full p-4 rounded-lg text-left transition-colors ${
+                      isDark ? 'hover:bg-gray-700 text-white' : 'hover:bg-gray-100 text-gray-900'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/>
+                      </svg>
+                      <span className="font-medium">Search Chats</span>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsDesignerMode(true);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full p-4 rounded-lg text-left transition-colors ${
+                      isDark ? 'hover:bg-gray-700 text-white' : 'hover:bg-gray-100 text-gray-900'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                      </svg>
+                      <span className="font-medium">Designer Mode</span>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Mobile Main Content */}
+          <div className="flex-1 overflow-hidden">
+            {messages.length === 0 ? (
+              <MainContent 
+                isDark={isDark} 
+                onSendMessage={sendMessage}
+                selectedModel={selectedModel}
+                onModelChange={setSelectedModel}
+                availableModels={availableModels}
+                customization={customization}
+              />
+            ) : (
+              <ChatView 
+                isDark={isDark} 
+                messages={messages}
+                onSendMessage={sendMessage}
+                selectedModel={selectedModel}
+                onModelChange={setSelectedModel}
+                availableModels={availableModels}
+                customization={customization}
+              />
+            )}
+          </div>
+        </div>
+      ) : (
+        /* Desktop Layout - Dynamic Grid Container */
+        <div 
+          className="h-full w-full grid relative"
+          style={{
+            gridTemplateColumns: `repeat(${maxX}, 1fr)`,
+            gridTemplateRows: `repeat(${maxY}, 1fr)`
+          }}
+        >
         {/* Render elements in z-index order (lowest to highest) */}
         {getSortedElements().map(([key, config]) => {
           const elementKey = key as keyof ExtendedLayoutConfig;
@@ -802,7 +1015,8 @@ function App() {
             </div>
           );
         })}
-      </div>
+        </div>
+      )}
 
       {/* Search Modal - Fixed positioning with high z-index */}
       {isSearchFocused && (
