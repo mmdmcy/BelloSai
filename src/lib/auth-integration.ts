@@ -74,13 +74,13 @@ export const defaultLayoutWithAuth: ExtendedLayoutConfig = {
 
 // Default mobile layout configuration (20x15 grid like desktop)
 export const defaultMobileLayout: MobileLayoutConfig = {
-  mobileHeader: { x: 0, y: 0, width: 20, height: 2, zIndex: 10 },
-  mobileMenuButton: { x: 0, y: 0, width: 2, height: 2, zIndex: 11 },
-  mobileAppLogo: { x: 8, y: 0, width: 4, height: 2, zIndex: 11 },
-  mobileThemeToggle: { x: 16, y: 0, width: 2, height: 2, zIndex: 11 },
-  mobileAuthButton: { x: 18, y: 0, width: 2, height: 2, zIndex: 11 },
-  mobileMainContent: { x: 0, y: 2, width: 20, height: 10, zIndex: 1 },
-  mobileChatArea: { x: 0, y: 2, width: 20, height: 10, zIndex: 2 },
+  mobileHeader: { x: 0, y: 0, width: 20, height: 1, zIndex: 10 },
+  mobileMenuButton: { x: 0, y: 0, width: 3, height: 1, zIndex: 11 },
+  mobileAppLogo: { x: 8, y: 0, width: 4, height: 1, zIndex: 11 },
+  mobileThemeToggle: { x: 14, y: 0, width: 3, height: 1, zIndex: 11 },
+  mobileAuthButton: { x: 17, y: 0, width: 3, height: 1, zIndex: 11 },
+  mobileMainContent: { x: 0, y: 1, width: 20, height: 11, zIndex: 1 },
+  mobileChatArea: { x: 0, y: 1, width: 20, height: 11, zIndex: 2 },
   mobileInputBox: { x: 0, y: 12, width: 20, height: 3, zIndex: 1 },
   // Menu items (these appear in the slide-out menu)
   mobileNewChat: { x: 0, y: 3, width: 8, height: 2, zIndex: 50 },
