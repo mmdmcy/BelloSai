@@ -136,7 +136,26 @@ function App() {
   const [mobileLayout, setMobileLayout] = useState<MobileLayoutConfig>(() => {
     const loadedMobileLayout = layoutManager.getMobileLayout();
     console.log('App - Initial mobile layout loaded:', loadedMobileLayout);
-    return loadedMobileLayout;
+    
+    // Check if loaded layout has all required properties
+    const hasAllProperties = loadedMobileLayout && 
+      'mobileChatArea' in loadedMobileLayout && 
+      'mobileInputBox' in loadedMobileLayout;
+    
+    if (!hasAllProperties) {
+      console.log('App - Mobile layout missing new properties, using default');
+      // Clear old layout and use default
+      layoutManager.saveMobileLayout(defaultMobileLayout);
+      return defaultMobileLayout;
+    }
+    
+    // Ensure all required properties exist (for backwards compatibility)
+    const safeLayout = {
+      ...defaultMobileLayout,
+      ...loadedMobileLayout
+    };
+    
+    return safeLayout;
   });
 
   // Available models for AI
@@ -715,66 +734,70 @@ function App() {
           </div>
 
           {/* Mobile Chat Area - Separate draggable element */}
-          <div 
-            className="overflow-hidden"
-            style={{
-              gridColumn: `${mobileLayout.mobileChatArea.x + 1} / ${mobileLayout.mobileChatArea.x + mobileLayout.mobileChatArea.width + 1}`,
-              gridRow: `${mobileLayout.mobileChatArea.y + 1} / ${mobileLayout.mobileChatArea.y + mobileLayout.mobileChatArea.height + 1}`,
-              zIndex: mobileLayout.mobileChatArea.zIndex
-            }}
-          >
-            {messages.length > 0 && (
-              <div className="h-full overflow-y-auto bg-white dark:bg-gray-900 p-4">
-                {messages.map((message) => (
-                  <div key={message.id} className={`mb-4 ${message.type === 'user' ? 'text-right' : 'text-left'}`}>
-                    <div className={`inline-block max-w-[80%] p-3 rounded-lg ${
-                      message.type === 'user' 
-                        ? 'bg-blue-500 text-white' 
-                        : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white'
-                    }`}>
-                      {message.content}
+          {mobileLayout.mobileChatArea && (
+            <div 
+              className="overflow-hidden"
+              style={{
+                gridColumn: `${mobileLayout.mobileChatArea.x + 1} / ${mobileLayout.mobileChatArea.x + mobileLayout.mobileChatArea.width + 1}`,
+                gridRow: `${mobileLayout.mobileChatArea.y + 1} / ${mobileLayout.mobileChatArea.y + mobileLayout.mobileChatArea.height + 1}`,
+                zIndex: mobileLayout.mobileChatArea.zIndex
+              }}
+            >
+              {messages.length > 0 && (
+                <div className="h-full overflow-y-auto bg-white dark:bg-gray-900 p-4">
+                  {messages.map((message) => (
+                    <div key={message.id} className={`mb-4 ${message.type === 'user' ? 'text-right' : 'text-left'}`}>
+                      <div className={`inline-block max-w-[80%] p-3 rounded-lg ${
+                        message.type === 'user' 
+                          ? 'bg-blue-500 text-white' 
+                          : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white'
+                      }`}>
+                        {message.content}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Mobile Input Box - Separate draggable element */}
-          <div 
-            className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4"
-            style={{
-              gridColumn: `${mobileLayout.mobileInputBox.x + 1} / ${mobileLayout.mobileInputBox.x + mobileLayout.mobileInputBox.width + 1}`,
-              gridRow: `${mobileLayout.mobileInputBox.y + 1} / ${mobileLayout.mobileInputBox.y + mobileLayout.mobileInputBox.height + 1}`,
-              zIndex: mobileLayout.mobileInputBox.zIndex
-            }}
-          >
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Type a message..."
-                className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                    sendMessage(e.currentTarget.value);
-                    e.currentTarget.value = '';
-                  }
-                }}
-              />
-              <button
-                onClick={() => {
-                  const input = document.querySelector('input[type="text"]') as HTMLInputElement;
-                  if (input?.value.trim()) {
-                    sendMessage(input.value);
-                    input.value = '';
-                  }
-                }}
-                className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-              >
-                Send
-              </button>
+          {mobileLayout.mobileInputBox && (
+            <div 
+              className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4"
+              style={{
+                gridColumn: `${mobileLayout.mobileInputBox.x + 1} / ${mobileLayout.mobileInputBox.x + mobileLayout.mobileInputBox.width + 1}`,
+                gridRow: `${mobileLayout.mobileInputBox.y + 1} / ${mobileLayout.mobileInputBox.y + mobileLayout.mobileInputBox.height + 1}`,
+                zIndex: mobileLayout.mobileInputBox.zIndex
+              }}
+            >
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Type a message..."
+                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                      sendMessage(e.currentTarget.value);
+                      e.currentTarget.value = '';
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    const input = document.querySelector('input[type="text"]') as HTMLInputElement;
+                    if (input?.value.trim()) {
+                      sendMessage(input.value);
+                      input.value = '';
+                    }
+                  }}
+                  className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  Send
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       ) : (
         /* Desktop Layout - Dynamic Grid Container */
