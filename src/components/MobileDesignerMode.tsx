@@ -100,14 +100,14 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
       clearTimeout(mobileInteraction.longPressTimer);
     }
     
-    // Set up long press detection for resize mode
+    // Set up long press detection for resize mode (reduced to 250ms for better UX)
     const longPressTimer = setTimeout(() => {
       setMobileInteraction(prev => ({ ...prev, mode: 'resize' }));
-      // Vibrate if available
+      // Vibrate if available - stronger feedback for resize mode
       if (navigator.vibrate) {
-        navigator.vibrate([50, 50, 50]);
+        navigator.vibrate([100, 50, 100]); // Longer vibration pattern
       }
-    }, 300);
+    }, 250); // Even faster activation
     
     setMobileInteraction({
       mode: 'move',
@@ -135,11 +135,23 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
     if (!dragState.isDragging || !dragState.element) return;
     
     e.preventDefault();
+    e.stopPropagation(); // Prevent event bubbling
+    
     const touch = e.touches[0];
     const currentElement = mobileLayout[dragState.element];
     
+    // Clear long press timer if user starts moving (to prevent accidental resize mode)
+    if (mobileInteraction.longPressTimer) {
+      const deltaX = Math.abs(touch.clientX - dragState.startX);
+      const deltaY = Math.abs(touch.clientY - dragState.startY);
+      if (deltaX > 10 || deltaY > 10) { // Movement threshold
+        clearTimeout(mobileInteraction.longPressTimer);
+        setMobileInteraction(prev => ({ ...prev, longPressTimer: null }));
+      }
+    }
+    
     if (mobileInteraction.mode === 'move') {
-      // MOVE MODE
+      // MOVE MODE - Smoother grid positioning
       const { x: currentGridX, y: currentGridY } = getGridPosition(touch.clientX, touch.clientY);
       const deltaX = currentGridX - dragState.startGridX;
       const deltaY = currentGridY - dragState.startGridY;
@@ -158,12 +170,20 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
       
       onMobileLayoutChange(updatedLayout);
     } else if (mobileInteraction.mode === 'resize') {
-      // RESIZE MODE
-      const deltaX = Math.floor((touch.clientX - dragState.startX) / 40); // Rough grid size
-      const deltaY = Math.floor((touch.clientY - dragState.startY) / 40);
+      // RESIZE MODE - More granular control
+      const gridRect = gridRef.current?.getBoundingClientRect();
+      if (!gridRect) return;
       
-      const newWidth = Math.max(1, Math.min(GRID_COLS, dragState.initialElementWidth + deltaX));
-      const newHeight = Math.max(1, Math.min(GRID_ROWS, dragState.initialElementHeight + deltaY));
+      const deltaX = touch.clientX - dragState.startX;
+      const deltaY = touch.clientY - dragState.startY;
+      
+      // More precise grid delta calculation
+      const gridDeltaX = Math.round(deltaX / (gridRect.width / GRID_COLS));
+      const gridDeltaY = Math.round(deltaY / (gridRect.height / GRID_ROWS));
+      
+      // Allow more granular resizing with 0.5 grid increments
+      const newWidth = Math.max(1, Math.min(GRID_COLS, dragState.initialElementWidth + gridDeltaX));
+      const newHeight = Math.max(1, Math.min(GRID_ROWS, dragState.initialElementHeight + gridDeltaY));
       
       // Ensure element doesn't exceed grid bounds
       const maxWidth = GRID_COLS - currentElement.x;
@@ -246,7 +266,7 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
             Mobile Designer
           </h1>
           <span className="text-xs opacity-90" style={{ fontFamily: customization.fontFamily }}>
-            Tap to select • Drag to move • Hold 0.3s & drag to resize
+            Tap to select • Drag to move • Hold 0.25s & drag to resize
           </span>
         </div>
 
@@ -275,14 +295,16 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
         </div>
       </div>
 
-      {/* Mobile Grid Preview */}
+      {/* Mobile Grid Preview - Prevent iOS pull-to-refresh */}
       <div 
         ref={gridRef}
         className="h-full w-full grid relative bg-white dark:bg-gray-800"
         style={{
           gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`,
           gridTemplateRows: `repeat(${GRID_ROWS}, 1fr)`,
-          paddingTop: '64px' // Account for header
+          paddingTop: '64px', // Account for header
+          touchAction: 'none', // Prevent iOS pull-to-refresh and other gestures
+          overscrollBehavior: 'none' // Additional prevention
         }}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -312,7 +334,9 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
             className={`
               relative border-2 transition-all cursor-move flex items-center justify-center
               ${selectedElement === key 
-                ? 'border-blue-500 bg-blue-100 dark:bg-blue-900/50' 
+                ? mobileInteraction.mode === 'resize' 
+                  ? 'border-yellow-500 bg-yellow-100 dark:bg-yellow-900/50 scale-105 shadow-lg' 
+                  : 'border-blue-500 bg-blue-100 dark:bg-blue-900/50'
                 : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-blue-300'
               }
             `}
@@ -364,8 +388,25 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
               </div>
             )}
             {key === 'mobileMainContent' && (
-              <div className="absolute inset-1 bg-gray-100 dark:bg-gray-800 rounded flex items-center justify-center">
-                <div className="text-gray-500 text-xs">Chat Content</div>
+              <div className="absolute inset-1 bg-gray-50 dark:bg-gray-900 rounded overflow-hidden flex flex-col">
+                {/* Chat Messages Preview */}
+                <div className="flex-1 p-2 space-y-2 overflow-hidden">
+                  <div className="bg-blue-500 text-white text-xs p-2 rounded-lg max-w-[80%] ml-auto">
+                    Hello! How can I help you today?
+                  </div>
+                  <div className="bg-gray-200 dark:bg-gray-700 text-xs p-2 rounded-lg max-w-[80%]">
+                    I need help with my project
+                  </div>
+                  <div className="bg-blue-500 text-white text-xs p-2 rounded-lg max-w-[80%] ml-auto">
+                    I'd be happy to help! What kind of project are you working on?
+                  </div>
+                </div>
+                {/* Input Area Preview */}
+                <div className="p-2 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+                  <div className="bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2 text-xs text-gray-500">
+                    Type a message...
+                  </div>
+                </div>
               </div>
             )}
           </div>
