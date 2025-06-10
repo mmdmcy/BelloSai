@@ -68,9 +68,13 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
     longPressTimer: null
   });
   const gridRef = useRef<HTMLDivElement>(null);
+  const elementRefs = useRef<{ [key in keyof MobileLayoutConfig]?: HTMLDivElement | null }>({});
 
   const GRID_COLS = 20;
   const GRID_ROWS = 15;
+
+  // Helper to check if in resize mode
+  const isResizeMode = mobileInteraction.mode === 'resize';
 
   const getGridPosition = (clientX: number, clientY: number) => {
     if (!gridRef.current) return { x: 0, y: 0 };
@@ -297,129 +301,172 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
         </div>
       </div>
 
-      {/* Mobile Grid Preview - Prevent iOS pull-to-refresh */}
-      <div 
-        ref={gridRef}
-        className="h-full w-full grid relative bg-white dark:bg-gray-800"
-        style={{
-          gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`,
-          gridTemplateRows: `repeat(${GRID_ROWS}, 1fr)`,
-          paddingTop: '64px', // Account for header
-          touchAction: 'none', // Prevent iOS pull-to-refresh and other gestures
-          overscrollBehavior: 'none' // Additional prevention
-        }}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        {/* Grid Lines */}
-        <div className="absolute inset-0 pointer-events-none">
-          {Array.from({ length: GRID_COLS + 1 }).map((_, i) => (
-            <div
-              key={`v-${i}`}
-              className="absolute top-0 bottom-0 border-l border-gray-200 dark:border-gray-700"
-              style={{ left: `${(i / GRID_COLS) * 100}%` }}
-            />
-          ))}
-          {Array.from({ length: GRID_ROWS + 1 }).map((_, i) => (
-            <div
-              key={`h-${i}`}
-              className="absolute left-0 right-0 border-t border-gray-200 dark:border-gray-700"
-              style={{ top: `${(i / GRID_ROWS) * 100}%` }}
-            />
-          ))}
-        </div>
-
-        {/* Mobile UI Elements */}
-        {(Object.entries(mobileLayout) as [keyof MobileLayoutConfig, any][]).map(([key, config]) => (
-          <div
-            key={key}
-            className={`
-              relative border-2 transition-all cursor-move flex items-center justify-center
-              ${selectedElement === key 
-                ? mobileInteraction.mode === 'resize' 
-                  ? 'border-yellow-500 bg-yellow-100 dark:bg-yellow-900/50 scale-105 shadow-lg' 
-                  : 'border-blue-500 bg-blue-100 dark:bg-blue-900/50'
-                : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:border-blue-300'
-              }
-            `}
-            style={{
-              gridColumn: `${config.x + 1} / ${config.x + config.width + 1}`,
-              gridRow: `${config.y + 1} / ${config.y + config.height + 1}`,
-              zIndex: config.zIndex
-            }}
-            onTouchStart={(e) => handleTouchStart(e, key)}
-            onClick={(e) => {
-              e.stopPropagation();
-              setSelectedElement(key);
-            }}
-          >
-            <div className="text-center p-2">
-              <div className="text-sm font-medium text-gray-900 dark:text-white">
-                {getElementDisplayName(key)}
-              </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">
-                {config.width}×{config.height}
-              </div>
-              
-              {selectedElement === key && mobileInteraction.mode && (
-                <div className={`text-xs mt-1 flex items-center justify-center gap-1 px-2 py-1 rounded ${
-                  mobileInteraction.mode === 'resize' ? 'bg-yellow-500' : 'bg-blue-500'
-                }`}>
-                  {mobileInteraction.mode === 'move' && (
-                    <>
-                      <Move className="w-3 h-3" />
-                      <span className="font-bold">MOVE</span>
-                    </>
-                  )}
-                  {mobileInteraction.mode === 'resize' && (
-                    <>
-                      <Maximize2 className="w-3 h-3" />
-                      <span className="font-bold">RESIZE</span>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Show preview of actual element */}
-            {key === 'mobileHeader' && (
-              <div className="absolute inset-1 bg-purple-600 text-white flex items-center justify-between px-2 text-xs rounded">
-                <Menu className="w-4 h-4" />
-                <span>BelloSai</span>
-                <User className="w-4 h-4" />
-              </div>
-            )}
-            {key === 'mobileMainContent' && (
-              <div className="absolute inset-1 bg-gray-50 dark:bg-gray-900 rounded overflow-hidden flex flex-col">
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="text-gray-500 text-xs">Main Content Area</div>
-                </div>
-              </div>
-            )}
-            {key === 'mobileChatArea' && (
-              <div className="absolute inset-1 bg-white dark:bg-gray-800 rounded overflow-hidden flex flex-col border border-gray-200 dark:border-gray-700">
-                <div className="flex-1 p-1 space-y-1 overflow-hidden">
-                  <div className="bg-blue-500 text-white text-[10px] p-1 rounded max-w-[70%] ml-auto">
-                    Hello!
-                  </div>
-                  <div className="bg-gray-200 dark:bg-gray-700 text-[10px] p-1 rounded max-w-[70%]">
-                    Hi there
-                  </div>
-                </div>
-              </div>
-            )}
-            {key === 'mobileInputBox' && (
-              <div className="absolute inset-1 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 flex items-center px-2">
-                <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1 text-[10px] text-gray-500">
-                  Type a message...
-                </div>
-                <div className="ml-2 w-6 h-6 bg-blue-500 rounded text-white flex items-center justify-center text-[8px]">
-                  →
-                </div>
-              </div>
-            )}
+      {/* Design Canvas */}
+      <div className="flex-1 relative overflow-hidden">
+        {/* Mobile Preview Container */}
+        <div 
+          ref={gridRef}
+          className="relative w-full h-full overflow-auto"
+          style={{
+            background: `
+              linear-gradient(to right, rgba(0,0,0,0.1) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(0,0,0,0.1) 1px, transparent 1px)
+            `,
+            backgroundSize: `${100/20}% ${100/15}%`,
+            minHeight: '100%'
+          }}
+          onTouchStart={(e) => {
+            // Only clear selection if touching the grid background
+            if (e.target === e.currentTarget) {
+              setSelectedElement(null);
+              setMobileInteraction({ mode: null, startTime: 0, longPressTimer: null });
+            }
+          }}
+        >
+          {/* Grid Lines */}
+          <div className="absolute inset-0 pointer-events-none">
+            {Array.from({ length: GRID_COLS + 1 }).map((_, i) => (
+              <div
+                key={`v-${i}`}
+                className="absolute top-0 bottom-0 border-l border-gray-200 dark:border-gray-700"
+                style={{ left: `${(i / GRID_COLS) * 100}%` }}
+              />
+            ))}
+            {Array.from({ length: GRID_ROWS + 1 }).map((_, i) => (
+              <div
+                key={`h-${i}`}
+                className="absolute left-0 right-0 border-t border-gray-200 dark:border-gray-700"
+                style={{ top: `${(i / GRID_ROWS) * 100}%` }}
+              />
+            ))}
           </div>
-        ))}
+
+          {/* Preview Elements */}
+          {Object.entries(mobileLayout).map(([elementKey, elementConfig]) => {
+            if (!elementConfig) return null;
+
+            const elementKey2 = elementKey as keyof MobileLayoutConfig;
+            const isSelected = selectedElement === elementKey2;
+
+            return (
+              <div
+                key={elementKey}
+                ref={el => elementRefs.current[elementKey2] = el}
+                className={`absolute border-2 transition-all ${
+                  isSelected 
+                    ? (isResizeMode ? 'border-yellow-400' : 'border-blue-400')
+                    : 'border-transparent hover:border-gray-400'
+                } ${isSelected ? 'shadow-lg' : ''}`}
+                style={{
+                  left: `${(elementConfig.x / 20) * 100}%`,
+                  top: `${(elementConfig.y / 15) * 100}%`,
+                  width: `${(elementConfig.width / 20) * 100}%`,
+                  height: `${(elementConfig.height / 15) * 100}%`,
+                  zIndex: isSelected ? 1000 : elementConfig.zIndex,
+                  minHeight: '40px',
+                  minWidth: '40px'
+                }}
+                onTouchStart={(e) => handleTouchStart(e, elementKey2)}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
+                {/* Element Preview Content */}
+                <div className={`w-full h-full overflow-hidden ${
+                  isDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'
+                } ${elementKey2.includes('Button') || elementKey2.includes('Toggle') || elementKey2.includes('Logo') ? 'flex items-center justify-center' : ''}`}>
+                  
+                  {/* Header */}
+                  {elementKey2 === 'mobileHeader' && (
+                    <div className={`w-full h-full ${isDark ? 'bg-gray-800' : 'bg-white'} border-b ${isDark ? 'border-gray-700' : 'border-gray-200'} flex items-center justify-center px-2`}>
+                      <span className="text-sm font-medium">Header Area</span>
+                    </div>
+                  )}
+
+                  {/* Menu Button */}
+                  {elementKey2 === 'mobileMenuButton' && (
+                    <div className="p-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                      </svg>
+                    </div>
+                  )}
+
+                  {/* App Logo */}
+                  {elementKey2 === 'mobileAppLogo' && (
+                    <span className="text-sm font-bold text-center px-1">BelloSai</span>
+                  )}
+
+                  {/* Theme Toggle */}
+                  {elementKey2 === 'mobileThemeToggle' && (
+                    <div className="p-2">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12,9c1.65,0 3,1.35 3,3s-1.35,3 -3,3s-3,-1.35 -3,-3S10.35,9 12,9M12,7c-2.76,0 -5,2.24 -5,5s2.24,5 5,5s5,-2.24 5,-5S14.76,7 12,7L12,7z"/>
+                      </svg>
+                    </div>
+                  )}
+
+                  {/* Auth Button */}
+                  {elementKey2 === 'mobileAuthButton' && (
+                    <div className="px-3 py-1 text-xs text-white rounded" style={{ backgroundColor: customization.primaryColor }}>
+                      Login
+                    </div>
+                  )}
+
+                  {/* Main Content */}
+                  {elementKey2 === 'mobileMainContent' && (
+                    <div className={`w-full h-full ${isDark ? 'bg-gray-900' : 'bg-gray-50'} flex items-center justify-center`}>
+                      <div className="text-center p-4">
+                        <h2 className="text-lg font-semibold mb-2">Main Content Area</h2>
+                        <p className="text-xs opacity-70">Your main interface will appear here</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Chat Area */}
+                  {elementKey2 === 'mobileChatArea' && (
+                    <div className={`w-full h-full ${isDark ? 'bg-gray-900' : 'bg-gray-50'} p-2 overflow-hidden`}>
+                      <div className="space-y-2">
+                        <div className={`p-2 rounded text-xs ${isDark ? 'bg-gray-700' : 'bg-white'}`}>
+                          <span className="opacity-70">Sample message</span>
+                        </div>
+                        <div className="flex justify-end">
+                          <div className="p-2 rounded text-xs text-white" style={{ backgroundColor: customization.primaryColor }}>
+                            <span>Your message</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Input Box */}
+                  {elementKey2 === 'mobileInputBox' && (
+                    <div className="p-2 h-full flex items-end">
+                      <div className={`w-full p-2 rounded border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-300'} text-xs`}>
+                        <span className="opacity-50">Type a message...</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  {(elementKey2 === 'mobileNewChat' || elementKey2 === 'mobileNewGame' || elementKey2 === 'mobileSearch' || elementKey2 === 'mobileDesignerMode') && (
+                    <div className="p-1">
+                      <div className="text-xs text-white px-2 py-1 rounded" style={{ backgroundColor: customization.primaryColor }}>
+                        {getElementDisplayName(elementKey2)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Element Label */}
+                {isSelected && (
+                  <div className="absolute -top-6 left-0 bg-black text-white text-xs px-2 py-1 rounded z-50">
+                    {getElementDisplayName(elementKey2)}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
