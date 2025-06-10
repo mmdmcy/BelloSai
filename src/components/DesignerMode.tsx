@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { X, RotateCcw, Save, Sun, Moon, Plus, Minus, ChevronUp, ChevronDown, GripVertical, Palette, Type, Eye, EyeOff, Move, Maximize2 } from 'lucide-react';
 import { LayoutConfig, CustomizationSettings } from '../App';
-import { defaultLayoutWithAuth } from '../lib/auth-integration';
+import { defaultLayoutWithAuth, layoutManager } from '../lib/auth-integration';
 
 interface DesignerModeProps {
   isDark: boolean;
@@ -79,7 +79,6 @@ export default function DesignerMode({
     startTime: 0,
     longPressTimer: null
   });
-  const [showMobileControls, setShowMobileControls] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
 
   // Mobile detection
@@ -143,21 +142,20 @@ export default function DesignerMode({
     const currentElement = layout[element];
     
     setSelectedElement(element);
-    setShowMobileControls(true);
     
     // Clear any existing timer
     if (mobileInteraction.longPressTimer) {
       clearTimeout(mobileInteraction.longPressTimer);
     }
     
-    // Set up long press detection for resize mode
+    // Set up long press detection for resize mode (reduced to 300ms for better UX)
     const longPressTimer = setTimeout(() => {
       setMobileInteraction(prev => ({ ...prev, mode: 'resize' }));
       // Vibrate if available (mobile feedback)
       if (navigator.vibrate) {
-        navigator.vibrate(50);
+        navigator.vibrate([50, 50, 50]); // Triple vibration for resize mode
       }
-    }, 500); // 500ms long press to enter resize mode
+    }, 300); // Reduced to 300ms for faster response
     
     setMobileInteraction({
       mode: 'move',
@@ -365,23 +363,22 @@ export default function DesignerMode({
       const newX = Math.max(0, Math.min(GRID_COLS - currentElement.width, dragState.initialElementX + deltaX));
       const newY = Math.max(0, Math.min(GRID_ROWS - currentElement.height, dragState.initialElementY + deltaY));
 
-      if (newX !== currentElement.x || newY !== currentElement.y) {
-        const updatedLayout = {
-          ...layout,
-          [dragState.element]: {
-            ...currentElement,
-            x: newX,
-            y: newY
-          }
-        };
-        
-        // Ensure designer button stays at top layer
-        if (dragState.element === 'designerButton') {
-          updatedLayout.designerButton.zIndex = 999;
+      // Always update position for smoother movement
+      const updatedLayout = {
+        ...layout,
+        [dragState.element]: {
+          ...currentElement,
+          x: newX,
+          y: newY
         }
-        
-        onLayoutChange(updatedLayout);
+      };
+      
+      // Ensure designer button stays at top layer
+      if (dragState.element === 'designerButton') {
+        updatedLayout.designerButton.zIndex = 999;
       }
+      
+      onLayoutChange(updatedLayout);
     } else if (dragState.isDragging && mobileInteraction.mode === 'resize') {
       // RESIZE MODE - Change size based on movement
       const deltaX = touch.clientX - dragState.startX;
@@ -682,7 +679,7 @@ export default function DesignerMode({
           )}
           {isMobile && (
             <span className="text-xs opacity-90" style={{ fontFamily: customization.fontFamily }}>
-              Tap to select • Drag to move • Hold 0.5s & drag to resize
+              Tap to select • Drag to move • Hold 0.3s & drag to resize
             </span>
           )}
         </div>
@@ -705,7 +702,11 @@ export default function DesignerMode({
           </button>
           
           <button
-            onClick={onExitDesigner}
+            onClick={() => {
+              // Force save layout before exiting
+              layoutManager.saveLayout(layout);
+              onExitDesigner();
+            }}
             className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors"
             style={{ fontFamily: customization.fontFamily }}
           >
@@ -732,7 +733,6 @@ export default function DesignerMode({
             onTouchEnd={handleTouchEnd}
             onClick={() => {
               if (isMobile) {
-                setShowMobileControls(false);
                 setSelectedElement(null);
               }
             }}
@@ -776,9 +776,6 @@ export default function DesignerMode({
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedElement(key as keyof LayoutConfig);
-                      if (isMobile) {
-                        setShowMobileControls(true);
-                      }
                     }}
                   >
                     <div className="text-center pointer-events-none">
@@ -789,17 +786,19 @@ export default function DesignerMode({
                         {config.width}×{config.height} (z:{config.zIndex})
                       </div>
                       {isMobile && selectedElement === key && mobileInteraction.mode && (
-                        <div className="text-xs mt-1 flex items-center justify-center gap-1">
+                        <div className={`text-xs mt-1 flex items-center justify-center gap-1 px-2 py-1 rounded ${
+                          mobileInteraction.mode === 'resize' ? 'bg-yellow-500' : 'bg-blue-500'
+                        }`}>
                           {mobileInteraction.mode === 'move' && (
                             <>
                               <Move className="w-3 h-3" />
-                              <span>MOVE</span>
+                              <span className="font-bold">MOVE</span>
                             </>
                           )}
                           {mobileInteraction.mode === 'resize' && (
                             <>
                               <Maximize2 className="w-3 h-3" />
-                              <span>RESIZE</span>
+                              <span className="font-bold">RESIZE</span>
                             </>
                           )}
                         </div>
@@ -836,144 +835,7 @@ export default function DesignerMode({
               })}
           </div>
 
-          {/* Mobile Floating Controls - only show on mobile when element is selected */}
-          {isMobile && selectedElement && showMobileControls && (
-            <div 
-              className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-50"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div 
-                className={`${isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-300'} rounded-2xl border-2 shadow-2xl p-4 min-w-80`}
-                style={{
-                  backdropFilter: 'blur(10px)',
-                  background: isDark ? 'rgba(31, 41, 55, 0.95)' : 'rgba(255, 255, 255, 0.95)'
-                }}
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h4 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                      {getElementDisplayName(selectedElement)}
-                    </h4>
-                    <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                      {layout[selectedElement].width}×{layout[selectedElement].height}
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setShowMobileControls(false)}
-                    className={`p-2 rounded-lg ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
 
-                <div className="space-y-4">
-                  {/* Mode Instruction */}
-                  <div className={`p-3 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Move className="w-4 h-4" />
-                      <span className="text-sm font-medium">Touch & Drag</span>
-                    </div>
-                    <p className="text-xs opacity-75">
-                      Touch and drag to move element position
-                    </p>
-                    
-                    <div className="flex items-center gap-2 mt-2">
-                      <Maximize2 className="w-4 h-4" />
-                      <span className="text-sm font-medium">Long Press & Drag</span>
-                    </div>
-                    <p className="text-xs opacity-75">
-                      Hold for 0.5s then drag to resize element
-                    </p>
-                  </div>
-
-                  {/* Quick Size Controls */}
-                  <div>
-                    <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                      Quick Resize
-                    </label>
-                    <div className="grid grid-cols-3 gap-2">
-                      <button
-                        onClick={() => onLayoutChange({
-                          ...layout,
-                          [selectedElement]: { ...layout[selectedElement], width: 2, height: 2 }
-                        })}
-                        className={`py-2 px-3 text-sm rounded-lg ${isDark ? 'bg-gray-600 hover:bg-gray-500 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
-                      >
-                        Small
-                      </button>
-                      <button
-                        onClick={() => onLayoutChange({
-                          ...layout,
-                          [selectedElement]: { ...layout[selectedElement], width: 6, height: 6 }
-                        })}
-                        className={`py-2 px-3 text-sm rounded-lg ${isDark ? 'bg-gray-600 hover:bg-gray-500 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
-                      >
-                        Medium
-                      </button>
-                      <button
-                        onClick={() => onLayoutChange({
-                          ...layout,
-                          [selectedElement]: { ...layout[selectedElement], width: 10, height: 8 }
-                        })}
-                        className={`py-2 px-3 text-sm rounded-lg ${isDark ? 'bg-gray-600 hover:bg-gray-500 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
-                      >
-                        Large
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Manual Size Controls */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                        Width
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => adjustElementSize(selectedElement, 'width', -1)}
-                          className={`p-2 rounded ${isDark ? 'bg-gray-600 hover:bg-gray-500 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
-                        >
-                          <Minus className="w-4 h-4" />
-                        </button>
-                        <span className={`flex-1 text-center text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                          {layout[selectedElement].width}
-                        </span>
-                        <button
-                          onClick={() => adjustElementSize(selectedElement, 'width', 1)}
-                          className={`p-2 rounded ${isDark ? 'bg-gray-600 hover:bg-gray-500 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                        Height
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => adjustElementSize(selectedElement, 'height', -1)}
-                          className={`p-2 rounded ${isDark ? 'bg-gray-600 hover:bg-gray-500 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
-                        >
-                          <Minus className="w-4 h-4" />
-                        </button>
-                        <span className={`flex-1 text-center text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                          {layout[selectedElement].height}
-                        </span>
-                        <button
-                          onClick={() => adjustElementSize(selectedElement, 'height', 1)}
-                          className={`p-2 rounded ${isDark ? 'bg-gray-600 hover:bg-gray-500 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Control Panel - Enhanced with all customization options */}
