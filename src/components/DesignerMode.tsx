@@ -703,8 +703,10 @@ export default function DesignerMode({
           
           <button
             onClick={() => {
-              // Force save layout before exiting
-              layoutManager.saveLayout(layout);
+              // Debug: Log current layout
+              console.log('Designer Mode - Current layout on exit:', layout);
+              // Force save the current layout state using the parent's update function
+              onLayoutChange(layout);
               onExitDesigner();
             }}
             className="flex items-center gap-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors"

@@ -126,7 +126,11 @@ function App() {
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Layout configuration - uses the auth-integrated layout manager
-  const [layout, setLayout] = useState<ExtendedLayoutConfig>(layoutManager.getLayout());
+  const [layout, setLayout] = useState<ExtendedLayoutConfig>(() => {
+    const loadedLayout = layoutManager.getLayout();
+    console.log('App - Initial layout loaded:', loadedLayout);
+    return loadedLayout;
+  });
 
   // Available models for AI
   const availableModels = ['Gemini 2.5 Flash', 'GPT-4o', 'Claude 3.5 Sonnet'];
@@ -344,6 +348,7 @@ function App() {
    * Ensures designer button always stays at top layer and saves to cloud
    */
   const updateLayout = (newLayout: ExtendedLayoutConfig) => {
+    console.log('App - Updating layout:', newLayout);
     const updatedLayout = {
       ...newLayout,
       designerButton: {
@@ -351,6 +356,7 @@ function App() {
         zIndex: 999
       }
     };
+    console.log('App - Final layout being saved:', updatedLayout);
     setLayout(updatedLayout);
     layoutManager.saveLayout(updatedLayout);
     
@@ -393,7 +399,10 @@ function App() {
         isDark={isDark}
         layout={layout}
         onLayoutChange={updateLayout}
-        onExitDesigner={() => setIsDesignerMode(false)}
+        onExitDesigner={() => {
+          console.log('App - Exiting designer mode, current layout:', layout);
+          setIsDesignerMode(false);
+        }}
         onToggleTheme={toggleTheme}
         customization={customization}
         onCustomizationChange={updateCustomization}
@@ -618,13 +627,13 @@ function App() {
         </div>
       ) : (
         /* Desktop Layout - Dynamic Grid Container */
-        <div 
-          className="h-full w-full grid relative"
-          style={{
-            gridTemplateColumns: `repeat(${maxX}, 1fr)`,
-            gridTemplateRows: `repeat(${maxY}, 1fr)`
-          }}
-        >
+      <div 
+        className="h-full w-full grid relative"
+        style={{
+          gridTemplateColumns: `repeat(${maxX}, 1fr)`,
+          gridTemplateRows: `repeat(${maxY}, 1fr)`
+        }}
+      >
         {/* Render elements in z-index order (lowest to highest) */}
         {getSortedElements().map(([key, config]) => {
           const elementKey = key as keyof ExtendedLayoutConfig;
@@ -1015,7 +1024,7 @@ function App() {
             </div>
           );
         })}
-        </div>
+      </div>
       )}
 
       {/* Search Modal - Fixed positioning with high z-index */}
