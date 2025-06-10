@@ -204,9 +204,9 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
       {/* Main Content Area */}
       <div className="h-full bg-red-200 relative" style={{ height: 'calc(100vh - 64px)' }}>
         
-        {/* Instructions */}
-        <div className="absolute top-2 right-2 bg-black/80 text-white p-2 rounded text-xs z-50">
-          Tap to select • Drag to move • Hold 0.5s + drag to resize
+        {/* Instructions - moved to bottom left and made smaller */}
+        <div className="absolute bottom-2 left-2 bg-black/80 text-white px-2 py-1 rounded text-xs z-50 max-w-40">
+          Tap→select • Drag→move • Hold 0.5s→resize
         </div>
 
         {/* Grid Background */}

@@ -531,13 +531,7 @@ function App() {
                   : undefined
               }}
             >
-              <div className="flex items-center justify-between h-full px-4">
-                <div className="flex items-center gap-4">
-                  <h1 className="text-xl font-bold" style={{ fontFamily: customization.fontFamily }}>
-                    BelloSai
-                  </h1>
-                </div>
-              </div>
+              {/* Empty header container - other elements will position themselves here */}
             </div>
           )}
 
