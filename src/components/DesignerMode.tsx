@@ -1,12 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { X, RotateCcw, Save, Sun, Moon, Plus, Minus, ChevronUp, ChevronDown, GripVertical, Palette, Type, Eye, EyeOff, Move, Maximize2 } from 'lucide-react';
 import { LayoutConfig, CustomizationSettings } from '../App';
-import { defaultLayoutWithAuth, layoutManager } from '../lib/auth-integration';
+import { defaultLayoutWithAuth, layoutManager, ExtendedLayoutConfig } from '../lib/auth-integration';
 
 interface DesignerModeProps {
   isDark: boolean;
-  layout: LayoutConfig;
-  onLayoutChange: (layout: LayoutConfig) => void;
+  layout: ExtendedLayoutConfig;
+  onLayoutChange: (layout: ExtendedLayoutConfig) => void;
   onExitDesigner: () => void;
   onToggleTheme: () => void;
   customization: CustomizationSettings;
@@ -35,11 +35,7 @@ interface LayerDragState {
   dragOverElement: keyof LayoutConfig | null;
 }
 
-interface MobileInteraction {
-  mode: 'move' | 'resize' | null;
-  startTime: number;
-  longPressTimer: NodeJS.Timeout | null;
-}
+
 
 export default function DesignerMode({ 
   isDark, 
@@ -73,23 +69,7 @@ export default function DesignerMode({
   });
 
   const [selectedElement, setSelectedElement] = useState<keyof LayoutConfig | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
-  const [mobileInteraction, setMobileInteraction] = useState<MobileInteraction>({
-    mode: null,
-    startTime: 0,
-    longPressTimer: null
-  });
   const gridRef = useRef<HTMLDivElement>(null);
-
-  // Mobile detection
-  React.useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   const GRID_COLS = 20;
   const GRID_ROWS = 18;
@@ -131,54 +111,6 @@ export default function DesignerMode({
     });
   };
 
-  const handleTouchStart = (e: React.TouchEvent, element: keyof LayoutConfig) => {
-    if (!isMobile) return;
-    
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const touch = e.touches[0];
-    const { x, y } = getGridPosition(touch.clientX, touch.clientY);
-    const currentElement = layout[element];
-    
-    setSelectedElement(element);
-    
-    // Clear any existing timer
-    if (mobileInteraction.longPressTimer) {
-      clearTimeout(mobileInteraction.longPressTimer);
-    }
-    
-    // Set up long press detection for resize mode (reduced to 300ms for better UX)
-    const longPressTimer = setTimeout(() => {
-      setMobileInteraction(prev => ({ ...prev, mode: 'resize' }));
-      // Vibrate if available (mobile feedback)
-      if (navigator.vibrate) {
-        navigator.vibrate([50, 50, 50]); // Triple vibration for resize mode
-      }
-    }, 300); // Reduced to 300ms for faster response
-    
-    setMobileInteraction({
-      mode: 'move',
-      startTime: Date.now(),
-      longPressTimer
-    });
-    
-    setDragState({
-      isDragging: true,
-      isResizing: false,
-      element,
-      startX: touch.clientX,
-      startY: touch.clientY,
-      startGridX: x,
-      startGridY: y,
-      resizeDirection: null,
-      initialElementX: currentElement.x,
-      initialElementY: currentElement.y,
-      initialElementWidth: currentElement.width,
-      initialElementHeight: currentElement.height
-    });
-  };
-
   const handleResizeStart = (e: React.MouseEvent, element: keyof LayoutConfig, direction: 'width' | 'height' | 'left' | 'top') => {
     e.preventDefault();
     e.stopPropagation();
@@ -192,30 +124,6 @@ export default function DesignerMode({
       element,
       startX: e.clientX,
       startY: e.clientY,
-      startGridX: 0,
-      startGridY: 0,
-      resizeDirection: direction,
-      initialElementX: currentElement.x,
-      initialElementY: currentElement.y,
-      initialElementWidth: currentElement.width,
-      initialElementHeight: currentElement.height
-    });
-  };
-
-  const handleTouchResizeStart = (e: React.TouchEvent, element: keyof LayoutConfig, direction: 'width' | 'height' | 'left' | 'top') => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const touch = e.touches[0];
-    const currentElement = layout[element];
-    
-    setSelectedElement(element);
-    setDragState({
-      isDragging: false,
-      isResizing: true,
-      element,
-      startX: touch.clientX,
-      startY: touch.clientY,
       startGridX: 0,
       startGridY: 0,
       resizeDirection: direction,
@@ -324,101 +232,6 @@ export default function DesignerMode({
   };
 
   const handleMouseUp = () => {
-    setDragState({
-      isDragging: false,
-      isResizing: false,
-      element: null,
-      startX: 0,
-      startY: 0,
-      startGridX: 0,
-      startGridY: 0,
-      resizeDirection: null,
-      initialElementX: 0,
-      initialElementY: 0,
-      initialElementWidth: 0,
-      initialElementHeight: 0
-    });
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!dragState.element || !isMobile) return;
-    e.preventDefault();
-
-    const touch = e.touches[0];
-    const currentElement = layout[dragState.element];
-
-    // Clear long press timer if user starts moving
-    if (mobileInteraction.longPressTimer) {
-      clearTimeout(mobileInteraction.longPressTimer);
-      setMobileInteraction(prev => ({ ...prev, longPressTimer: null }));
-    }
-
-    if (dragState.isDragging && mobileInteraction.mode === 'move') {
-      // MOVE MODE - Only move position
-      const { x: currentGridX, y: currentGridY } = getGridPosition(touch.clientX, touch.clientY);
-      const deltaX = currentGridX - dragState.startGridX;
-      const deltaY = currentGridY - dragState.startGridY;
-      
-      // Apply offset to initial element position
-      const newX = Math.max(0, Math.min(GRID_COLS - currentElement.width, dragState.initialElementX + deltaX));
-      const newY = Math.max(0, Math.min(GRID_ROWS - currentElement.height, dragState.initialElementY + deltaY));
-
-      // Always update position for smoother movement
-      const updatedLayout = {
-        ...layout,
-        [dragState.element]: {
-          ...currentElement,
-          x: newX,
-          y: newY
-        }
-      };
-      
-      // Ensure designer button stays at top layer
-      if (dragState.element === 'designerButton') {
-        updatedLayout.designerButton.zIndex = 999;
-      }
-      
-      onLayoutChange(updatedLayout);
-    } else if (dragState.isDragging && mobileInteraction.mode === 'resize') {
-      // RESIZE MODE - Change size based on movement
-      const deltaX = touch.clientX - dragState.startX;
-      const deltaY = touch.clientY - dragState.startY;
-      
-      // Use both X and Y movement for more intuitive resizing
-      const gridDeltaX = Math.round(deltaX / (gridRef.current!.getBoundingClientRect().width / GRID_COLS));
-      const gridDeltaY = Math.round(deltaY / (gridRef.current!.getBoundingClientRect().height / GRID_ROWS));
-      
-      const newWidth = Math.max(1, Math.min(GRID_COLS - currentElement.x, dragState.initialElementWidth + gridDeltaX));
-      const newHeight = Math.max(1, Math.min(GRID_ROWS - currentElement.y, dragState.initialElementHeight + gridDeltaY));
-      
-      if (newWidth !== currentElement.width || newHeight !== currentElement.height) {
-        onLayoutChange({
-          ...layout,
-          [dragState.element]: {
-            ...currentElement,
-            width: newWidth,
-            height: newHeight
-          }
-        });
-      }
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (!isMobile) return;
-    
-    // Clear long press timer
-    if (mobileInteraction.longPressTimer) {
-      clearTimeout(mobileInteraction.longPressTimer);
-    }
-    
-    // Reset interaction state
-    setMobileInteraction({
-      mode: null,
-      startTime: 0,
-      longPressTimer: null
-    });
-    
     setDragState({
       isDragging: false,
       isResizing: false,
@@ -669,19 +482,9 @@ export default function DesignerMode({
         }}
       >
         <div className="flex items-center gap-4">
-          <h1 className={`${isMobile ? 'text-lg' : 'text-xl'} font-semibold`} style={{ fontFamily: customization.fontFamily }}>
+          <h1 className={`text-xl font-semibold`} style={{ fontFamily: customization.fontFamily }}>
             Designer Mode
           </h1>
-          {!isMobile && (
-            <span className="text-sm opacity-90" style={{ fontFamily: customization.fontFamily }}>
-              Click and drag to move • Click edges to resize • Drag layers to reorder
-            </span>
-          )}
-          {isMobile && (
-            <span className="text-xs opacity-90" style={{ fontFamily: customization.fontFamily }}>
-              Tap to select • Drag to move • Hold 0.3s & drag to resize
-            </span>
-          )}
         </div>
         
         <div className="flex items-center gap-3">
@@ -718,12 +521,12 @@ export default function DesignerMode({
         </div>
       </div>
 
-      <div className={`${isMobile ? 'flex-col' : 'flex'} h-[calc(100vh-4rem)]`}>
+      <div className="flex h-[calc(100vh-4rem)]">
         {/* Grid Container */}
-        <div className={`flex-1 ${isMobile ? 'p-2' : 'p-6'}`}>
+        <div className="flex-1 p-6">
           <div 
             ref={gridRef}
-            className={`h-full grid ${isMobile ? 'gap-0.5' : 'gap-1'} bg-gray-300/20 rounded-lg ${isMobile ? 'p-2' : 'p-4'} relative overflow-hidden touch-none`}
+            className={`h-full grid gap-1 bg-gray-300/20 rounded-lg p-4 relative overflow-hidden touch-none`}
             style={{
               gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`,
               gridTemplateRows: `repeat(${GRID_ROWS}, 1fr)`
@@ -731,13 +534,6 @@ export default function DesignerMode({
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            onClick={() => {
-              if (isMobile) {
-                setSelectedElement(null);
-              }
-            }}
           >
             {/* Grid Lines */}
             {Array.from({ length: GRID_COLS * GRID_ROWS }).map((_, i) => (
@@ -757,13 +553,9 @@ export default function DesignerMode({
                 return (
                   <div
                     key={key}
-                    className={`${colorClass} border-2 border-white/70 rounded-lg cursor-move flex items-center justify-center text-white font-medium ${isMobile ? 'text-xs' : 'text-sm'} shadow-lg transition-all hover:scale-[1.01] relative group ${
+                    className={`${colorClass} border-2 border-white/70 rounded-lg cursor-move flex items-center justify-center text-white font-medium text-sm shadow-lg transition-all hover:scale-[1.01] relative group ${
                       dragState.element === key ? 'scale-[1.01] shadow-xl' : ''
-                    } ${isSelected ? 'ring-2 ring-white/50' : ''} select-none ${
-                      isMobile && mobileInteraction.mode === 'resize' && selectedElement === key ? 'ring-4 ring-yellow-400' : ''
-                    } ${
-                      isMobile && mobileInteraction.mode === 'move' && selectedElement === key ? 'ring-4 ring-blue-400' : ''
-                    }`}
+                    } ${isSelected ? 'ring-2 ring-white/50' : ''} select-none`}
                     style={{
                       gridColumn: `${config.x + 1} / ${config.x + config.width + 1}`,
                       gridRow: `${config.y + 1} / ${config.y + config.height + 1}`,
@@ -773,12 +565,7 @@ export default function DesignerMode({
                         ? `linear-gradient(135deg, ${customization.primaryColor}CC, ${customization.secondaryColor}CC)`
                         : undefined
                     }}
-                    onMouseDown={(e) => !isMobile && handleMouseDown(e, key as keyof LayoutConfig)}
-                    onTouchStart={(e) => handleTouchStart(e, key as keyof LayoutConfig)}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedElement(key as keyof LayoutConfig);
-                    }}
+                    onMouseDown={(e) => handleMouseDown(e, key as keyof LayoutConfig)}
                   >
                     <div className="text-center pointer-events-none">
                       <div className="font-semibold capitalize text-xs sm:text-sm">
@@ -787,28 +574,10 @@ export default function DesignerMode({
                       <div className="text-xs opacity-90">
                         {config.width}×{config.height} (z:{config.zIndex})
                       </div>
-                      {isMobile && selectedElement === key && mobileInteraction.mode && (
-                        <div className={`text-xs mt-1 flex items-center justify-center gap-1 px-2 py-1 rounded ${
-                          mobileInteraction.mode === 'resize' ? 'bg-yellow-500' : 'bg-blue-500'
-                        }`}>
-                          {mobileInteraction.mode === 'move' && (
-                            <>
-                              <Move className="w-3 h-3" />
-                              <span className="font-bold">MOVE</span>
-                            </>
-                          )}
-                          {mobileInteraction.mode === 'resize' && (
-                            <>
-                              <Maximize2 className="w-3 h-3" />
-                              <span className="font-bold">RESIZE</span>
-                            </>
-                          )}
-                        </div>
-                      )}
                     </div>
 
                     {/* Desktop Resize Handles - only show for desktop */}
-                    {isSelected && !isMobile && (
+                                         {isSelected && (
                       <>
                         {/* Right resize handle */}
                         <div
@@ -836,37 +605,35 @@ export default function DesignerMode({
                 );
               })}
           </div>
-
-
         </div>
 
         {/* Control Panel - Enhanced with all customization options */}
-        <div className={`${isMobile ? 'w-full' : 'w-80'} ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} ${isMobile ? 'border-t' : 'border-l'} ${isMobile ? 'p-4' : 'p-6'} overflow-y-auto`}>
-          <h3 className={`font-semibold ${isMobile ? 'mb-4' : 'mb-6'} ${isDark ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: customization.fontFamily }}>
+        <div className="w-80 bg-white border-gray-200 border-l p-6 overflow-y-auto">
+          <h3 className={`font-semibold mb-6`} style={{ fontFamily: customization.fontFamily }}>
             Designer Controls
           </h3>
 
           {/* Customization Section - Complete from Account Menu */}
           <div className="space-y-6 mb-8">
-            <h4 className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`} style={{ fontFamily: customization.fontFamily }}>
+            <h4 className={`font-medium`} style={{ fontFamily: customization.fontFamily }}>
               Appearance Settings
             </h4>
             
             {/* Show Questions Toggle */}
-            <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+            <div className={`p-4 rounded-lg`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: customization.fontFamily }}>
+                  <h4 className={`font-medium`} style={{ fontFamily: customization.fontFamily }}>
                     Show Sample Questions
                   </h4>
-                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`} style={{ fontFamily: customization.fontFamily }}>
+                  <p className={`text-sm`} style={{ fontFamily: customization.fontFamily }}>
                     Display sample questions on the main page
                   </p>
                 </div>
                 <button
                   onClick={() => onCustomizationChange({ showQuestions: !customization.showQuestions })}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    customization.showQuestions ? 'bg-purple-600' : isDark ? 'bg-gray-600' : 'bg-gray-300'
+                    customization.showQuestions ? 'bg-purple-600' : 'bg-gray-300'
                   }`}
                 >
                   <span
@@ -879,8 +646,8 @@ export default function DesignerMode({
             </div>
 
             {/* Color Theme */}
-            <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
-              <h4 className={`font-medium mb-4 flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: customization.fontFamily }}>
+            <div className={`p-4 rounded-lg`}>
+              <h4 className={`font-medium mb-4 flex items-center gap-2`} style={{ fontFamily: customization.fontFamily }}>
                 <Palette className="w-5 h-5" />
                 Color Theme
               </h4>
@@ -914,7 +681,7 @@ export default function DesignerMode({
               {/* Custom Color Inputs */}
               <div className="space-y-3">
                 <div>
-                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`} style={{ fontFamily: customization.fontFamily }}>
+                  <label className={`block text-sm font-medium mb-1`} style={{ fontFamily: customization.fontFamily }}>
                     Primary Color
                   </label>
                   <input
@@ -925,7 +692,7 @@ export default function DesignerMode({
                   />
                 </div>
                 <div>
-                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`} style={{ fontFamily: customization.fontFamily }}>
+                  <label className={`block text-sm font-medium mb-1`} style={{ fontFamily: customization.fontFamily }}>
                     Secondary Color
                   </label>
                   <input
@@ -939,8 +706,8 @@ export default function DesignerMode({
             </div>
 
             {/* Font Selection */}
-            <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
-              <h4 className={`font-medium mb-4 flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: customization.fontFamily }}>
+            <div className={`p-4 rounded-lg`}>
+              <h4 className={`font-medium mb-4 flex items-center gap-2`} style={{ fontFamily: customization.fontFamily }}>
                 <Type className="w-5 h-5" />
                 Font Family
               </h4>
@@ -948,11 +715,7 @@ export default function DesignerMode({
               <select
                 value={customization.fontFamily}
                 onChange={(e) => onCustomizationChange({ fontFamily: e.target.value })}
-                className={`w-full p-3 rounded-lg border ${
-                  isDark 
-                    ? 'bg-gray-600 border-gray-500 text-white' 
-                    : 'bg-white border-gray-300 text-gray-900'
-                }`}
+                className={`w-full p-3 rounded-lg border`}
                 style={{ fontFamily: customization.fontFamily }}
               >
                 {fontOptions.map((font) => (
@@ -964,20 +727,20 @@ export default function DesignerMode({
             </div>
 
             {/* Gradient Toggle */}
-            <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+            <div className={`p-4 rounded-lg`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: customization.fontFamily }}>
+                  <h4 className={`font-medium`} style={{ fontFamily: customization.fontFamily }}>
                     Gradient Effects
                   </h4>
-                  <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`} style={{ fontFamily: customization.fontFamily }}>
+                  <p className={`text-sm`} style={{ fontFamily: customization.fontFamily }}>
                     Enable gradient backgrounds and effects
                   </p>
                 </div>
                 <button
                   onClick={() => onCustomizationChange({ gradientEnabled: !customization.gradientEnabled })}
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    customization.gradientEnabled ? 'bg-purple-600' : isDark ? 'bg-gray-600' : 'bg-gray-300'
+                    customization.gradientEnabled ? 'bg-purple-600' : 'bg-gray-300'
                   }`}
                 >
                   <span
@@ -994,45 +757,45 @@ export default function DesignerMode({
           {selectedElement && (
             <div className="space-y-6 mb-8">
               <div>
-                <h4 className={`font-medium mb-3 ${isDark ? 'text-gray-200' : 'text-gray-800'}`} style={{ fontFamily: customization.fontFamily }}>
+                <h4 className={`font-medium mb-3`} style={{ fontFamily: customization.fontFamily }}>
                   {getElementDisplayName(selectedElement)}
                 </h4>
                 
                 <div className="space-y-4">
                   {/* Position Display */}
                   <div>
-                    <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`} style={{ fontFamily: customization.fontFamily }}>
+                    <label className={`block text-sm font-medium mb-2`} style={{ fontFamily: customization.fontFamily }}>
                       Position
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`} style={{ fontFamily: customization.fontFamily }}>X: {layout[selectedElement].x}</span>
+                        <span className={`text-xs`} style={{ fontFamily: customization.fontFamily }}>X: {layout[selectedElement].x}</span>
                       </div>
                       <div>
-                        <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-600'}`} style={{ fontFamily: customization.fontFamily }}>Y: {layout[selectedElement].y}</span>
+                        <span className={`text-xs`} style={{ fontFamily: customization.fontFamily }}>Y: {layout[selectedElement].y}</span>
                       </div>
                     </div>
                   </div>
 
                   {/* Size Controls */}
                   <div>
-                    <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`} style={{ fontFamily: customization.fontFamily }}>
+                    <label className={`block text-sm font-medium mb-2`} style={{ fontFamily: customization.fontFamily }}>
                       Width
                     </label>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => adjustElementSize(selectedElement, 'width', -1)}
-                        className={`p-1 rounded ${isDark ? 'bg-gray-600 hover:bg-gray-500 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
+                        className={`p-1 rounded`}
                       >
                         <Minus className="w-4 h-4" />
                       </button>
-                      <span className={`flex-1 text-center text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`} style={{ fontFamily: customization.fontFamily }}>
+                      <span className={`flex-1 text-center text-sm`} style={{ fontFamily: customization.fontFamily }}>
                         {layout[selectedElement].width}
                       </span>
-                      <button
-                        onClick={() => adjustElementSize(selectedElement, 'width', 1)}
-                        className={`p-1 rounded ${isDark ? 'bg-gray-600 hover:bg-gray-500 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
-                      >
+                                             <button
+                         onClick={() => adjustElementSize(selectedElement, 'width', 1)}
+                         className={`p-1 rounded`}
+                       >
                         <Plus className="w-4 h-4" />
                       </button>
                     </div>
