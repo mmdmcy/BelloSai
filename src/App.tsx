@@ -581,15 +581,16 @@ function App() {
                 gridRow: `${mobileLayout.mobileMenuButton.y + 1} / ${mobileLayout.mobileMenuButton.y + mobileLayout.mobileMenuButton.height + 1}`,
                 zIndex: mobileLayout.mobileMenuButton.zIndex
               }}
-              className="flex items-center justify-center"
+              className="flex items-center justify-center pointer-events-auto"
             >
               <button
-                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                className={`p-3 rounded-lg transition-colors ${
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className={`p-3 rounded-lg transition-colors pointer-events-auto ${
                   isDark 
                     ? 'text-gray-300 hover:text-white hover:bg-gray-700' 
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
+                onTouchStart={(e) => e.stopPropagation()}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -606,7 +607,7 @@ function App() {
                 gridRow: `${mobileLayout.mobileAppLogo.y + 1} / ${mobileLayout.mobileAppLogo.y + mobileLayout.mobileAppLogo.height + 1}`,
                 zIndex: mobileLayout.mobileAppLogo.zIndex
               }}
-              className="flex items-center justify-center"
+              className="flex items-center justify-center pointer-events-auto"
             >
               <h1 
                 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}
@@ -630,15 +631,16 @@ function App() {
                 gridRow: `${mobileLayout.mobileThemeToggle.y + 1} / ${mobileLayout.mobileThemeToggle.y + mobileLayout.mobileThemeToggle.height + 1}`,
                 zIndex: mobileLayout.mobileThemeToggle.zIndex
               }}
-              className="flex items-center justify-center"
+              className="flex items-center justify-center pointer-events-auto"
             >
               <button
                 onClick={() => setIsDark(!isDark)}
-                className={`p-3 rounded-lg transition-colors ${
+                className={`p-3 rounded-lg transition-colors pointer-events-auto ${
                   isDark 
                     ? 'text-yellow-400 hover:text-yellow-300 hover:bg-gray-700' 
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
+                onTouchStart={(e) => e.stopPropagation()}
               >
                 {isDark ? (
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -661,11 +663,11 @@ function App() {
                 gridRow: `${mobileLayout.mobileAuthButton.y + 1} / ${mobileLayout.mobileAuthButton.y + mobileLayout.mobileAuthButton.height + 1}`,
                 zIndex: mobileLayout.mobileAuthButton.zIndex
               }}
-              className="flex items-center justify-center"
+              className="flex items-center justify-center pointer-events-auto"
             >
               <button
                 onClick={() => user ? setIsAccountMenuOpen(true) : setShowLoginModal(true)}
-                className={`px-4 py-2 rounded-lg transition-colors text-white ${
+                className={`px-4 py-2 rounded-lg transition-colors text-white pointer-events-auto ${
                   user ? 'hover:opacity-80' : 'hover:opacity-90'
                 }`}
                 style={{ 
@@ -674,6 +676,7 @@ function App() {
                     : customization.primaryColor,
                   fontFamily: customization.fontFamily
                 }}
+                onTouchStart={(e) => e.stopPropagation()}
               >
                 {user ? 'Account' : 'Login'}
               </button>
@@ -779,7 +782,7 @@ function App() {
 
           {/* Mobile Main Content - Now positioned using grid */}
           <div 
-            className="overflow-hidden"
+            className="overflow-hidden pointer-events-auto"
             style={{
               gridColumn: `${mobileLayout.mobileMainContent.x + 1} / ${mobileLayout.mobileMainContent.x + mobileLayout.mobileMainContent.width + 1}`,
               gridRow: `${mobileLayout.mobileMainContent.y + 1} / ${mobileLayout.mobileMainContent.y + mobileLayout.mobileMainContent.height + 1}`,
@@ -811,7 +814,7 @@ function App() {
           {/* Mobile Chat Area - Separate draggable element */}
           {mobileLayout.mobileChatArea && (
             <div 
-              className="overflow-hidden"
+              className="overflow-hidden pointer-events-auto"
               style={{
                 gridColumn: `${mobileLayout.mobileChatArea.x + 1} / ${mobileLayout.mobileChatArea.x + mobileLayout.mobileChatArea.width + 1}`,
                 gridRow: `${mobileLayout.mobileChatArea.y + 1} / ${mobileLayout.mobileChatArea.y + mobileLayout.mobileChatArea.height + 1}`,
@@ -819,7 +822,7 @@ function App() {
               }}
             >
               {messages.length > 0 && (
-                <div className="h-full overflow-y-auto bg-white dark:bg-gray-900 p-4">
+                <div className="h-full overflow-y-auto bg-white dark:bg-gray-900 p-4 pointer-events-auto" style={{ touchAction: 'pan-y' }}>
                   {messages.map((message) => (
                     <div key={message.id} className={`mb-4 ${message.type === 'user' ? 'text-right' : 'text-left'}`}>
                       <div className={`inline-block max-w-[80%] p-3 rounded-lg ${
@@ -839,7 +842,7 @@ function App() {
           {/* Mobile Input Box - Separate draggable element */}
           {mobileLayout.mobileInputBox && (
             <div 
-              className=""
+              className="pointer-events-auto"
               style={{
                 gridColumn: `${mobileLayout.mobileInputBox.x + 1} / ${mobileLayout.mobileInputBox.x + mobileLayout.mobileInputBox.width + 1}`,
                 gridRow: `${mobileLayout.mobileInputBox.y + 1} / ${mobileLayout.mobileInputBox.y + mobileLayout.mobileInputBox.height + 1}`,
@@ -850,6 +853,7 @@ function App() {
                 <div className="w-full">
                   <form onSubmit={(e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     const input = e.currentTarget.querySelector('textarea') as HTMLTextAreaElement;
                     if (input?.value.trim()) {
                       sendMessage(input.value);
@@ -859,15 +863,18 @@ function App() {
                     {/* Message Input Container - Exact PC styling */}
                     <div className={`relative rounded-2xl border ${
                       isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-purple-200'
-                    } shadow-sm`}>
+                    } shadow-sm pointer-events-auto`}>
                       <textarea
                         placeholder="Type your message here..."
-                        className={`w-full px-6 py-4 pr-32 rounded-2xl resize-none focus:outline-none min-h-[60px] max-h-32 ${
+                        className={`w-full px-6 py-4 pr-32 rounded-2xl resize-none focus:outline-none min-h-[60px] max-h-32 pointer-events-auto ${
                           isDark 
                             ? 'bg-gray-700 text-white placeholder-gray-400' 
                             : 'bg-white text-gray-900 placeholder-gray-500'
                         }`}
-                        style={{ fontFamily: customization.fontFamily }}
+                        style={{ 
+                          fontFamily: customization.fontFamily,
+                          touchAction: 'manipulation' // Ensures touch events work properly
+                        }}
                         rows={1}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.shiftKey && e.currentTarget.value.trim()) {
@@ -875,6 +882,14 @@ function App() {
                             sendMessage(e.currentTarget.value);
                             e.currentTarget.value = '';
                           }
+                        }}
+                        onTouchStart={(e) => {
+                          // Ensure textarea can be focused on touch
+                          e.stopPropagation();
+                        }}
+                        onFocus={(e) => {
+                          // Make sure the input is scrolled into view on focus
+                          e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }}
                       />
                       
@@ -885,12 +900,13 @@ function App() {
                           <select
                             value={selectedModel}
                             onChange={(e) => setSelectedModel(e.target.value)}
-                            className={`text-xs px-2 py-1 rounded-md border ${
+                            className={`text-xs px-2 py-1 rounded-md border pointer-events-auto ${
                               isDark 
                                 ? 'bg-gray-600 border-gray-500 text-gray-300' 
                                 : 'bg-white border-gray-300 text-gray-700'
                             }`}
                             style={{ fontFamily: customization.fontFamily }}
+                            onTouchStart={(e) => e.stopPropagation()}
                           >
                             {availableModels.map(model => (
                               <option key={model} value={model}>{model}</option>
@@ -899,8 +915,9 @@ function App() {
                           {/* Search Button */}
                           <button 
                             type="button"
-                            className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
+                            className={`p-1 pointer-events-auto ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
                             style={{ color: isDark ? undefined : customization.primaryColor }}
+                            onTouchStart={(e) => e.stopPropagation()}
                           >
                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/>
@@ -909,8 +926,9 @@ function App() {
                           {/* Attachment Button */}
                           <button 
                             type="button"
-                            className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
+                            className={`p-1 pointer-events-auto ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
                             style={{ color: isDark ? undefined : customization.primaryColor }}
+                            onTouchStart={(e) => e.stopPropagation()}
                           >
                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                               <path d="M16.5,6V17.5A4,4 0 0,1 12.5,21.5A4,4 0 0,1 8.5,17.5V5A2.5,2.5 0 0,1 11,2.5A2.5,2.5 0 0,1 13.5,5V15.5A1,1 0 0,1 12.5,16.5A1,1 0 0,1 11.5,15.5V6H10V15.5A2.5,2.5 0 0,0 12.5,18A2.5,2.5 0 0,0 15,15.5V5A4,4 0 0,0 11,1A4,4 0 0,0 7,5V17.5A5.5,5.5 0 0,0 12.5,23A5.5,5.5 0 0,0 18,17.5V6H16.5Z"/>
@@ -921,12 +939,13 @@ function App() {
                         {/* Send Button - Exact PC styling */}
                         <button 
                           type="submit"
-                          className="text-white p-2.5 rounded-xl transition-colors hover:opacity-90"
+                          className="text-white p-2.5 rounded-xl transition-colors hover:opacity-90 pointer-events-auto"
                           style={{ 
                             background: customization.gradientEnabled 
                               ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
                               : customization.primaryColor 
                           }}
+                          onTouchStart={(e) => e.stopPropagation()}
                         >
                           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M4,12l1.41,1.41L11,7.83V20h2V7.83l5.58,5.59L20,12l-8-8L4,12z"/>
