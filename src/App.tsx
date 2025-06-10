@@ -450,6 +450,9 @@ function App() {
   // Render designer mode if active
   if (isDesignerMode) {
     if (isMobile) {
+      console.log('App - Rendering MobileDesignerMode with layout:', mobileLayout);
+      console.log('App - Mobile layout keys:', Object.keys(mobileLayout));
+      console.log('App - Mobile layout values:', Object.values(mobileLayout));
       return (
         <MobileDesignerMode
           isDark={isDark}
