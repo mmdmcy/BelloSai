@@ -128,34 +128,14 @@ function App() {
   // Layout configuration - uses the auth-integrated layout manager
   const [layout, setLayout] = useState<ExtendedLayoutConfig>(() => {
     const loadedLayout = layoutManager.getLayout();
-    console.log('App - Initial layout loaded:', loadedLayout);
     return loadedLayout;
   });
 
   // Mobile layout configuration - separate from desktop
   const [mobileLayout, setMobileLayout] = useState<MobileLayoutConfig>(() => {
-    const loadedMobileLayout = layoutManager.getMobileLayout();
-    console.log('App - Initial mobile layout loaded:', loadedMobileLayout);
-    
-    // Check if loaded layout has all required properties
-    const hasAllProperties = loadedMobileLayout && 
-      'mobileChatArea' in loadedMobileLayout && 
-      'mobileInputBox' in loadedMobileLayout;
-    
-    if (!hasAllProperties) {
-      console.log('App - Mobile layout missing new properties, using default');
-      // Clear old layout and use default
-      layoutManager.saveMobileLayout(defaultMobileLayout);
-      return defaultMobileLayout;
-    }
-    
-    // Ensure all required properties exist (for backwards compatibility)
-    const safeLayout = {
-      ...defaultMobileLayout,
-      ...loadedMobileLayout
-    };
-    
-    return safeLayout;
+    // Force reset to fix overlapping elements - temporary fix
+    layoutManager.saveMobileLayout(defaultMobileLayout);
+    return defaultMobileLayout;
   });
 
   // Available models for AI
@@ -214,16 +194,7 @@ function App() {
     return unsubscribe;
   }, [authState.user]);
 
-  // Debug mobile layout
-  useEffect(() => {
-    if (isMobile) {
-      console.log('🔧 Mobile layout being used:', mobileLayout);
-      console.log('🔧 Mobile layout elements:');
-      Object.entries(mobileLayout).forEach(([key, config]) => {
-        console.log(`  ${key}:`, `x:${config.x} y:${config.y} w:${config.width} h:${config.height} z:${config.zIndex}`);
-      });
-    }
-  }, [isMobile, mobileLayout]);
+
 
   // Authentication handlers
   const handleLogin = async (e: React.FormEvent) => {
@@ -384,7 +355,6 @@ function App() {
    * Update layout configuration with automatic saving
    */
   const updateLayout = (newLayout: ExtendedLayoutConfig) => {
-    console.log('App - Updating layout:', newLayout);
     const updatedLayout = {
       ...newLayout,
       designerButton: {
@@ -392,7 +362,6 @@ function App() {
         zIndex: 999
       }
     };
-    console.log('App - Final layout being saved:', updatedLayout);
     setLayout(updatedLayout);
     layoutManager.saveLayout(updatedLayout);
     
@@ -450,16 +419,12 @@ function App() {
   // Render designer mode if active
   if (isDesignerMode) {
     if (isMobile) {
-      console.log('App - Rendering MobileDesignerMode with layout:', mobileLayout);
-      console.log('App - Mobile layout keys:', Object.keys(mobileLayout));
-      console.log('App - Mobile layout values:', Object.values(mobileLayout));
       return (
         <MobileDesignerMode
           isDark={isDark}
           mobileLayout={mobileLayout}
           onMobileLayoutChange={updateMobileLayout}
           onExitDesigner={() => {
-            console.log('App - Exiting mobile designer mode, current mobile layout:', mobileLayout);
             setIsDesignerMode(false);
           }}
           onToggleTheme={toggleTheme}
