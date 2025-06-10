@@ -67,7 +67,18 @@ export default function DesignerMode({
   });
 
   const [selectedElement, setSelectedElement] = useState<keyof LayoutConfig | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
+
+  // Mobile detection
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const GRID_COLS = 20;
   const GRID_ROWS = 18;
@@ -109,6 +120,31 @@ export default function DesignerMode({
     });
   };
 
+  const handleTouchStart = (e: React.TouchEvent, element: keyof LayoutConfig) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const touch = e.touches[0];
+    const { x, y } = getGridPosition(touch.clientX, touch.clientY);
+    const currentElement = layout[element];
+    
+    setSelectedElement(element);
+    setDragState({
+      isDragging: true,
+      isResizing: false,
+      element,
+      startX: touch.clientX,
+      startY: touch.clientY,
+      startGridX: x,
+      startGridY: y,
+      resizeDirection: null,
+      initialElementX: currentElement.x,
+      initialElementY: currentElement.y,
+      initialElementWidth: currentElement.width,
+      initialElementHeight: currentElement.height
+    });
+  };
+
   const handleResizeStart = (e: React.MouseEvent, element: keyof LayoutConfig, direction: 'width' | 'height' | 'left' | 'top') => {
     e.preventDefault();
     e.stopPropagation();
@@ -122,6 +158,30 @@ export default function DesignerMode({
       element,
       startX: e.clientX,
       startY: e.clientY,
+      startGridX: 0,
+      startGridY: 0,
+      resizeDirection: direction,
+      initialElementX: currentElement.x,
+      initialElementY: currentElement.y,
+      initialElementWidth: currentElement.width,
+      initialElementHeight: currentElement.height
+    });
+  };
+
+  const handleTouchResizeStart = (e: React.TouchEvent, element: keyof LayoutConfig, direction: 'width' | 'height' | 'left' | 'top') => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const touch = e.touches[0];
+    const currentElement = layout[element];
+    
+    setSelectedElement(element);
+    setDragState({
+      isDragging: false,
+      isResizing: true,
+      element,
+      startX: touch.clientX,
+      startY: touch.clientY,
       startGridX: 0,
       startGridY: 0,
       resizeDirection: direction,
@@ -230,6 +290,92 @@ export default function DesignerMode({
   };
 
   const handleMouseUp = () => {
+    setDragState({
+      isDragging: false,
+      isResizing: false,
+      element: null,
+      startX: 0,
+      startY: 0,
+      startGridX: 0,
+      startGridY: 0,
+      resizeDirection: null,
+      initialElementX: 0,
+      initialElementY: 0,
+      initialElementWidth: 0,
+      initialElementHeight: 0
+    });
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!dragState.element) return;
+    e.preventDefault();
+
+    const touch = e.touches[0];
+    const currentElement = layout[dragState.element];
+
+    if (dragState.isDragging) {
+      // Calculate offset from initial touch position
+      const { x: currentGridX, y: currentGridY } = getGridPosition(touch.clientX, touch.clientY);
+      const deltaX = currentGridX - dragState.startGridX;
+      const deltaY = currentGridY - dragState.startGridY;
+      
+      // Apply offset to initial element position
+      const newX = Math.max(0, Math.min(GRID_COLS - currentElement.width, dragState.initialElementX + deltaX));
+      const newY = Math.max(0, Math.min(GRID_ROWS - currentElement.height, dragState.initialElementY + deltaY));
+
+      if (newX !== currentElement.x || newY !== currentElement.y) {
+        const updatedLayout = {
+          ...layout,
+          [dragState.element]: {
+            ...currentElement,
+            x: newX,
+            y: newY
+          }
+        };
+        
+        // Ensure designer button stays at top layer
+        if (dragState.element === 'designerButton') {
+          updatedLayout.designerButton.zIndex = 999;
+        }
+        
+        onLayoutChange(updatedLayout);
+      }
+    } else if (dragState.isResizing && dragState.resizeDirection) {
+      // Handle resizing with touch
+      const deltaX = touch.clientX - dragState.startX;
+      const deltaY = touch.clientY - dragState.startY;
+      
+      if (dragState.resizeDirection === 'width') {
+        const gridDelta = Math.round(deltaX / (gridRef.current!.getBoundingClientRect().width / GRID_COLS));
+        const newWidth = Math.max(1, Math.min(GRID_COLS - currentElement.x, dragState.initialElementWidth + gridDelta));
+        
+        if (newWidth !== currentElement.width) {
+          onLayoutChange({
+            ...layout,
+            [dragState.element]: {
+              ...currentElement,
+              width: newWidth
+            }
+          });
+        }
+      } else if (dragState.resizeDirection === 'height') {
+        const gridDelta = Math.round(deltaY / (gridRef.current!.getBoundingClientRect().height / GRID_ROWS));
+        const newHeight = Math.max(1, Math.min(GRID_ROWS - currentElement.y, dragState.initialElementHeight + gridDelta));
+        
+        if (newHeight !== currentElement.height) {
+          onLayoutChange({
+            ...layout,
+            [dragState.element]: {
+              ...currentElement,
+              height: newHeight
+            }
+          });
+        }
+      }
+    }
+  };
+
+  const handleTouchEnd = () => {
     setDragState({
       isDragging: false,
       isResizing: false,
@@ -480,12 +626,19 @@ export default function DesignerMode({
         }}
       >
         <div className="flex items-center gap-4">
-          <h1 className="text-xl font-semibold" style={{ fontFamily: customization.fontFamily }}>
+          <h1 className={`${isMobile ? 'text-lg' : 'text-xl'} font-semibold`} style={{ fontFamily: customization.fontFamily }}>
             Designer Mode
           </h1>
-          <span className="text-sm opacity-90" style={{ fontFamily: customization.fontFamily }}>
-            Click and drag to move • Click edges to resize • Drag layers to reorder
-          </span>
+          {!isMobile && (
+            <span className="text-sm opacity-90" style={{ fontFamily: customization.fontFamily }}>
+              Click and drag to move • Click edges to resize • Drag layers to reorder
+            </span>
+          )}
+          {isMobile && (
+            <span className="text-xs opacity-90" style={{ fontFamily: customization.fontFamily }}>
+              Touch to move • Touch edges to resize
+            </span>
+          )}
         </div>
         
         <div className="flex items-center gap-3">
@@ -516,12 +669,12 @@ export default function DesignerMode({
         </div>
       </div>
 
-      <div className="flex h-[calc(100vh-4rem)]">
+      <div className={`${isMobile ? 'flex-col' : 'flex'} h-[calc(100vh-4rem)]`}>
         {/* Grid Container */}
-        <div className="flex-1 p-6">
+        <div className={`flex-1 ${isMobile ? 'p-2' : 'p-6'}`}>
           <div 
             ref={gridRef}
-            className={`h-full grid gap-1 bg-gray-300/20 rounded-lg p-4 relative overflow-hidden`}
+            className={`h-full grid ${isMobile ? 'gap-0.5' : 'gap-1'} bg-gray-300/20 rounded-lg ${isMobile ? 'p-2' : 'p-4'} relative overflow-hidden touch-none`}
             style={{
               gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`,
               gridTemplateRows: `repeat(${GRID_ROWS}, 1fr)`
@@ -529,6 +682,8 @@ export default function DesignerMode({
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           >
             {/* Grid Lines */}
             {Array.from({ length: GRID_COLS * GRID_ROWS }).map((_, i) => (
@@ -548,9 +703,9 @@ export default function DesignerMode({
                 return (
                   <div
                     key={key}
-                    className={`${colorClass} border-2 border-white/70 rounded-lg cursor-move flex items-center justify-center text-white font-medium text-sm shadow-lg transition-all hover:scale-[1.01] relative group ${
+                    className={`${colorClass} border-2 border-white/70 rounded-lg cursor-move flex items-center justify-center text-white font-medium ${isMobile ? 'text-xs' : 'text-sm'} shadow-lg transition-all hover:scale-[1.01] relative group ${
                       dragState.element === key ? 'scale-[1.01] shadow-xl' : ''
-                    } ${isSelected ? 'ring-2 ring-white/50' : ''}`}
+                    } ${isSelected ? 'ring-2 ring-white/50' : ''} select-none`}
                     style={{
                       gridColumn: `${config.x + 1} / ${config.x + config.width + 1}`,
                       gridRow: `${config.y + 1} / ${config.y + config.height + 1}`,
@@ -561,6 +716,7 @@ export default function DesignerMode({
                         : undefined
                     }}
                     onMouseDown={(e) => handleMouseDown(e, key as keyof LayoutConfig)}
+                    onTouchStart={(e) => handleTouchStart(e, key as keyof LayoutConfig)}
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelectedElement(key as keyof LayoutConfig);
@@ -580,23 +736,27 @@ export default function DesignerMode({
                       <>
                         {/* Right resize handle */}
                         <div
-                          className="absolute right-0 top-1/2 transform translate-x-1/2 -translate-y-1/2 w-3 h-8 bg-white/80 rounded cursor-ew-resize hover:bg-white transition-colors z-50"
+                          className={`absolute right-0 top-1/2 transform translate-x-1/2 -translate-y-1/2 ${isMobile ? 'w-4 h-10' : 'w-3 h-8'} bg-white/80 rounded cursor-ew-resize hover:bg-white transition-colors z-50`}
                           onMouseDown={(e) => handleResizeStart(e, key as keyof LayoutConfig, 'width')}
+                          onTouchStart={(e) => handleTouchResizeStart(e, key as keyof LayoutConfig, 'width')}
                         />
                         {/* Bottom resize handle */}
                         <div
-                          className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 w-8 h-3 bg-white/80 rounded cursor-ns-resize hover:bg-white transition-colors z-50"
+                          className={`absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 ${isMobile ? 'w-10 h-4' : 'w-8 h-3'} bg-white/80 rounded cursor-ns-resize hover:bg-white transition-colors z-50`}
                           onMouseDown={(e) => handleResizeStart(e, key as keyof LayoutConfig, 'height')}
+                          onTouchStart={(e) => handleTouchResizeStart(e, key as keyof LayoutConfig, 'height')}
                         />
                         {/* Left resize handle */}
                         <div
-                          className="absolute left-0 top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-8 bg-white/80 rounded cursor-ew-resize hover:bg-white transition-colors z-50"
+                          className={`absolute left-0 top-1/2 transform -translate-x-1/2 -translate-y-1/2 ${isMobile ? 'w-4 h-10' : 'w-3 h-8'} bg-white/80 rounded cursor-ew-resize hover:bg-white transition-colors z-50`}
                           onMouseDown={(e) => handleResizeStart(e, key as keyof LayoutConfig, 'left')}
+                          onTouchStart={(e) => handleTouchResizeStart(e, key as keyof LayoutConfig, 'left')}
                         />
                         {/* Top resize handle */}
                         <div
-                          className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-3 bg-white/80 rounded cursor-ns-resize hover:bg-white transition-colors z-50"
+                          className={`absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 ${isMobile ? 'w-10 h-4' : 'w-8 h-3'} bg-white/80 rounded cursor-ns-resize hover:bg-white transition-colors z-50`}
                           onMouseDown={(e) => handleResizeStart(e, key as keyof LayoutConfig, 'top')}
+                          onTouchStart={(e) => handleTouchResizeStart(e, key as keyof LayoutConfig, 'top')}
                         />
                       </>
                     )}
@@ -607,8 +767,8 @@ export default function DesignerMode({
         </div>
 
         {/* Control Panel - Enhanced with all customization options */}
-        <div className={`w-80 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border-l p-6 overflow-y-auto`}>
-          <h3 className={`font-semibold mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: customization.fontFamily }}>
+        <div className={`${isMobile ? 'w-full' : 'w-80'} ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} ${isMobile ? 'border-t' : 'border-l'} ${isMobile ? 'p-4' : 'p-6'} overflow-y-auto`}>
+          <h3 className={`font-semibold ${isMobile ? 'mb-4' : 'mb-6'} ${isDark ? 'text-white' : 'text-gray-900'}`} style={{ fontFamily: customization.fontFamily }}>
             Designer Controls
           </h3>
 
