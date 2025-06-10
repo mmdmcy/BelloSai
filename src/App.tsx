@@ -195,6 +195,17 @@ function App() {
     return unsubscribe;
   }, [authState.user]);
 
+  // Debug mobile layout
+  useEffect(() => {
+    if (isMobile) {
+      console.log('🔧 Mobile layout being used:', mobileLayout);
+      console.log('🔧 Mobile layout elements:');
+      Object.entries(mobileLayout).forEach(([key, config]) => {
+        console.log(`  ${key}:`, `x:${config.x} y:${config.y} w:${config.width} h:${config.height} z:${config.zIndex}`);
+      });
+    }
+  }, [isMobile, mobileLayout]);
+
   // Authentication handlers
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -491,13 +502,41 @@ function App() {
       className={`h-screen overflow-hidden ${isDark ? 'dark bg-gray-900' : 'bg-purple-50'}`}
       style={{ fontFamily: customization.fontFamily }}
     >
-      {/* Mobile Layout */}
+      {/* Mobile Layout - Dynamic Grid Based */}
       {isMobile ? (
-        <div className="h-full flex flex-col">
+        <div 
+          className="h-full w-full grid relative"
+          style={{
+            gridTemplateColumns: `repeat(20, 1fr)`,
+            gridTemplateRows: `repeat(15, 1fr)`
+          }}
+        >
+          {/* Debug: Grid visualization */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="absolute inset-0 pointer-events-none">
+              {Array.from({ length: 21 }).map((_, i) => (
+                <div
+                  key={`v-${i}`}
+                  className="absolute top-0 bottom-0 border-l border-red-200 opacity-30"
+                  style={{ left: `${(i / 20) * 100}%` }}
+                />
+              ))}
+              {Array.from({ length: 16 }).map((_, i) => (
+                <div
+                  key={`h-${i}`}
+                  className="absolute left-0 right-0 border-t border-red-200 opacity-30"
+                  style={{ top: `${(i / 15) * 100}%` }}
+                />
+              ))}
+            </div>
+          )}
+
           {/* Mobile Header */}
           <div 
-            className="h-16 flex items-center justify-between px-4 text-white"
+            className="flex items-center justify-between px-4 text-white z-10"
             style={{
+              gridColumn: `${mobileLayout.mobileHeader.x + 1} / ${mobileLayout.mobileHeader.x + mobileLayout.mobileHeader.width + 1}`,
+              gridRow: `${mobileLayout.mobileHeader.y + 1} / ${mobileLayout.mobileHeader.y + mobileLayout.mobileHeader.height + 1}`,
               background: customization.gradientEnabled 
                 ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
                 : customization.primaryColor
@@ -644,8 +683,15 @@ function App() {
             </div>
           )}
 
-          {/* Mobile Main Content */}
-          <div className="flex-1 overflow-hidden">
+          {/* Mobile Main Content - Now positioned using grid */}
+          <div 
+            className="overflow-hidden"
+            style={{
+              gridColumn: `${mobileLayout.mobileMainContent.x + 1} / ${mobileLayout.mobileMainContent.x + mobileLayout.mobileMainContent.width + 1}`,
+              gridRow: `${mobileLayout.mobileMainContent.y + 1} / ${mobileLayout.mobileMainContent.y + mobileLayout.mobileMainContent.height + 1}`,
+              zIndex: mobileLayout.mobileMainContent.zIndex
+            }}
+          >
             {messages.length === 0 ? (
               <MainContent 
                 isDark={isDark} 
