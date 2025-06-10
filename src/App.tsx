@@ -783,20 +783,27 @@ function App() {
                 zIndex: mobileLayout.mobileChatArea.zIndex
               }}
             >
-              {messages.length > 0 && (
-                <div className="h-full overflow-y-auto bg-white dark:bg-gray-900 p-4 pointer-events-auto" style={{ touchAction: 'pan-y' }}>
-                  {messages.map((message) => (
-                    <div key={message.id} className={`mb-4 ${message.type === 'user' ? 'text-right' : 'text-left'}`}>
-                      <div className={`inline-block max-w-[80%] p-3 rounded-lg ${
-                        message.type === 'user' 
-                          ? 'bg-blue-500 text-white' 
-                          : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white'
-                      }`}>
-                        {message.content}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              {messages.length > 0 ? (
+                <ChatView
+                  isDark={isDark}
+                  messages={messages}
+                  onSendMessage={sendMessage}
+                  selectedModel={selectedModel}
+                  onModelChange={setSelectedModel}
+                  availableModels={availableModels}
+                  hideInput={true}
+                  customization={customization}
+                />
+              ) : (
+                <MainContent 
+                  isDark={isDark} 
+                  onSendMessage={sendMessage}
+                  selectedModel={selectedModel}
+                  onModelChange={setSelectedModel}
+                  availableModels={availableModels}
+                  inputOnly={false}
+                  customization={customization}
+                />
               )}
             </div>
           )}
