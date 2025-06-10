@@ -242,6 +242,8 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
       mobileThemeToggle: 'Theme Toggle',
       mobileAuthButton: 'Auth Button',
       mobileMainContent: 'Main Content',
+      mobileChatArea: 'Chat Area',
+      mobileInputBox: 'Input Box',
       mobileNewChat: 'New Chat',
       mobileNewGame: 'New Game',
       mobileSearch: 'Search',
@@ -389,23 +391,30 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
             )}
             {key === 'mobileMainContent' && (
               <div className="absolute inset-1 bg-gray-50 dark:bg-gray-900 rounded overflow-hidden flex flex-col">
-                {/* Chat Messages Preview */}
-                <div className="flex-1 p-2 space-y-2 overflow-hidden">
-                  <div className="bg-blue-500 text-white text-xs p-2 rounded-lg max-w-[80%] ml-auto">
-                    Hello! How can I help you today?
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="text-gray-500 text-xs">Main Content Area</div>
+                </div>
+              </div>
+            )}
+            {key === 'mobileChatArea' && (
+              <div className="absolute inset-1 bg-white dark:bg-gray-800 rounded overflow-hidden flex flex-col border border-gray-200 dark:border-gray-700">
+                <div className="flex-1 p-1 space-y-1 overflow-hidden">
+                  <div className="bg-blue-500 text-white text-[10px] p-1 rounded max-w-[70%] ml-auto">
+                    Hello!
                   </div>
-                  <div className="bg-gray-200 dark:bg-gray-700 text-xs p-2 rounded-lg max-w-[80%]">
-                    I need help with my project
-                  </div>
-                  <div className="bg-blue-500 text-white text-xs p-2 rounded-lg max-w-[80%] ml-auto">
-                    I'd be happy to help! What kind of project are you working on?
+                  <div className="bg-gray-200 dark:bg-gray-700 text-[10px] p-1 rounded max-w-[70%]">
+                    Hi there
                   </div>
                 </div>
-                {/* Input Area Preview */}
-                <div className="p-2 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-                  <div className="bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2 text-xs text-gray-500">
-                    Type a message...
-                  </div>
+              </div>
+            )}
+            {key === 'mobileInputBox' && (
+              <div className="absolute inset-1 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 flex items-center px-2">
+                <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1 text-[10px] text-gray-500">
+                  Type a message...
+                </div>
+                <div className="ml-2 w-6 h-6 bg-blue-500 rounded text-white flex items-center justify-center text-[8px]">
+                  →
                 </div>
               </div>
             )}

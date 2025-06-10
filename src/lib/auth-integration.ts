@@ -44,6 +44,8 @@ export interface MobileLayoutConfig {
   mobileThemeToggle: { x: number; y: number; width: number; height: number; zIndex: number }
   mobileAuthButton: { x: number; y: number; width: number; height: number; zIndex: number }
   mobileMainContent: { x: number; y: number; width: number; height: number; zIndex: number }
+  mobileChatArea: { x: number; y: number; width: number; height: number; zIndex: number }
+  mobileInputBox: { x: number; y: number; width: number; height: number; zIndex: number }
   mobileNewChat: { x: number; y: number; width: number; height: number; zIndex: number }
   mobileNewGame: { x: number; y: number; width: number; height: number; zIndex: number }
   mobileSearch: { x: number; y: number; width: number; height: number; zIndex: number }
@@ -77,7 +79,9 @@ export const defaultMobileLayout: MobileLayoutConfig = {
   mobileAppLogo: { x: 8, y: 0, width: 4, height: 2, zIndex: 11 },
   mobileThemeToggle: { x: 16, y: 0, width: 2, height: 2, zIndex: 11 },
   mobileAuthButton: { x: 18, y: 0, width: 2, height: 2, zIndex: 11 },
-  mobileMainContent: { x: 0, y: 2, width: 20, height: 13, zIndex: 1 },
+  mobileMainContent: { x: 0, y: 2, width: 20, height: 10, zIndex: 1 },
+  mobileChatArea: { x: 0, y: 2, width: 20, height: 10, zIndex: 2 },
+  mobileInputBox: { x: 0, y: 12, width: 20, height: 3, zIndex: 1 },
   // Menu items (these appear in the slide-out menu)
   mobileNewChat: { x: 0, y: 3, width: 8, height: 2, zIndex: 50 },
   mobileNewGame: { x: 0, y: 5, width: 8, height: 2, zIndex: 50 },
