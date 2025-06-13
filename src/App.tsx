@@ -335,10 +335,15 @@ function App() {
 
       // Prepare conversation context for Supabase chat
       const allMessages = [...messages, userMessage];
+      console.log('🔍 All messages before mapping:', allMessages);
+      
       const chatMessages: ChatMessage[] = allMessages.map(msg => ({
         type: msg.type,
         content: msg.content
       }));
+      
+      console.log('📋 Chat messages after mapping:', chatMessages);
+      console.log('🎯 Selected model:', selectedModel);
 
       // Get streaming response from Supabase Edge Function
       let fullResponse = '';
