@@ -42,15 +42,39 @@ export async function sendChatMessage(
     console.log('🚀 Starting chat message request:', { messages, model, conversationId });
     
     // Get current session
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    let { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
-    if (sessionError || !session) {
-      console.error('❌ Authentication error:', sessionError);
-      throw new Error('Authentication required');
+    console.log('🔍 Session check:', { session: !!session, error: sessionError });
+    
+    if (sessionError) {
+      console.error('❌ Session error:', sessionError);
+      throw new Error('Authentication error: ' + sessionError.message);
+    }
+    
+    if (!session) {
+      console.error('❌ No session found');
+      throw new Error('Please log in to continue');
     }
     
     console.log('✅ Authentication successful, user:', session.user.email);
     console.log('🔑 Access token length:', session.access_token.length);
+    console.log('⏰ Token expires at:', new Date(session.expires_at! * 1000));
+
+    // Check if token is expired and refresh if needed
+    const now = Date.now() / 1000;
+    if (session.expires_at && session.expires_at < now) {
+      console.log('🔄 Token expired, refreshing...');
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      
+      if (refreshError || !refreshData.session) {
+        console.error('❌ Failed to refresh token:', refreshError);
+        throw new Error('Session expired. Please log in again.');
+      }
+      
+      // Use the refreshed session
+      session = refreshData.session;
+      console.log('✅ Token refreshed successfully');
+    }
 
     // Call the Edge Function
     const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`;
