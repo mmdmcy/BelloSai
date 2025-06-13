@@ -77,6 +77,7 @@ export async function sendChatMessage(
     }
 
     // Call the Edge Function
+    console.log('🌍 VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL);
     const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`;
     console.log('📡 Calling Edge Function:', url);
     
