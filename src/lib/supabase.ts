@@ -1,9 +1,13 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://uxqrdnotdkcwfwcifajf.supabase.co'
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4cXJkbm90ZGtjd2Z3Y2lmYWpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0OTcyMjgsImV4cCI6MjA2NTA3MzIyOH0.qiOp6HjPir90t3y6wq9teoYdZsMPGnQcGiDEucEDako'
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 console.log('🔧 Supabase config:', { url: supabaseUrl, hasKey: !!supabaseAnonKey })
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables. Please check your Vercel deployment settings.')
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
