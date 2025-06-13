@@ -50,10 +50,16 @@ export async function sendChatMessage(
     }
     
     console.log('✅ Authentication successful, user:', session.user.email);
+    console.log('🔑 Access token length:', session.access_token.length);
 
     // Call the Edge Function
     const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`;
     console.log('📡 Calling Edge Function:', url);
+    
+    console.log('📤 Request payload:', { messages, model, conversationId });
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
     
     const response = await fetch(url, {
       method: 'POST',
@@ -65,8 +71,11 @@ export async function sendChatMessage(
         messages,
         model,
         conversationId
-      })
+      }),
+      signal: controller.signal
     });
+    
+    clearTimeout(timeoutId);
 
     console.log('📨 Edge Function response status:', response.status);
 
