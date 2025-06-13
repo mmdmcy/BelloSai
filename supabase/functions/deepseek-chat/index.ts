@@ -32,9 +32,14 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🚀 Edge Function called');
+    
     // Get authorization header
     const authHeader = req.headers.get('Authorization')
+    console.log('🔑 Auth header present:', !!authHeader);
+    
     if (!authHeader) {
+      console.log('❌ Missing authorization header');
       return new Response(
         JSON.stringify({ error: 'Missing authorization header' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -42,6 +47,7 @@ serve(async (req) => {
     }
 
     // Create Supabase client
+    console.log('🔧 Creating Supabase client');
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? 'https://uxqrdnotdkcwfwcifajf.supabase.co',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -53,13 +59,19 @@ serve(async (req) => {
     )
 
     // Get user from token
+    console.log('👤 Getting user from token');
     const { data: { user }, error: userError } = await supabase.auth.getUser()
+    console.log('👤 User result:', { user: !!user, error: userError });
+    
     if (userError || !user) {
+      console.log('❌ Auth failed:', userError);
       return new Response(
-        JSON.stringify({ error: 'Invalid or expired token' }),
+        JSON.stringify({ error: 'Invalid or expired token', details: userError?.message }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+    
+    console.log('✅ User authenticated:', user.email);
 
     // Check user's message limit
     const { data: userData, error: userDataError } = await supabase
