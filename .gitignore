@@ -12,6 +12,25 @@ dist
 dist-ssr
 *.local
 
+# Environment variables (sensitive data)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+env.example
+
+# Supabase sensitive files
+supabase/.temp/
+supabase/.branches/
+supabase/.git/
+
+# API Keys and secrets (backup protection)
+**/api-keys.json
+**/secrets.json
+**/*secret*
+**/*key*.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,5 +41,19 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-.env
-env.example
+
+# OS generated files
+Thumbs.db
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# Vercel
+.vercel
+
+# Build outputs
+build/
+out/

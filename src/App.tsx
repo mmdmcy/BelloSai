@@ -34,6 +34,7 @@ import AccountMenu from './components/AccountMenu';
 import GameSection from './components/GameSection';
 import { authService, AuthUser } from './lib/auth';
 import { authManager, layoutManager, ExtendedLayoutConfig, AuthState, defaultLayoutWithAuth, MobileLayoutConfig, defaultMobileLayout } from './lib/auth-integration'
+import { sendChatMessage, DeepSeekModel, ChatMessage } from './lib/supabase-chat';
 import { LogIn, UserPlus, User, Loader2, Menu, X } from 'lucide-react'
 
 /**
@@ -89,10 +90,16 @@ function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   
   // AI model selection
-  const [selectedModel, setSelectedModel] = useState('Gemini 2.5 Flash');
+  const [selectedModel, setSelectedModel] = useState('DeepSeek-V3');
   
   // Message counter for AI response logic
   const [messageCount, setMessageCount] = useState(0);
+  
+  // Last user message for regeneration
+  const [lastUserMessage, setLastUserMessage] = useState<string>('');
+  
+  // AI generation state
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Search state for detached search functionality
   const [searchQuery, setSearchQuery] = useState('');
@@ -139,7 +146,7 @@ function App() {
   });
 
   // Available models for AI
-  const availableModels = ['Gemini 2.5 Flash', 'GPT-4o', 'Claude 3.5 Sonnet'];
+  const availableModels = ['DeepSeek-V3', 'DeepSeek-R1'];
 
   // Mobile responsive detection
   useEffect(() => {
@@ -294,9 +301,15 @@ function App() {
 
   /**
    * Handle sending a new message
-   * Creates user message and simulates AI response
+   * Creates user message and gets AI response via Supabase Edge Function
    */
-  const sendMessage = (content: string) => {
+  const sendMessage = async (content: string) => {
+    // Don't send if already generating
+    if (isGenerating) return;
+
+    // Store the user message for potential regeneration
+    setLastUserMessage(content);
+
     const userMessage: Message = {
       id: Date.now().toString(),
       type: 'user',
@@ -306,31 +319,145 @@ function App() {
 
     setMessages(prev => [...prev, userMessage]);
     setMessageCount(prev => prev + 1);
+    setIsGenerating(true);
 
-    // Simulate AI response after a short delay
-    setTimeout(() => {
-      let aiResponse: Message;
+    try {
+      // Create AI response placeholder
+      const aiMessageId = (Date.now() + 1).toString();
+      const aiMessage: Message = {
+        id: aiMessageId,
+        type: 'ai',
+        content: '',
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, aiMessage]);
+
+      // Prepare conversation context for Supabase chat
+      const allMessages = [...messages, userMessage];
+      const chatMessages: ChatMessage[] = allMessages.map(msg => ({
+        type: msg.type,
+        content: msg.content
+      }));
+
+      // Get streaming response from Supabase Edge Function
+      let fullResponse = '';
+      const response = await sendChatMessage(
+        chatMessages,
+        selectedModel as DeepSeekModel,
+        (chunk: string) => {
+          fullResponse += chunk;
+          // Update the AI message in real-time
+          setMessages(prev => prev.map(msg => 
+            msg.id === aiMessageId 
+              ? { ...msg, content: fullResponse }
+              : msg
+          ));
+        }
+      );
+
+      // Ensure final response is set
+      setMessages(prev => prev.map(msg => 
+        msg.id === aiMessageId 
+          ? { ...msg, content: response }
+          : msg
+      ));
+
+    } catch (error) {
+      console.error('Error getting AI response:', error);
       
-      if (messageCount === 0) {
-        // First response
-        aiResponse = {
-          id: (Date.now() + 1).toString(),
-          type: 'ai',
-          content: 'Hello! How can I help you today?',
-          timestamp: new Date()
-        };
-      } else {
-        // Second and subsequent responses with code
-        aiResponse = {
-          id: (Date.now() + 1).toString(),
-          type: 'ai',
-          content: 'Here\'s a simple Python "Hello, World!" script:\n\n```python\nprint("Hello, world!")\n```',
-          timestamp: new Date()
-        };
-      }
+      // Add error message
+      const errorMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        type: 'ai',
+        content: error instanceof Error ? error.message : 'Sorry, I encountered an error while processing your request. Please try again.',
+        timestamp: new Date()
+      };
 
-      setMessages(prev => [...prev, aiResponse]);
-    }, 500);
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  /**
+   * Handle regenerating the last AI response with current model
+   */
+  const regenerateResponse = async () => {
+    if (!lastUserMessage || isGenerating) return;
+
+    // Remove the last AI message(s) if any
+    const userMessages = messages.filter(m => m.type === 'user');
+    const lastUserMsg = userMessages[userMessages.length - 1];
+    
+    if (lastUserMsg) {
+      // Find the index of the last user message and remove everything after it
+      const lastUserIndex = messages.findIndex(m => m.id === lastUserMsg.id);
+      if (lastUserIndex !== -1) {
+        setMessages(prev => prev.slice(0, lastUserIndex + 1));
+      }
+    }
+
+    // Generate new response with current model
+    setIsGenerating(true);
+
+    try {
+      // Create AI response placeholder
+      const aiMessageId = Date.now().toString();
+      const aiMessage: Message = {
+        id: aiMessageId,
+        type: 'ai',
+        content: '',
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, aiMessage]);
+
+      // Prepare conversation context for Supabase chat
+      const filteredMessages = messages.filter(m => m.type === 'user' || (m.type === 'ai' && m.content.trim() !== ''));
+      const chatMessages: ChatMessage[] = filteredMessages.map(msg => ({
+        type: msg.type,
+        content: msg.content
+      }));
+
+      // Get streaming response from Supabase Edge Function
+      let fullResponse = '';
+      const response = await sendChatMessage(
+        chatMessages,
+        selectedModel as DeepSeekModel,
+        (chunk: string) => {
+          fullResponse += chunk;
+          // Update the AI message in real-time
+          setMessages(prev => prev.map(msg => 
+            msg.id === aiMessageId 
+              ? { ...msg, content: fullResponse }
+              : msg
+          ));
+        }
+      );
+
+      // Ensure final response is set
+      setMessages(prev => prev.map(msg => 
+        msg.id === aiMessageId 
+          ? { ...msg, content: response }
+          : msg
+      ));
+
+    } catch (error) {
+      console.error('Error regenerating response:', error);
+      
+      // Add error message
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: 'Sorry, I encountered an error while processing your request. Please try again.',
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   /**
@@ -769,6 +896,8 @@ function App() {
                 onModelChange={setSelectedModel}
                 availableModels={availableModels}
                 customization={customization}
+                onRegenerateResponse={regenerateResponse}
+                isGenerating={isGenerating}
               />
             )}
           </div>
@@ -793,6 +922,8 @@ function App() {
                   availableModels={availableModels}
                   hideInput={true}
                   customization={customization}
+                  onRegenerateResponse={regenerateResponse}
+                  isGenerating={isGenerating}
                 />
               ) : (
                 <MainContent 
@@ -1146,6 +1277,8 @@ function App() {
                       availableModels={availableModels}
                       hideInput={true}
                       customization={customization}
+                      onRegenerateResponse={regenerateResponse}
+                      isGenerating={isGenerating}
                     />
                   )}
                 </div>
@@ -1174,6 +1307,8 @@ function App() {
                       availableModels={availableModels}
                       inputOnly={true}
                       customization={customization}
+                      onRegenerateResponse={regenerateResponse}
+                      isGenerating={isGenerating}
                     />
                   )}
                 </div>

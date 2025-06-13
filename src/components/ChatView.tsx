@@ -17,7 +17,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Search, Paperclip, ArrowUp, Copy, RotateCcw } from 'lucide-react';
+import { ChevronDown, Search, Paperclip, ArrowUp, Copy, RotateCcw, RefreshCw } from 'lucide-react';
 import { Message } from '../App';
 import { CustomizationSettings } from '../App';
 import ModelSelector from './ModelSelector';
@@ -32,6 +32,8 @@ interface ChatViewProps {
   hideInput?: boolean;
   inputOnly?: boolean;
   customization: CustomizationSettings;
+  onRegenerateResponse?: () => void;
+  isGenerating?: boolean;
 }
 
 export default function ChatView({ 
@@ -43,7 +45,9 @@ export default function ChatView({
   availableModels,
   hideInput = false,
   inputOnly = false,
-  customization
+  customization,
+  onRegenerateResponse,
+  isGenerating = false
 }: ChatViewProps) {
   // Input state management
   const [inputValue, setInputValue] = useState('');
@@ -278,22 +282,26 @@ export default function ChatView({
                 >
                   <Copy className="w-4 h-4" />
                 </button>
-                <button className={`p-2 rounded-lg transition-colors ${
-                  isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:text-purple-800'
-                }`}
-                style={{ color: isDark ? undefined : customization.primaryColor + 'AA' }}
-                onMouseEnter={(e) => {
-                  if (!isDark) {
-                    e.currentTarget.style.backgroundColor = customization.primaryColor + '20';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isDark) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }
-                }}
+                <button 
+                  className={`p-2 rounded-lg transition-colors ${
+                    isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:text-purple-800'
+                  } ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  style={{ color: isDark ? undefined : customization.primaryColor + 'AA' }}
+                  onClick={onRegenerateResponse}
+                  disabled={isGenerating || !onRegenerateResponse}
+                  title="Regenerate response with current model"
+                  onMouseEnter={(e) => {
+                    if (!isDark) {
+                      e.currentTarget.style.backgroundColor = customization.primaryColor + '20';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isDark) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                  }}
                 >
-                  <RotateCcw className="w-4 h-4" />
+                  <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
                 </button>
                 <span 
                   className={`text-sm ${isDark ? 'text-purple-400' : ''}`}
@@ -339,22 +347,26 @@ export default function ChatView({
                 >
                   <Copy className="w-4 h-4" />
                 </button>
-                <button className={`p-2 rounded-lg transition-colors ${
-                  isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:text-purple-800'
-                }`}
-                style={{ color: isDark ? undefined : customization.primaryColor + 'AA' }}
-                onMouseEnter={(e) => {
-                  if (!isDark) {
-                    e.currentTarget.style.backgroundColor = customization.primaryColor + '20';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isDark) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }
-                }}
+                <button 
+                  className={`p-2 rounded-lg transition-colors ${
+                    isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:text-purple-800'
+                  } ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  style={{ color: isDark ? undefined : customization.primaryColor + 'AA' }}
+                  onClick={onRegenerateResponse}
+                  disabled={isGenerating || !onRegenerateResponse}
+                  title="Regenerate response with current model"
+                  onMouseEnter={(e) => {
+                    if (!isDark) {
+                      e.currentTarget.style.backgroundColor = customization.primaryColor + '20';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isDark) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                  }}
                 >
-                  <RotateCcw className="w-4 h-4" />
+                  <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
                 </button>
                 <span 
                   className={`text-sm ${isDark ? 'text-purple-400' : ''}`}
