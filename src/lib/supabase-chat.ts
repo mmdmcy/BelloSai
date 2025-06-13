@@ -39,15 +39,23 @@ export async function sendChatMessage(
   conversationId?: string
 ): Promise<string> {
   try {
+    console.log('🚀 Starting chat message request:', { messages, model, conversationId });
+    
     // Get current session
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
     if (sessionError || !session) {
+      console.error('❌ Authentication error:', sessionError);
       throw new Error('Authentication required');
     }
+    
+    console.log('✅ Authentication successful, user:', session.user.email);
 
     // Call the Edge Function
-    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`, {
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`;
+    console.log('📡 Calling Edge Function:', url);
+    
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -60,8 +68,11 @@ export async function sendChatMessage(
       })
     });
 
+    console.log('📨 Edge Function response status:', response.status);
+
     if (!response.ok) {
       const errorData = await response.json();
+      console.error('❌ Edge Function error:', errorData);
       
       // Handle message limit error
       if (response.status === 429) {
@@ -74,9 +85,11 @@ export async function sendChatMessage(
 
     // Handle streaming response
     if (!response.body) {
+      console.error('❌ No response body from Edge Function');
       throw new Error('No response body');
     }
 
+    console.log('🌊 Starting to read streaming response...');
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let fullResponse = '';
@@ -85,9 +98,13 @@ export async function sendChatMessage(
       while (true) {
         const { done, value } = await reader.read();
         
-        if (done) break;
+        if (done) {
+          console.log('✅ Streaming completed');
+          break;
+        }
 
         const chunk = decoder.decode(value, { stream: true });
+        console.log('📦 Received chunk:', chunk);
         const lines = chunk.split('\n');
 
         for (const line of lines) {
@@ -97,6 +114,7 @@ export async function sendChatMessage(
           try {
             const jsonStr = line.slice(6); // Remove "data: " prefix
             const data: ChatResponse = JSON.parse(jsonStr);
+            console.log('📝 Parsed data:', data);
             
             if (data.type === 'chunk' && data.content) {
               onChunk?.(data.content);
@@ -105,12 +123,11 @@ export async function sendChatMessage(
               
               // Update local message count if available
               if (data.messageCount !== undefined && data.messageLimit !== undefined) {
-                // You can emit this data for UI updates
-                console.log(`Message count: ${data.messageCount}/${data.messageLimit}`);
+                console.log(`📊 Message count: ${data.messageCount}/${data.messageLimit}`);
               }
             }
           } catch (parseError) {
-            console.warn('Failed to parse streaming chunk:', parseError);
+            console.warn('⚠️ Failed to parse streaming chunk:', parseError, 'Line:', line);
             continue;
           }
         }
