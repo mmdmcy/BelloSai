@@ -31,108 +31,74 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isAuthReady, setIsAuthReady] = useState(false)
 
   useEffect(() => {
-    // Initialize auth with retry
-    const initializeAuth = async (retryCount = 0) => {
+    console.log('🔄 Starting auth initialization...')
+    
+    // Initialize auth - simplified approach based on Bible Kitty guide
+    const initializeAuth = async () => {
       try {
-        console.log(`🔄 Initializing auth... (attempt ${retryCount + 1})`)
+        console.log('🔄 Getting initial session...')
         
-        // Check if supabase client is available
-        if (!supabase) {
-          console.error('❌ Supabase client not available')
-          return
-        }
-        
-        // Add timeout to the request itself
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Request timeout')), 3000)
-        )
-        
-        const sessionPromise = supabase.auth.getSession()
-        
-        const { data: { session }, error } = await Promise.race([
-          sessionPromise,
-          timeoutPromise
-        ]) as any
+        const { data: { session }, error } = await supabase.auth.getSession()
         
         if (error) {
           console.error('❌ Error getting session:', error)
-          // Don't throw, just continue without session
+          // Continue without throwing - don't block the app
         } else {
-          console.log('✅ Session loaded:', session ? 'User logged in' : 'No session')
+          console.log('✅ Initial session loaded:', session ? 'User logged in' : 'No session')
           setSession(session)
           setUser(session?.user ?? null)
         }
       } catch (error) {
-        console.error(`❌ Error initializing auth (attempt ${retryCount + 1}):`, error)
-        
-        // Retry up to 2 times
-        if (retryCount < 2) {
-          console.log('🔄 Retrying auth initialization...')
-          setTimeout(() => initializeAuth(retryCount + 1), 1000)
-          return
-        }
-        
-        // After all retries failed, continue anyway
-        console.warn('⚠️ Auth initialization failed after retries, proceeding without auth')
+        console.error('❌ Error in auth initialization:', error)
+        // Continue without throwing - don't block the app
       } finally {
-        if (retryCount >= 2) {
-          console.log('✅ Auth initialization complete (with or without success)')
-          setLoading(false)
-          setIsAuthReady(true)
-        }
-      }
-    }
-
-    initializeAuth()
-
-    // Fallback timeout in case auth initialization hangs
-    const timeoutId = setTimeout(() => {
-      if (loading) {
-        console.warn('⚠️ Auth initialization timeout, proceeding without auth')
+        console.log('✅ Auth initialization complete')
         setLoading(false)
         setIsAuthReady(true)
       }
-    }, 10000) // 10 second timeout - give more time for slow connections
+    }
 
-    // Listen for auth changes
+    // Listen for auth changes - this is the primary way auth state updates
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email)
-        
+        console.log('🔄 Auth state changed:', event, session ? 'User logged in' : 'No session')
         setSession(session)
         setUser(session?.user ?? null)
         setLoading(false)
+        setIsAuthReady(true)
 
         // Handle specific auth events
         if (event === 'SIGNED_IN') {
-          console.log('User signed in:', session?.user?.email)
+          console.log('✅ User signed in:', session?.user?.email)
         } else if (event === 'SIGNED_OUT') {
-          console.log('User signed out')
+          console.log('✅ User signed out')
         } else if (event === 'TOKEN_REFRESHED') {
-          console.log('Token refreshed for user:', session?.user?.email)
+          console.log('🔄 Token refreshed for user:', session?.user?.email)
         }
       }
     )
 
+    // Initialize auth
+    initializeAuth()
+
     return () => {
+      console.log('🧹 Cleaning up auth subscription')
       subscription.unsubscribe()
-      clearTimeout(timeoutId)
     }
   }, [])
 
   const signOut = async () => {
     try {
-      setLoading(true)
+      console.log('🔄 Signing out...')
       const { error } = await supabase.auth.signOut()
       if (error) {
-        console.error('Error signing out:', error)
+        console.error('❌ Error signing out:', error)
         throw error
       }
+      console.log('✅ Signed out successfully')
     } catch (error) {
-      console.error('Failed to sign out:', error)
+      console.error('❌ Sign out failed:', error)
       throw error
-    } finally {
-      setLoading(false)
     }
   }
 
