@@ -17,10 +17,12 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Search, Paperclip, ArrowUp, Copy, RotateCcw, RefreshCw } from 'lucide-react';
+import { ChevronDown, Search, Paperclip, ArrowUp, Copy, RotateCcw, RefreshCw, Share2, Image, Globe, X } from 'lucide-react';
 import { Message } from '../App';
 import { CustomizationSettings } from '../App';
 import ModelSelector from './ModelSelector';
+import AttachmentUpload from './AttachmentUpload';
+import ChatSharing from './ChatSharing';
 
 interface ChatViewProps {
   isDark: boolean;
@@ -34,6 +36,8 @@ interface ChatViewProps {
   customization: CustomizationSettings;
   onRegenerateResponse?: () => void;
   isGenerating?: boolean;
+  conversationId?: string;
+  conversationTitle?: string;
 }
 
 export default function ChatView({ 
@@ -47,7 +51,9 @@ export default function ChatView({
   inputOnly = false,
   customization,
   onRegenerateResponse,
-  isGenerating = false
+  isGenerating = false,
+  conversationId,
+  conversationTitle = 'Untitled Conversation'
 }: ChatViewProps) {
   // Input state management
   const [inputValue, setInputValue] = useState('');
@@ -60,6 +66,13 @@ export default function ChatView({
   // Scroll state management
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [isNearBottom, setIsNearBottom] = useState(true);
+  
+  // Feature states
+  const [showAttachmentUpload, setShowAttachmentUpload] = useState(false);
+  const [showChatSharing, setShowChatSharing] = useState(false);
+  const [showWebSearch, setShowWebSearch] = useState(false);
+  const [showImageGeneration, setShowImageGeneration] = useState(false);
+  const [attachments, setAttachments] = useState<any[]>([]);
 
   /**
    * Monitor container size changes for responsive scaling
@@ -152,6 +165,38 @@ export default function ChatView({
       scrollToBottom();
     }
   }, [messages]);
+
+  /**
+   * Handle attachment upload
+   */
+  const handleAttachmentUploaded = (attachment: any) => {
+    setAttachments(prev => [...prev, attachment]);
+    console.log('Attachment uploaded:', attachment);
+  };
+
+  /**
+   * Handle attachment upload error
+   */
+  const handleAttachmentError = (error: string) => {
+    console.error('Attachment error:', error);
+    // You could show a toast notification here
+  };
+
+  /**
+   * Handle web search
+   */
+  const handleWebSearch = (query: string) => {
+    onSendMessage(`🌐 Zoek op het web: ${query}`);
+    setShowWebSearch(false);
+  };
+
+  /**
+   * Handle image generation
+   */
+  const handleImageGeneration = (prompt: string) => {
+    onSendMessage(`🎨 Genereer afbeelding: ${prompt}`);
+    setShowImageGeneration(false);
+  };
 
   /**
    * Handle form submission for new messages
@@ -455,18 +500,42 @@ export default function ChatView({
                   />
                   <button 
                     type="button"
+                    onClick={() => setShowWebSearch(!showWebSearch)}
                     className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
                     style={{ color: isDark ? undefined : customization.primaryColor }}
+                    title="Web zoeken"
                   >
-                    <Search className="w-4 h-4" />
+                    <Globe className="w-4 h-4" />
                   </button>
                   <button 
                     type="button"
+                    onClick={() => setShowAttachmentUpload(!showAttachmentUpload)}
                     className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
                     style={{ color: isDark ? undefined : customization.primaryColor }}
+                    title="Bestand uploaden"
                   >
                     <Paperclip className="w-4 h-4" />
                   </button>
+                  <button 
+                    type="button"
+                    onClick={() => setShowImageGeneration(!showImageGeneration)}
+                    className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
+                    style={{ color: isDark ? undefined : customization.primaryColor }}
+                    title="Afbeelding genereren"
+                  >
+                    <Image className="w-4 h-4" />
+                  </button>
+                  {conversationId && (
+                    <button 
+                      type="button"
+                      onClick={() => setShowChatSharing(true)}
+                      className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
+                      style={{ color: isDark ? undefined : customization.primaryColor }}
+                      title="Gesprek delen"
+                    >
+                      <Share2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
                 
                 <button 
@@ -588,6 +657,144 @@ export default function ChatView({
             </form>
           </div>
         </div>
+      )}
+
+      {/* Attachment Upload Modal */}
+      {showAttachmentUpload && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-md rounded-lg shadow-xl ${
+            isDark ? 'bg-gray-800' : 'bg-white'
+          }`}>
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Bestand Uploaden
+                </h3>
+                <button
+                  onClick={() => setShowAttachmentUpload(false)}
+                  className={`p-2 rounded-lg ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <AttachmentUpload
+                onAttachmentUploaded={handleAttachmentUploaded}
+                onError={handleAttachmentError}
+                isDark={isDark}
+                disabled={isGenerating}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Web Search Modal */}
+      {showWebSearch && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-md rounded-lg shadow-xl ${
+            isDark ? 'bg-gray-800' : 'bg-white'
+          }`}>
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Web Zoeken
+                </h3>
+                <button
+                  onClick={() => setShowWebSearch(false)}
+                  className={`p-2 rounded-lg ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                const query = formData.get('query') as string;
+                if (query.trim()) {
+                  handleWebSearch(query.trim());
+                }
+              }}>
+                <input
+                  name="query"
+                  type="text"
+                  placeholder="Zoek op het web..."
+                  className={`w-full p-3 rounded-lg border mb-4 ${
+                    isDark 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-white border-gray-300 text-gray-900'
+                  } focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  className="w-full py-3 px-4 bg-purple-500 text-white rounded-lg font-medium hover:bg-purple-600 transition-colors"
+                >
+                  Zoeken
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Generation Modal */}
+      {showImageGeneration && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className={`w-full max-w-md rounded-lg shadow-xl ${
+            isDark ? 'bg-gray-800' : 'bg-white'
+          }`}>
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Afbeelding Genereren
+                </h3>
+                <button
+                  onClick={() => setShowImageGeneration(false)}
+                  className={`p-2 rounded-lg ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                const formData = new FormData(e.currentTarget);
+                const prompt = formData.get('prompt') as string;
+                if (prompt.trim()) {
+                  handleImageGeneration(prompt.trim());
+                }
+              }}>
+                <textarea
+                  name="prompt"
+                  placeholder="Beschrijf de afbeelding die je wilt genereren..."
+                  rows={4}
+                  className={`w-full p-3 rounded-lg border mb-4 resize-none ${
+                    isDark 
+                      ? 'bg-gray-700 border-gray-600 text-white' 
+                      : 'bg-white border-gray-300 text-gray-900'
+                  } focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  className="w-full py-3 px-4 bg-purple-500 text-white rounded-lg font-medium hover:bg-purple-600 transition-colors"
+                >
+                  Genereren
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Chat Sharing Modal */}
+      {conversationId && (
+        <ChatSharing
+          conversationId={conversationId}
+          conversationTitle={conversationTitle}
+          isDark={isDark}
+          isOpen={showChatSharing}
+          onClose={() => setShowChatSharing(false)}
+        />
       )}
     </div>
   );

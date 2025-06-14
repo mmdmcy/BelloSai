@@ -12,9 +12,10 @@ interface AccountMenuProps {
   onCustomizationChange: (settings: Partial<CustomizationSettings>) => void;
   user?: User | null;
   onLogout?: () => void;
+  onOpenAPIKeyManager?: () => void;
 }
 
-export default function AccountMenu({ isDark, onClose, customization, onCustomizationChange, user, onLogout }: AccountMenuProps) {
+export default function AccountMenu({ isDark, onClose, customization, onCustomizationChange, user, onLogout, onOpenAPIKeyManager }: AccountMenuProps) {
   const [activeTab, setActiveTab] = useState('Account');
   const [tempCustomization, setTempCustomization] = useState<CustomizationSettings>(customization);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -513,6 +514,33 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
     </div>
   );
 
+  const renderAPIKeysTab = () => (
+    <div className="space-y-6" style={{ fontFamily: customization.fontFamily }}>
+      <div className={`p-8 text-center rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+        <h3 className={`text-xl font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          API Keys (BYOK)
+        </h3>
+        <p className={`mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+          Gebruik je eigen API keys voor directe toegang tot AI providers. 
+          Keys worden veilig versleuteld opgeslagen.
+        </p>
+        <button
+          onClick={() => {
+            onOpenAPIKeyManager?.();
+          }}
+          className="px-6 py-3 rounded-lg text-white font-medium transition-colors hover:opacity-90"
+          style={{ 
+            background: customization.gradientEnabled 
+              ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+              : customization.primaryColor
+          }}
+        >
+          Beheer API Keys
+        </button>
+      </div>
+    </div>
+  );
+
   const renderGenericTab = (title: string) => (
     <div className="space-y-6" style={{ fontFamily: customization.fontFamily }}>
       <div className={`p-8 text-center rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
@@ -532,6 +560,8 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
         return renderAccountTab();
       case 'Customization':
         return renderCustomizationTab();
+      case 'API Keys':
+        return renderAPIKeysTab();
       default:
         return renderGenericTab(activeTab);
     }
