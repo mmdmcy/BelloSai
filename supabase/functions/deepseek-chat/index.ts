@@ -46,11 +46,17 @@ serve(async (req) => {
       )
     }
 
-    // Create Supabase client
+    // Create Supabase client with service role key for admin operations
     console.log('🔧 Creating Supabase client');
-    const supabase = createClient(
+    const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? 'https://uxqrdnotdkcwfwcifajf.supabase.co',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    )
+
+    // Create client with user's JWT for auth verification
+    const supabaseUser = createClient(
+      Deno.env.get('SUPABASE_URL') ?? 'https://uxqrdnotdkcwfwcifajf.supabase.co',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
           headers: { Authorization: authHeader },
@@ -58,23 +64,23 @@ serve(async (req) => {
       }
     )
 
-    // Get user from token
+    // Get user from token using the user client
     console.log('👤 Getting user from token');
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    const { data: { user }, error: userError } = await supabaseUser.auth.getUser()
     console.log('👤 User result:', { user: !!user, error: userError });
     
     if (userError || !user) {
       console.log('❌ Auth failed:', userError);
       return new Response(
-        JSON.stringify({ error: 'Invalid or expired token', details: userError?.message }),
+        JSON.stringify({ error: 'Invalid or expired token', details: 'Auth session missing!' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
     
     console.log('✅ User authenticated:', user.email);
 
-    // Check user's message limit
-    const { data: userData, error: userDataError } = await supabase
+    // Check user's message limit using admin client
+    const { data: userData, error: userDataError } = await supabaseAdmin
       .from('users')
       .select('message_count, message_limit, subscription_tier')
       .eq('id', user.id)
@@ -152,8 +158,8 @@ serve(async (req) => {
       )
     }
 
-    // Increment user's message count
-    const { error: incrementError } = await supabase
+    // Increment user's message count using admin client
+    const { error: incrementError } = await supabaseAdmin
       .from('users')
       .update({ 
         message_count: userData.message_count + 1,
@@ -224,7 +230,7 @@ serve(async (req) => {
           if (conversationId && fullResponse) {
             try {
               // Save user message
-              await supabase.from('messages').insert({
+              await supabaseAdmin.from('messages').insert({
                 conversation_id: conversationId,
                 type: 'user',
                 content: messages[messages.length - 1].content,
@@ -232,7 +238,7 @@ serve(async (req) => {
               })
 
               // Save AI response
-              await supabase.from('messages').insert({
+              await supabaseAdmin.from('messages').insert({
                 conversation_id: conversationId,
                 type: 'ai',
                 content: fullResponse,
