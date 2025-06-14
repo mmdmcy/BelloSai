@@ -212,6 +212,8 @@ function App() {
       setConversations(userConversations);
     } catch (error) {
       console.error('Failed to load conversations:', error);
+      // If tables don't exist yet, just set empty array
+      setConversations([]);
     }
   };
 
@@ -348,19 +350,29 @@ function App() {
       
       // Create new conversation if this is the first message
       if (!conversationId && user) {
-        const title = content.trim().slice(0, 50) + (content.length > 50 ? '...' : '');
-        const newConversation = await chatFeaturesService.createConversation(user.id, title, selectedModel);
-        conversationId = newConversation.id;
-        setCurrentConversationId(conversationId);
-        setConversationTitle(title);
-        
-        // Reload conversations to update sidebar
-        await loadConversations();
+        try {
+          const title = content.trim().slice(0, 50) + (content.length > 50 ? '...' : '');
+          const newConversation = await chatFeaturesService.createConversation(user.id, title, selectedModel);
+          conversationId = newConversation.id;
+          setCurrentConversationId(conversationId);
+          setConversationTitle(title);
+          
+          // Reload conversations to update sidebar
+          await loadConversations();
+        } catch (error) {
+          console.error('Failed to create conversation:', error);
+          // Continue without database storage
+        }
       }
 
       // Save user message to database if we have a conversation
       if (conversationId && user) {
-        await chatFeaturesService.saveMessage(conversationId, 'user', content.trim());
+        try {
+          await chatFeaturesService.saveMessage(conversationId, 'user', content.trim());
+        } catch (error) {
+          console.error('Failed to save user message:', error);
+          // Continue without database storage
+        }
       }
 
       // Create AI message placeholder for streaming
@@ -403,7 +415,12 @@ function App() {
 
       // Save AI response to database if we have a conversation
       if (conversationId && user) {
-        await chatFeaturesService.saveMessage(conversationId, 'assistant', fullResponse);
+        try {
+          await chatFeaturesService.saveMessage(conversationId, 'assistant', fullResponse);
+        } catch (error) {
+          console.error('Failed to save AI response:', error);
+          // Continue without database storage
+        }
       }
 
     } catch (error: any) {
@@ -459,6 +476,11 @@ function App() {
       setConversationTitle(conversation?.title || 'Untitled Conversation');
     } catch (error) {
       console.error('Failed to load conversation:', error);
+      // Just switch to the conversation without loading messages
+      const conversation = conversations.find(c => c.id === conversationId);
+      setCurrentConversationId(conversationId);
+      setConversationTitle(conversation?.title || 'Untitled Conversation');
+      setMessages([]);
     }
   };
 
