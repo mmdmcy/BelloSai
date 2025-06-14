@@ -30,6 +30,9 @@ supabase/.git/
 **/*secret*
 **/*key*.json
 
+# Database check scripts with credentials
+check-database.js
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
