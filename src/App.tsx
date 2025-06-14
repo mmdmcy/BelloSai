@@ -32,8 +32,9 @@ import DesignerMode from './components/DesignerMode';
 import MobileDesignerMode from './components/MobileDesignerMode';
 import AccountMenu from './components/AccountMenu';
 import GameSection from './components/GameSection';
-import { authService, AuthUser } from './lib/auth';
-import { authManager, layoutManager, ExtendedLayoutConfig, AuthState, defaultLayoutWithAuth, MobileLayoutConfig, defaultMobileLayout } from './lib/auth-integration'
+import { useAuth } from './contexts/AuthContext';
+import { supabase } from './lib/supabase';
+import { layoutManager, ExtendedLayoutConfig, MobileLayoutConfig, defaultMobileLayout } from './lib/auth-integration'
 import { LogIn, UserPlus, User, Loader2, Menu, X } from 'lucide-react'
 
 /**
@@ -67,6 +68,9 @@ export interface CustomizationSettings {
 }
 
 function App() {
+  // Use Supabase auth context
+  const { user, loading: authLoading, signOut } = useAuth();
+  
   // Theme state - controls light/dark mode
   const [isDark, setIsDark] = useState(false);
   
@@ -112,12 +116,7 @@ function App() {
     gradientColors: ['#7c3aed', '#a855f7']
   });
 
-  // Authentication state
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
-
-  // Authentication state management
-  const [authState, setAuthState] = useState<AuthState>(authManager.getState());
+  // Authentication modals and forms
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
@@ -165,34 +164,22 @@ function App() {
     }
   }, [isMobile]);
 
-  // Initialize authentication and layout sync
+  // Sync layout when user logs in
   useEffect(() => {
-    const unsubscribe = authManager.subscribe((newAuthState) => {
-      setAuthState(newAuthState);
-      setUser(newAuthState.user);
-      setAuthLoading(newAuthState.loading);
-      
-      // Sync layout when user logs in
-      if (newAuthState.user && !authState.user) {
-        // User just logged in, sync their layout from cloud
-        const syncLayout = async () => {
-          try {
-            const cloudLayout = await authService.getUserProfile();
-            if (cloudLayout?.api_keys?.layout_config) {
-              const parsedLayout = JSON.parse(cloudLayout.api_keys.layout_config as string);
-              setLayout(parsedLayout);
-              layoutManager.saveLayout(parsedLayout);
-            }
-          } catch (error) {
-            console.log('No cloud layout found, using current layout');
-          }
-        };
-        syncLayout();
-      }
-    });
-
-    return unsubscribe;
-  }, [authState.user]);
+    if (user) {
+      // User is logged in, try to sync their layout from cloud
+      const syncLayout = async () => {
+        try {
+          // For now, just use the default layout
+          // TODO: Implement cloud layout sync with Supabase
+          console.log('User logged in, using default layout');
+        } catch (error) {
+          console.log('No cloud layout found, using current layout');
+        }
+      };
+      syncLayout();
+    }
+  }, [user]);
 
 
 
@@ -205,7 +192,13 @@ function App() {
     setAuthError(null);
 
     try {
-      await authManager.signIn(loginForm.email, loginForm.password);
+      const { error } = await supabase.auth.signInWithPassword({
+        email: loginForm.email,
+        password: loginForm.password,
+      });
+
+      if (error) throw error;
+
       setShowLoginModal(false);
       setLoginForm({ email: '', password: '' });
     } catch (error: any) {
@@ -223,14 +216,20 @@ function App() {
     setAuthError(null);
 
     try {
-      const result = await authService.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: signupForm.email,
         password: signupForm.password,
-        full_name: signupForm.fullName
+        options: {
+          data: {
+            full_name: signupForm.fullName,
+          },
+        },
       });
+
+      if (error) throw error;
       
       // Check if email confirmation is required
-      if (result.user && !result.session) {
+      if (data.user && !data.session) {
         // Email confirmation required
         setAuthError(`Please check your email (${signupForm.email}) and click the confirmation link to complete your registration.`);
         // Clear the form but keep modal open to show the message
@@ -249,7 +248,7 @@ function App() {
 
   const handleLogout = async () => {
     try {
-      await authManager.signOut();
+      await signOut();
       setIsAccountMenuOpen(false);
       setIsMobileMenuOpen(false);
     } catch (error) {
@@ -365,14 +364,10 @@ function App() {
     setLayout(updatedLayout);
     layoutManager.saveLayout(updatedLayout);
     
-    // Save to cloud if user is authenticated
-    if (authState.user) {
-      authService.updateProfile({
-        api_keys: {
-          ...authState.user.api_keys,
-          layout_config: JSON.stringify(updatedLayout)
-        }
-      }).catch(error => console.error('Failed to save layout to cloud:', error));
+    // TODO: Save to cloud if user is authenticated
+    if (user) {
+      console.log('User is authenticated, layout saved locally');
+      // TODO: Implement cloud sync with Supabase
     }
   };
 
@@ -384,14 +379,10 @@ function App() {
     setMobileLayout(newMobileLayout);
     layoutManager.saveMobileLayout(newMobileLayout);
     
-    // Save to cloud if user is authenticated
-    if (authState.user) {
-      authService.updateProfile({
-        api_keys: {
-          ...authState.user.api_keys,
-          mobile_layout_config: JSON.stringify(newMobileLayout)
-        }
-      }).catch(error => console.error('Failed to save mobile layout to cloud:', error));
+    // TODO: Save to cloud if user is authenticated
+    if (user) {
+      console.log('User is authenticated, mobile layout saved locally');
+      // TODO: Implement cloud sync with Supabase
     }
   };
 
@@ -418,8 +409,8 @@ function App() {
 
   // Helper functions for user display
   const getUserDisplayName = () => {
-    if (!authState.user) return 'User';
-    return authState.user.full_name || authState.user.email.split('@')[0] || 'User';
+    if (!user) return 'User';
+    return user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
   };
 
   const getUserInitial = () => {
@@ -441,7 +432,7 @@ function App() {
           onToggleTheme={toggleTheme}
           customization={customization}
           onCustomizationChange={updateCustomization}
-          isAuthenticated={!!authState.user}
+          isAuthenticated={!!user}
         />
       );
     } else {
@@ -1236,7 +1227,7 @@ function App() {
               )}
 
               {/* Login Button - Shows when not authenticated */}
-              {elementKey === 'loginButton' && !authState.user && (
+              {elementKey === 'loginButton' && !user && (
                 <div 
                   className="h-full w-full flex items-center justify-center"
                   style={{
@@ -1271,7 +1262,7 @@ function App() {
               )}
 
               {/* Signup Button - Shows when not authenticated */}
-              {elementKey === 'signupButton' && !authState.user && (
+              {elementKey === 'signupButton' && !user && (
                 <div 
                   className="h-full w-full flex items-center justify-center"
                   style={{
@@ -1306,7 +1297,7 @@ function App() {
               )}
 
               {/* Account Button - Shows when authenticated */}
-              {elementKey === 'accountButton' && authState.user && (
+              {elementKey === 'accountButton' && user && (
                 <div 
                   className="h-full w-full flex items-center justify-center"
                   style={{
@@ -1329,7 +1320,7 @@ function App() {
                         ? '#f59e0b' 
                         : undefined
                     }}
-                    title={`Account: ${authState.user.email}`}
+                    title={`Account: ${user?.email}`}
                   >
                     <User className="w-5 h-5" />
                   </button>
@@ -1673,7 +1664,7 @@ function App() {
               onClose={() => setIsAccountMenuOpen(false)}
               customization={customization}
               onCustomizationChange={updateCustomization}
-              user={authState.user}
+              user={user}
               onLogout={handleLogout}
             />
           </div>

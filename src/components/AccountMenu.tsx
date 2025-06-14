@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, ChevronLeft, Palette, Type, Eye, EyeOff, Sparkles, Save, Check, RotateCcw, LogOut } from 'lucide-react';
 import { CustomizationSettings } from '../App';
-import type { AuthUser } from '../lib/auth';
+import type { User } from '@supabase/supabase-js';
 import { useSubscription } from '../hooks/useSubscription';
 import { SUBSCRIPTION_PLANS } from '../lib/stripeService';
 
@@ -10,7 +10,7 @@ interface AccountMenuProps {
   onClose: () => void;
   customization: CustomizationSettings;
   onCustomizationChange: (settings: Partial<CustomizationSettings>) => void;
-  user?: AuthUser | null;
+  user?: User | null;
   onLogout?: () => void;
 }
 
@@ -89,7 +89,7 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
   // Get user display name and initial
   const getUserDisplayName = () => {
     if (!user) return 'Guest';
-    return user.full_name || user.email.split('@')[0] || 'User';
+    return user.user_metadata?.full_name || user.email?.split('@')[0] || 'User';
   };
 
   const getUserInitial = () => {
