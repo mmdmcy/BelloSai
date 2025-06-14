@@ -53,26 +53,16 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
-    // Create client with user's JWT for auth verification
-    const supabaseUser = createClient(
-      Deno.env.get('SUPABASE_URL') ?? 'https://uxqrdnotdkcwfwcifajf.supabase.co',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
-    )
-
-    // Get user from token using the user client
-    console.log('👤 Getting user from token');
-    const { data: { user }, error: userError } = await supabaseUser.auth.getUser()
+    // Verify JWT token directly using admin client
+    console.log('👤 Verifying JWT token');
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token)
     console.log('👤 User result:', { user: !!user, error: userError });
     
     if (userError || !user) {
       console.log('❌ Auth failed:', userError);
       return new Response(
-        JSON.stringify({ error: 'Invalid or expired token', details: 'Auth session missing!' }),
+        JSON.stringify({ error: 'Invalid or expired token', details: userError?.message || 'Auth session missing!' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
