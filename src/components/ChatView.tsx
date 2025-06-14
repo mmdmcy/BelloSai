@@ -54,7 +54,12 @@ export default function ChatView({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
+  
+  // Scroll state management
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const [isNearBottom, setIsNearBottom] = useState(true);
 
   /**
    * Monitor container size changes for responsive scaling
@@ -114,14 +119,38 @@ export default function ChatView({
   };
 
   /**
-   * Auto-scroll to bottom when new messages arrive
+   * Handle scroll events to show/hide scroll to bottom button
    */
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const handleScroll = () => {
+    if (!scrollContainerRef.current) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+    
+    // Show button if user has scrolled up more than 100px from bottom
+    const shouldShowButton = distanceFromBottom > 100 && messages.length > 3;
+    setShowScrollButton(shouldShowButton);
+    
+    // Track if user is near bottom for auto-scroll behavior
+    setIsNearBottom(distanceFromBottom < 50);
   };
 
+  /**
+   * Auto-scroll to bottom when new messages arrive (only if user is near bottom)
+   */
+  const scrollToBottom = (force = false) => {
+    if (force || isNearBottom) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  /**
+   * Auto-scroll when new messages arrive, but only if user is near bottom
+   */
   useEffect(() => {
-    scrollToBottom();
+    if (isNearBottom) {
+      scrollToBottom();
+    }
   }, [messages]);
 
   /**
@@ -166,9 +195,13 @@ export default function ChatView({
    * Render individual message with proper scaling and responsive design
    * Handles both user and AI messages with different layouts
    */
-  const renderMessage = (message: Message) => {
+  const renderMessage = (message: Message, index: number) => {
     const aiMessageMaxWidth = getResponsiveMaxWidth();
     const userMessageMaxWidth = getUserMessageMaxWidth();
+    
+    // Check if this is the last AI message and if AI is currently generating
+    const isLastAiMessage = message.type === 'ai' && index === messages.length - 1;
+    const shouldShowLoading = isGenerating && isLastAiMessage;
     
     if (message.type === 'user') {
       // User message - right-aligned with custom color and compact sizing
@@ -285,10 +318,10 @@ export default function ChatView({
                 <button 
                   className={`p-2 rounded-lg transition-colors ${
                     isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:text-purple-800'
-                  } ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  } ${shouldShowLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                   style={{ color: isDark ? undefined : customization.primaryColor + 'AA' }}
                   onClick={onRegenerateResponse}
-                  disabled={isGenerating || !onRegenerateResponse}
+                  disabled={shouldShowLoading || !onRegenerateResponse}
                   title="Regenerate response with current model"
                   onMouseEnter={(e) => {
                     if (!isDark) {
@@ -301,7 +334,7 @@ export default function ChatView({
                     }
                   }}
                 >
-                  <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`w-4 h-4 ${shouldShowLoading ? 'animate-spin' : ''}`} />
                 </button>
                 <span 
                   className={`text-sm ${isDark ? 'text-purple-400' : ''}`}
@@ -350,10 +383,10 @@ export default function ChatView({
                 <button 
                   className={`p-2 rounded-lg transition-colors ${
                     isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:text-purple-800'
-                  } ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  } ${shouldShowLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                   style={{ color: isDark ? undefined : customization.primaryColor + 'AA' }}
                   onClick={onRegenerateResponse}
-                  disabled={isGenerating || !onRegenerateResponse}
+                  disabled={shouldShowLoading || !onRegenerateResponse}
                   title="Regenerate response with current model"
                   onMouseEnter={(e) => {
                     if (!isDark) {
@@ -366,7 +399,7 @@ export default function ChatView({
                     }
                   }}
                 >
-                  <RefreshCw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`w-4 h-4 ${shouldShowLoading ? 'animate-spin' : ''}`} />
                 </button>
                 <span 
                   className={`text-sm ${isDark ? 'text-purple-400' : ''}`}
@@ -459,16 +492,20 @@ export default function ChatView({
       className={`flex-1 h-full flex flex-col ${isDark ? 'bg-gray-900' : 'bg-purple-50'}`}
     >
       {/* Chat Messages Area - Responsive padding */}
-      <div className={`flex-1 overflow-y-auto py-6 ${getResponsivePadding()}`}>
+      <div 
+        ref={scrollContainerRef}
+        className={`flex-1 overflow-y-auto py-6 ${getResponsivePadding()}`}
+        onScroll={handleScroll}
+      >
         <div className="w-full mx-auto">
-          {messages.map(renderMessage)}
+          {messages.map((message, index) => renderMessage(message, index))}
           <div ref={messagesEndRef} />
           
-          {/* Scroll to bottom indicator - only show for longer conversations */}
-          {messages.length > 3 && (
+          {/* Scroll to bottom indicator - only show when user has scrolled up */}
+          {showScrollButton && (
             <div className="flex justify-center py-4">
               <button 
-                onClick={scrollToBottom}
+                onClick={() => scrollToBottom(true)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-colors ${
                   isDark 
                     ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
