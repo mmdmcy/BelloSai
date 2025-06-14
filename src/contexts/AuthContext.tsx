@@ -33,16 +33,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     console.log('🔄 Starting auth initialization...')
     
-    // Initialize auth - simplified approach based on Bible Kitty guide
+    let mounted = true
+    let timeoutId: NodeJS.Timeout
+
+    // Initialize auth with timeout protection
     const initializeAuth = async () => {
       try {
         console.log('🔄 Getting initial session...')
         
-        const { data: { session }, error } = await supabase.auth.getSession()
+        // Create a timeout promise
+        const timeoutPromise = new Promise((_, reject) => {
+          timeoutId = setTimeout(() => {
+            reject(new Error('Session request timeout'))
+          }, 5000) // 5 second timeout
+        })
+
+        // Race between session request and timeout
+        const sessionPromise = supabase.auth.getSession()
+        
+        const result = await Promise.race([sessionPromise, timeoutPromise])
+        
+        // Clear timeout if we got a result
+        clearTimeout(timeoutId)
+        
+        const { data: { session }, error } = result as any
+        
+        if (!mounted) return // Component unmounted
         
         if (error) {
           console.error('❌ Error getting session:', error)
-          // Continue without throwing - don't block the app
         } else {
           console.log('✅ Initial session loaded:', session ? 'User logged in' : 'No session')
           setSession(session)
@@ -50,17 +69,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       } catch (error) {
         console.error('❌ Error in auth initialization:', error)
-        // Continue without throwing - don't block the app
+        if (error instanceof Error && error.message === 'Session request timeout') {
+          console.warn('⚠️ Session request timed out, continuing without initial session')
+        }
       } finally {
-        console.log('✅ Auth initialization complete')
-        setLoading(false)
-        setIsAuthReady(true)
+        if (mounted) {
+          console.log('✅ Auth initialization complete')
+          setLoading(false)
+          setIsAuthReady(true)
+        }
       }
     }
 
     // Listen for auth changes - this is the primary way auth state updates
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return
+        
         console.log('🔄 Auth state changed:', event, session ? 'User logged in' : 'No session')
         setSession(session)
         setUser(session?.user ?? null)
@@ -81,8 +106,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Initialize auth
     initializeAuth()
 
+    // Fallback timeout - if nothing happens in 8 seconds, mark as ready anyway
+    const fallbackTimeoutId = setTimeout(() => {
+      if (mounted && loading) {
+        console.warn('⚠️ Auth fallback timeout - marking as ready without session')
+        setLoading(false)
+        setIsAuthReady(true)
+      }
+    }, 8000)
+
     return () => {
       console.log('🧹 Cleaning up auth subscription')
+      mounted = false
+      clearTimeout(timeoutId)
+      clearTimeout(fallbackTimeoutId)
       subscription.unsubscribe()
     }
   }, [])
