@@ -34,7 +34,6 @@ import DesignerMode from './components/DesignerMode';
 import MobileDesignerMode from './components/MobileDesignerMode';
 import AccountMenu from './components/AccountMenu';
 import GameSection from './components/GameSection';
-import GridLayout from './components/GridLayout';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { authService, AuthUser } from './lib/auth';
 import { authManager, layoutManager, ExtendedLayoutConfig, AuthState, defaultLayoutWithAuth, MobileLayoutConfig, defaultMobileLayout } from './lib/auth-integration'
@@ -147,9 +146,8 @@ function AppContent() {
 
   // Layout configuration - uses the auth-integrated layout manager
   const [layout, setLayout] = useState<ExtendedLayoutConfig>(() => {
-    // Force reset to new default layout to match the design image
-    layoutManager.saveLayout(defaultLayoutWithAuth);
-    return defaultLayoutWithAuth;
+    const loadedLayout = layoutManager.getLayout();
+    return loadedLayout;
   });
 
   // Mobile layout configuration - separate from desktop
@@ -667,44 +665,143 @@ function AppContent() {
           </div>
         </div>
       ) : (
-        /* Desktop Layout - Grid Based */
-        isDesignerMode ? (
-          <DesignerMode
-            layout={layout}
-            onLayoutChange={updateLayout}
-            isDark={isDark}
-            customization={customization}
-            onExitDesigner={toggleDesignerMode}
-            onToggleTheme={toggleTheme}
-            onCustomizationChange={updateCustomization}
-          />
-        ) : (
-          <GridLayout
-            layout={layout}
-            isDark={isDark}
-            customization={customization}
-            user={user}
-            currentView={currentView}
-            messages={messages}
-            isGenerating={isGenerating}
-            selectedModel={selectedModel}
-            availableModels={availableModels}
-            onToggleTheme={toggleTheme}
-            onToggleDesigner={toggleDesignerMode}
-            onToggleAccount={toggleAccountMenu}
-            onShowLogin={() => setShowLoginModal(true)}
-            onShowSignup={() => setShowSignupModal(true)}
-            onSendMessage={sendMessage}
-            onRegenerateResponse={regenerateResponse}
-            onModelChange={setSelectedModel}
-            onNewChat={handleNewChat}
-            onNewGame={handleNewGame}
-            onBackToChat={handleBackToChat}
-            onSearch={handleSearch}
-            getUserDisplayName={getUserDisplayName}
-            getUserInitial={getUserInitial}
-          />
-        )
+        /* Desktop Layout */
+        <div className="h-screen flex">
+          {/* Sidebar */}
+          <div className={`${isSidebarCollapsed ? 'w-16' : 'w-64'} transition-all duration-300`}>
+            <Sidebar
+              isDark={isDark}
+              onAccountClick={toggleAccountMenu}
+              customization={customization}
+              isCollapsed={isSidebarCollapsed}
+              onToggleCollapse={toggleSidebar}
+              onSendMessage={sendMessage}
+              onNewGame={handleNewGame}
+            />
+          </div>
+
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col">
+            {/* Top Bar */}
+            <div className={`flex items-center justify-between p-4 border-b ${
+              isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+            }`}>
+              <div className="flex items-center gap-4">
+                <h1 className="text-xl font-semibold">BelloSai</h1>
+                <button
+                  onClick={handleNewChat}
+                  className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+                    isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                  }`}
+                >
+                  New Chat
+                </button>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={toggleDesignerMode}
+                  className={`p-2 rounded-lg transition-colors ${
+                    isDesignerMode 
+                      ? 'bg-purple-600 text-white' 
+                      : isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                  }`}
+                  title="Designer Mode"
+                >
+                  <Edit3 className="w-5 h-5" />
+                </button>
+                <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
+                {user ? (
+                  <button
+                    onClick={toggleAccountMenu}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                      isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                         style={{ 
+                           background: customization.gradientEnabled 
+                             ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                             : customization.primaryColor
+                         }}>
+                      {getUserInitial()}
+                    </div>
+                    <span className="text-sm font-medium">{getUserDisplayName()}</span>
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowLoginModal(true)}
+                      className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                        isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      <LogIn className="w-4 h-4" />
+                      Sign In
+                    </button>
+                    <button
+                      onClick={() => setShowSignupModal(true)}
+                      className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg text-white transition-colors"
+                      style={{ 
+                        background: customization.gradientEnabled 
+                          ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                          : customization.primaryColor
+                      }}
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      Sign Up
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-hidden">
+              {isDesignerMode ? (
+                <DesignerMode
+                  layout={layout}
+                  onLayoutChange={updateLayout}
+                  isDark={isDark}
+                  customization={customization}
+                  onExitDesigner={toggleDesignerMode}
+                  onToggleTheme={toggleTheme}
+                  onCustomizationChange={updateCustomization}
+                />
+              ) : currentView === 'chat' ? (
+                messages.length > 0 ? (
+                  <ChatView
+                    messages={messages}
+                    onSendMessage={sendMessage}
+                    onRegenerateResponse={regenerateResponse}
+                    selectedModel={selectedModel}
+                    onModelChange={setSelectedModel}
+                    availableModels={availableModels}
+                    isDark={isDark}
+                    isGenerating={isGenerating}
+                    customization={customization}
+                  />
+                ) : (
+                  <MainContent
+                    isDark={isDark}
+                    onSendMessage={sendMessage}
+                    selectedModel={selectedModel}
+                    onModelChange={setSelectedModel}
+                    availableModels={availableModels}
+                    customization={customization}
+                  />
+                )
+              ) : (
+                <GameSection
+                  isDark={isDark}
+                  onBackToChat={handleBackToChat}
+                  onNewGame={handleNewGame}
+                  customization={customization}
+                />
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Login Modal */}
