@@ -431,7 +431,7 @@ class ChatFeaturesService {
     // Simple encryption - in production, use proper encryption
     const encrypted: any = {};
     for (const [key, value] of Object.entries(keys)) {
-      if (value) {
+      if (value && typeof value === 'string') {
         encrypted[key] = btoa(value); // Base64 encoding (use proper encryption in production)
       }
     }
@@ -443,7 +443,7 @@ class ChatFeaturesService {
     for (const [key, value] of Object.entries(encryptedData)) {
       if (value && typeof value === 'string' && key.endsWith('_key')) {
         try {
-          decrypted[key] = atob(value); // Base64 decoding
+          decrypted[key] = atob(value as string); // Base64 decoding
         } catch (error) {
           console.error(`Failed to decrypt ${key}:`, error);
         }
@@ -549,6 +549,45 @@ class ChatFeaturesService {
       .eq('id', conversationId);
 
     if (error) throw error;
+  }
+
+  /**
+   * Save a message to a conversation
+   */
+  async saveMessage(conversationId: string, role: 'user' | 'assistant', content: string) {
+    const { data, error } = await supabase
+      .from('messages')
+      .insert({
+        conversation_id: conversationId,
+        role: role,
+        content: content
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    
+    // Update conversation's updated_at timestamp
+    await supabase
+      .from('conversations')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', conversationId);
+
+    return data;
+  }
+
+  /**
+   * Get messages for a conversation
+   */
+  async getConversationMessages(conversationId: string) {
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
   }
 }
 

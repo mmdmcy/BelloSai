@@ -36,6 +36,7 @@ import APIKeyManager from './components/APIKeyManager';
 import { useAuth } from './contexts/AuthContext';
 import { supabase } from './lib/supabase';
 import { sendChatMessage, DeepSeekModel, ChatMessage } from './lib/supabase-chat';
+import { chatFeaturesService } from './lib/chat-features';
 import { layoutManager, ExtendedLayoutConfig, MobileLayoutConfig, defaultMobileLayout } from './lib/auth-integration'
 import { LogIn, UserPlus, User, Loader2, Menu, X } from 'lucide-react'
 
@@ -102,6 +103,11 @@ function App() {
   
   // AI generation state
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Conversation management
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [conversationTitle, setConversationTitle] = useState('Untitled Conversation');
 
   // Search state for detached search functionality
   const [searchQuery, setSearchQuery] = useState('');
@@ -186,6 +192,28 @@ function App() {
       syncLayout();
     }
   }, [user]);
+
+  // Load conversations when user logs in
+  useEffect(() => {
+    if (user) {
+      loadConversations();
+    } else {
+      setConversations([]);
+      setCurrentConversationId(null);
+      setMessages([]);
+    }
+  }, [user]);
+
+  const loadConversations = async () => {
+    if (!user) return;
+    
+    try {
+      const userConversations = await chatFeaturesService.getUserConversations(user.id);
+      setConversations(userConversations);
+    } catch (error) {
+      console.error('Failed to load conversations:', error);
+    }
+  };
 
 
 
@@ -315,18 +343,37 @@ function App() {
     setMessageCount(prev => prev + 1);
     setIsGenerating(true);
 
-    // Create AI message placeholder for streaming
-    const aiMessageId = (Date.now() + 1).toString();
-    const aiMessage: Message = {
-      id: aiMessageId,
-      type: 'ai',
-      content: '',
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, aiMessage]);
-
     try {
+      let conversationId = currentConversationId;
+      
+      // Create new conversation if this is the first message
+      if (!conversationId && user) {
+        const title = content.trim().slice(0, 50) + (content.length > 50 ? '...' : '');
+        const newConversation = await chatFeaturesService.createConversation(user.id, title, selectedModel);
+        conversationId = newConversation.id;
+        setCurrentConversationId(conversationId);
+        setConversationTitle(title);
+        
+        // Reload conversations to update sidebar
+        await loadConversations();
+      }
+
+      // Save user message to database if we have a conversation
+      if (conversationId && user) {
+        await chatFeaturesService.saveMessage(conversationId, 'user', content.trim());
+      }
+
+      // Create AI message placeholder for streaming
+      const aiMessageId = (Date.now() + 1).toString();
+      const aiMessage: Message = {
+        id: aiMessageId,
+        type: 'ai',
+        content: '',
+        timestamp: new Date()
+      };
+
+      setMessages(prev => [...prev, aiMessage]);
+
       // Convert messages to ChatMessage format
       const chatMessages: ChatMessage[] = [...messages, userMessage].map(msg => ({
         type: msg.type,
@@ -354,18 +401,24 @@ function App() {
           : msg
       ));
 
+      // Save AI response to database if we have a conversation
+      if (conversationId && user) {
+        await chatFeaturesService.saveMessage(conversationId, 'assistant', fullResponse);
+      }
+
     } catch (error: any) {
       console.error('Error sending message:', error);
       
-      // Update AI message with error
-      setMessages(prev => prev.map(msg => 
-        msg.id === aiMessageId 
-          ? { 
-              ...msg, 
-              content: `Sorry, I encountered an error: ${error.message || 'Unknown error'}. Please try again.` 
-            }
-          : msg
-      ));
+      // Create AI message with error
+      const aiMessageId = (Date.now() + 1).toString();
+      const errorMessage: Message = {
+        id: aiMessageId,
+        type: 'ai',
+        content: `Sorry, I encountered an error: ${error.message || 'Unknown error'}. Please try again.`,
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsGenerating(false);
     }
@@ -375,7 +428,38 @@ function App() {
    * Handle new chat creation
    */
   const handleNewChat = () => {
-    sendMessage('Hello! I\'d like to start a new conversation.');
+    setMessages([]);
+    setCurrentConversationId(null);
+    setConversationTitle('Untitled Conversation');
+  };
+
+  /**
+   * Handle conversation selection from sidebar
+   */
+  const handleConversationSelect = async (conversationId: string) => {
+    if (!user) return;
+    
+    try {
+      // Load messages for the selected conversation
+      const conversationMessages = await chatFeaturesService.getConversationMessages(conversationId);
+      
+      // Convert to Message format
+      const messages: Message[] = conversationMessages.map((msg: any) => ({
+        id: msg.id,
+        type: msg.role === 'user' ? 'user' : 'ai',
+        content: msg.content,
+        timestamp: new Date(msg.created_at)
+      }));
+      
+      // Find conversation title
+      const conversation = conversations.find(c => c.id === conversationId);
+      
+      setMessages(messages);
+      setCurrentConversationId(conversationId);
+      setConversationTitle(conversation?.title || 'Untitled Conversation');
+    } catch (error) {
+      console.error('Failed to load conversation:', error);
+    }
   };
 
   /**
@@ -1015,6 +1099,9 @@ function App() {
                   onSendMessage={sendMessage}
                   onNewGame={handleNewGame}
                   detachedMode={true} // New prop to indicate detached components
+                  conversations={conversations}
+                  currentConversationId={currentConversationId}
+                  onConversationSelect={handleConversationSelect}
                 />
               )}
 
@@ -1189,6 +1276,8 @@ function App() {
                       hideInput={true}
                       customization={customization}
                       isGenerating={isGenerating}
+                      conversationId={currentConversationId || undefined}
+                      conversationTitle={conversationTitle}
                     />
                   )}
                 </div>
@@ -1219,6 +1308,8 @@ function App() {
                       inputOnly={true}
                       customization={customization}
                       isGenerating={isGenerating}
+                      conversationId={currentConversationId || undefined}
+                      conversationTitle={conversationTitle}
                     />
                   )}
                 </div>

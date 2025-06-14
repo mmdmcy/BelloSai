@@ -5,7 +5,7 @@
  * It displays the conversation history and provides input functionality for new messages.
  * 
  * Features:
- * - Message rendering with support for code blocks
+ * - Message rendering with markdown support
  * - Syntax highlighting for code snippets
  * - Auto-scrolling to latest messages
  * - Copy and regenerate functionality for AI responses
@@ -18,6 +18,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Search, Paperclip, ArrowUp, Copy, RotateCcw, RefreshCw, Share2, Image, Globe, X } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeHighlight from 'rehype-highlight';
+import 'highlight.js/styles/github-dark.css';
 import { Message } from '../App';
 import { CustomizationSettings } from '../App';
 import ModelSelector from './ModelSelector';
@@ -267,151 +271,213 @@ export default function ChatView({
         </div>
       );
     } else {
-      // AI message - left-aligned with code block support and responsive sizing
-      const hasCode = message.content.includes('```');
-      
-      if (hasCode) {
-        // Parse code blocks from message content
-        const parts = message.content.split('```');
-        const beforeCode = parts[0];
-        const codeContent = parts[1];
-        const afterCode = parts[2] || '';
-        
-        // Extract language from code block
-        const codeLines = codeContent.split('\n');
-        const language = codeLines[0] || 'python';
-        const code = codeLines.slice(1).join('\n');
-
-        return (
-          <div key={message.id} className="flex justify-start mb-6">
-            <div className="w-full" style={{ maxWidth: aiMessageMaxWidth }}>
-              {/* Text before code block */}
-              {beforeCode && (
-                <p 
-                  className={`mb-4 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}
-                  style={{ fontFamily: customization.fontFamily }}
-                >
-                  {beforeCode.trim()}
-                </p>
-              )}
-              
-              {/* Code Block Container - Scales with container */}
-              <div className={`rounded-xl overflow-hidden ${
-                isDark ? 'bg-gray-900' : 'bg-white'
-              } border ${isDark ? 'border-gray-700' : 'border-purple-200'}`}>
-                {/* Code Header with Language and Copy Button */}
-                <div 
-                  className="flex items-center justify-between px-4 py-3 border-b text-white"
-                  style={{ 
-                    backgroundColor: customization.primaryColor,
-                    borderBottomColor: isDark ? '#374151' : customization.primaryColor + '40'
-                  }}
-                >
-                  <span 
-                    className="text-sm font-medium"
-                    style={{ fontFamily: customization.fontFamily }}
-                  >
-                    {language}
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <button className="p-1 rounded hover:bg-black/10 text-white">
-                      <Copy className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-                
-                {/* Code Content - Responsive text size */}
-                <div className="p-4">
-                  <pre 
-                    className={`${containerWidth < 600 ? 'text-xs' : 'text-sm'} ${isDark ? 'text-gray-200' : 'text-gray-800'} overflow-x-auto`}
-                    style={{ fontFamily: 'Monaco, Consolas, monospace' }}
-                  >
-                    <code>{code}</code>
-                  </pre>
-                </div>
-              </div>
-
-              {/* Text after code block */}
-              {afterCode && (
-                <p 
-                  className={`mt-4 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}
-                  style={{ fontFamily: customization.fontFamily }}
-                >
-                  {afterCode.trim()}
-                </p>
-              )}
-
-              {/* Response Actions */}
-              <div className="flex items-center gap-4 mt-4">
-                <button className={`p-2 rounded-lg transition-colors ${
-                  isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:text-purple-800'
-                }`}
-                style={{ color: isDark ? undefined : customization.primaryColor + 'AA' }}
-                onMouseEnter={(e) => {
-                  if (!isDark) {
-                    e.currentTarget.style.backgroundColor = customization.primaryColor + '20';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isDark) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }
-                }}
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
-                <button 
-                  className={`p-2 rounded-lg transition-colors ${
-                    isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:text-purple-800'
-                  } ${shouldShowLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  style={{ color: isDark ? undefined : customization.primaryColor + 'AA' }}
-                  onClick={onRegenerateResponse}
-                  disabled={shouldShowLoading || !onRegenerateResponse}
-                  title="Regenerate response with current model"
-                  onMouseEnter={(e) => {
-                    if (!isDark) {
-                      e.currentTarget.style.backgroundColor = customization.primaryColor + '20';
+      // AI message - left-aligned with markdown support and responsive sizing
+      return (
+        <div key={message.id} className="flex justify-start mb-6">
+          <div className="w-full" style={{ maxWidth: aiMessageMaxWidth }}>
+            {/* Markdown Content */}
+            <div 
+              className={`prose ${isDark ? 'prose-invert' : 'prose-gray'} max-w-none mb-4`}
+              style={{ fontFamily: customization.fontFamily }}
+            >
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeHighlight]}
+                components={{
+                  // Custom styling for code blocks
+                  pre: ({ children, ...props }) => (
+                    <div className={`rounded-xl overflow-hidden ${
+                      isDark ? 'bg-gray-900' : 'bg-white'
+                    } border ${isDark ? 'border-gray-700' : 'border-purple-200'}`}>
+                      <div 
+                        className="flex items-center justify-between px-4 py-3 border-b text-white"
+                        style={{ 
+                          backgroundColor: customization.primaryColor,
+                          borderBottomColor: isDark ? '#374151' : customization.primaryColor + '40'
+                        }}
+                      >
+                        <span 
+                          className="text-sm font-medium"
+                          style={{ fontFamily: customization.fontFamily }}
+                        >
+                          Code
+                        </span>
+                        <button 
+                          className="p-1 rounded hover:bg-black/10 text-white"
+                          onClick={() => {
+                            const code = (children as any)?.props?.children?.[0]?.props?.children;
+                            if (code && typeof code === 'string') {
+                              navigator.clipboard.writeText(code);
+                            }
+                          }}
+                        >
+                          <Copy className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div className="p-4">
+                        <pre 
+                          {...props}
+                          className={`${containerWidth < 600 ? 'text-xs' : 'text-sm'} ${isDark ? 'text-gray-200' : 'text-gray-800'} overflow-x-auto m-0`}
+                          style={{ fontFamily: 'Monaco, Consolas, monospace' }}
+                        >
+                          {children}
+                        </pre>
+                      </div>
+                    </div>
+                  ),
+                  // Custom styling for inline code
+                  code: ({ children, className, ...props }) => {
+                    const isInline = !className;
+                    if (isInline) {
+                      return (
+                        <code 
+                          className={`px-1.5 py-0.5 rounded text-sm ${
+                            isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-800'
+                          }`}
+                          style={{ fontFamily: 'Monaco, Consolas, monospace' }}
+                          {...props}
+                        >
+                          {children}
+                        </code>
+                      );
                     }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isDark) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }
-                  }}
-                >
-                  <RefreshCw className={`w-4 h-4 ${shouldShowLoading ? 'animate-spin' : ''}`} />
-                </button>
-                <span 
-                  className={`text-sm ${isDark ? 'text-purple-400' : ''}`}
-                  style={{ 
-                    fontFamily: customization.fontFamily,
-                    color: isDark ? undefined : customization.primaryColor 
-                  }}
-                >
-                  {selectedModel}
-                </span>
-              </div>
-            </div>
-          </div>
-        );
-      } else {
-        // Regular text message without code - Responsive sizing
-        return (
-          <div key={message.id} className="flex justify-start mb-6">
-            <div style={{ maxWidth: aiMessageMaxWidth }}>
-              <p 
-                className={`mb-4 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}
-                style={{ fontFamily: customization.fontFamily }}
+                    return <code className={className} {...props}>{children}</code>;
+                  },
+                  // Custom styling for headings
+                  h1: ({ children, ...props }) => (
+                    <h1 
+                      className={`text-2xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}
+                      style={{ 
+                        fontFamily: customization.fontFamily,
+                        color: isDark ? undefined : customization.primaryColor
+                      }}
+                      {...props}
+                    >
+                      {children}
+                    </h1>
+                  ),
+                  h2: ({ children, ...props }) => (
+                    <h2 
+                      className={`text-xl font-semibold mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}
+                      style={{ 
+                        fontFamily: customization.fontFamily,
+                        color: isDark ? undefined : customization.primaryColor
+                      }}
+                      {...props}
+                    >
+                      {children}
+                    </h2>
+                  ),
+                  h3: ({ children, ...props }) => (
+                    <h3 
+                      className={`text-lg font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}
+                      style={{ 
+                        fontFamily: customization.fontFamily,
+                        color: isDark ? undefined : customization.primaryColor
+                      }}
+                      {...props}
+                    >
+                      {children}
+                    </h3>
+                  ),
+                  // Custom styling for paragraphs
+                  p: ({ children, ...props }) => (
+                    <p 
+                      className={`mb-4 leading-relaxed ${isDark ? 'text-gray-200' : 'text-gray-700'}`}
+                      style={{ fontFamily: customization.fontFamily }}
+                      {...props}
+                    >
+                      {children}
+                    </p>
+                  ),
+                  // Custom styling for lists
+                  ul: ({ children, ...props }) => (
+                    <ul 
+                      className={`mb-4 pl-6 space-y-1 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}
+                      style={{ fontFamily: customization.fontFamily }}
+                      {...props}
+                    >
+                      {children}
+                    </ul>
+                  ),
+                  ol: ({ children, ...props }) => (
+                    <ol 
+                      className={`mb-4 pl-6 space-y-1 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}
+                      style={{ fontFamily: customization.fontFamily }}
+                      {...props}
+                    >
+                      {children}
+                    </ol>
+                  ),
+                  // Custom styling for blockquotes
+                  blockquote: ({ children, ...props }) => (
+                    <blockquote 
+                      className={`border-l-4 pl-4 py-2 mb-4 italic ${
+                        isDark ? 'border-gray-600 text-gray-300' : 'text-gray-600'
+                      }`}
+                      style={{ 
+                        borderLeftColor: isDark ? undefined : customization.primaryColor + '60',
+                        fontFamily: customization.fontFamily 
+                      }}
+                      {...props}
+                    >
+                      {children}
+                    </blockquote>
+                  ),
+                  // Custom styling for tables
+                  table: ({ children, ...props }) => (
+                    <div className="overflow-x-auto mb-4">
+                      <table 
+                        className={`min-w-full border-collapse ${
+                          isDark ? 'border-gray-700' : 'border-gray-200'
+                        }`}
+                        {...props}
+                      >
+                        {children}
+                      </table>
+                    </div>
+                  ),
+                  th: ({ children, ...props }) => (
+                    <th 
+                      className={`border px-4 py-2 text-left font-semibold ${
+                        isDark 
+                          ? 'border-gray-700 bg-gray-800 text-white' 
+                          : 'border-gray-200 bg-gray-50 text-gray-900'
+                      }`}
+                      style={{ fontFamily: customization.fontFamily }}
+                      {...props}
+                    >
+                      {children}
+                    </th>
+                  ),
+                  td: ({ children, ...props }) => (
+                    <td 
+                      className={`border px-4 py-2 ${
+                        isDark 
+                          ? 'border-gray-700 text-gray-200' 
+                          : 'border-gray-200 text-gray-700'
+                      }`}
+                      style={{ fontFamily: customization.fontFamily }}
+                      {...props}
+                    >
+                      {children}
+                    </td>
+                  ),
+                }}
               >
                 {message.content}
-              </p>
-              
-              {/* Response Actions */}
-              <div className="flex items-center gap-4">
-                <button className={`p-2 rounded-lg transition-colors ${
+              </ReactMarkdown>
+            </div>
+            
+            {/* Response Actions */}
+            <div className="flex items-center gap-4">
+              <button 
+                className={`p-2 rounded-lg transition-colors ${
                   isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:text-purple-800'
                 }`}
                 style={{ color: isDark ? undefined : customization.primaryColor + 'AA' }}
+                onClick={() => navigator.clipboard.writeText(message.content)}
+                title="Copy message"
                 onMouseEnter={(e) => {
                   if (!isDark) {
                     e.currentTarget.style.backgroundColor = customization.primaryColor + '20';
@@ -422,44 +488,43 @@ export default function ChatView({
                     e.currentTarget.style.backgroundColor = 'transparent';
                   }
                 }}
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
-                <button 
-                  className={`p-2 rounded-lg transition-colors ${
-                    isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:text-purple-800'
-                  } ${shouldShowLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  style={{ color: isDark ? undefined : customization.primaryColor + 'AA' }}
-                  onClick={onRegenerateResponse}
-                  disabled={shouldShowLoading || !onRegenerateResponse}
-                  title="Regenerate response with current model"
-                  onMouseEnter={(e) => {
-                    if (!isDark) {
-                      e.currentTarget.style.backgroundColor = customization.primaryColor + '20';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isDark) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }
-                  }}
-                >
-                  <RefreshCw className={`w-4 h-4 ${shouldShowLoading ? 'animate-spin' : ''}`} />
-                </button>
-                <span 
-                  className={`text-sm ${isDark ? 'text-purple-400' : ''}`}
-                  style={{ 
-                    fontFamily: customization.fontFamily,
-                    color: isDark ? undefined : customization.primaryColor 
-                  }}
-                >
-                  {selectedModel}
-                </span>
-              </div>
+              >
+                <Copy className="w-4 h-4" />
+              </button>
+              <button 
+                className={`p-2 rounded-lg transition-colors ${
+                  isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:text-purple-800'
+                } ${shouldShowLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                style={{ color: isDark ? undefined : customization.primaryColor + 'AA' }}
+                onClick={onRegenerateResponse}
+                disabled={shouldShowLoading || !onRegenerateResponse}
+                title="Regenerate response with current model"
+                onMouseEnter={(e) => {
+                  if (!isDark) {
+                    e.currentTarget.style.backgroundColor = customization.primaryColor + '20';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isDark) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
+                }}
+              >
+                <RefreshCw className={`w-4 h-4 ${shouldShowLoading ? 'animate-spin' : ''}`} />
+              </button>
+              <span 
+                className={`text-sm ${isDark ? 'text-purple-400' : ''}`}
+                style={{ 
+                  fontFamily: customization.fontFamily,
+                  color: isDark ? undefined : customization.primaryColor 
+                }}
+              >
+                {selectedModel}
+              </span>
             </div>
           </div>
-        );
-      }
+        </div>
+      );
     }
   };
 

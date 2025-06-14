@@ -26,6 +26,9 @@ interface SidebarProps {
   onSendMessage: (message: string) => void;
   onNewGame: () => void;
   detachedMode?: boolean; // New prop to indicate if components are detached
+  conversations?: any[];
+  currentConversationId?: string | null;
+  onConversationSelect?: (conversationId: string) => void;
 }
 
 export default function Sidebar({ 
@@ -36,7 +39,10 @@ export default function Sidebar({
   onToggleCollapse,
   onSendMessage,
   onNewGame,
-  detachedMode = false
+  detachedMode = false,
+  conversations = [],
+  currentConversationId,
+  onConversationSelect
 }: SidebarProps) {
 
   /**
@@ -115,69 +121,74 @@ export default function Sidebar({
       </div>
 
       {/* Chat History Section */}
-      <div className="px-4 pb-4 flex-1">
-        {/* Today Section */}
-        <div className={`text-xs font-medium mb-2`}
-             style={{ 
-               fontFamily: customization.fontFamily,
-               color: getSecondaryTextColor(customization.primaryColor + 'CC', isDark)
-             }}>
-          Today
-        </div>
-        <button 
-          className={`w-full text-left px-3 py-2 rounded-lg mb-2 transition-colors ${
-            isDark 
-              ? 'bg-gray-700 text-white' 
-              : 'text-purple-800'
-          }`}
-          style={{ 
-            background: isDark 
-              ? undefined 
-              : customization.gradientEnabled
-                ? `linear-gradient(135deg, ${customization.secondaryColor}40, ${customization.primaryColor}20)`
-                : customization.secondaryColor + '40',
-            fontFamily: customization.fontFamily,
-            color: isDark 
-              ? (customization.secondaryColor !== '#a855f7' ? customization.secondaryColor : undefined)
-              : customization.primaryColor
-          }}
-        >
-          Greeting
-        </button>
-        
-        {/* Last 30 Days Section */}
-        <div className={`text-xs font-medium mb-2 mt-4`}
-             style={{ 
-               fontFamily: customization.fontFamily,
-               color: getSecondaryTextColor(customization.primaryColor + 'CC', isDark)
-             }}>
-          Last 30 Days
-        </div>
-        <button 
-          className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-            isDark 
-              ? 'text-gray-300 hover:bg-gray-700 hover:text-white' 
-              : 'hover:text-purple-800'
-          }`}
-          style={{ 
-            fontFamily: customization.fontFamily,
-            color: getTextColor(customization.primaryColor + 'CC', isDark)
-          }}
-          onMouseEnter={(e) => {
-            if (!isDark) {
-              e.currentTarget.style.backgroundColor = customization.gradientEnabled
-                ? `linear-gradient(135deg, ${customization.primaryColor}20, ${customization.secondaryColor}10)`
-                : customization.primaryColor + '20';
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isDark) {
-              e.currentTarget.style.backgroundColor = 'transparent';
-            }
-          }}
-        >
-          AI Explained
-        </button>
+      <div className="px-4 pb-4 flex-1 overflow-y-auto">
+        {conversations.length > 0 ? (
+          <>
+            {/* Today Section */}
+            <div className={`text-xs font-medium mb-2`}
+                 style={{ 
+                   fontFamily: customization.fontFamily,
+                   color: getSecondaryTextColor(customization.primaryColor + 'CC', isDark)
+                 }}>
+              Recent Conversations
+            </div>
+            
+            {conversations.map((conversation) => (
+              <button 
+                key={conversation.id}
+                onClick={() => onConversationSelect?.(conversation.id)}
+                className={`w-full text-left px-3 py-2 rounded-lg mb-2 transition-colors ${
+                  currentConversationId === conversation.id
+                    ? (isDark ? 'bg-gray-700 text-white' : 'text-purple-800')
+                    : (isDark ? 'text-gray-300 hover:bg-gray-700 hover:text-white' : 'hover:text-purple-800')
+                }`}
+                style={{ 
+                  background: currentConversationId === conversation.id
+                    ? (isDark 
+                        ? undefined 
+                        : customization.gradientEnabled
+                          ? `linear-gradient(135deg, ${customization.secondaryColor}40, ${customization.primaryColor}20)`
+                          : customization.secondaryColor + '40')
+                    : 'transparent',
+                  fontFamily: customization.fontFamily,
+                  color: currentConversationId === conversation.id
+                    ? (isDark 
+                        ? (customization.secondaryColor !== '#a855f7' ? customization.secondaryColor : undefined)
+                        : customization.primaryColor)
+                    : getTextColor(customization.primaryColor + 'CC', isDark)
+                }}
+                onMouseEnter={(e) => {
+                  if (!isDark && currentConversationId !== conversation.id) {
+                    e.currentTarget.style.backgroundColor = customization.gradientEnabled
+                      ? `linear-gradient(135deg, ${customization.primaryColor}20, ${customization.secondaryColor}10)`
+                      : customization.primaryColor + '20';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isDark && currentConversationId !== conversation.id) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
+                }}
+              >
+                <div className="truncate text-sm">
+                  {conversation.title || 'Untitled Conversation'}
+                </div>
+                <div className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {new Date(conversation.updated_at).toLocaleDateString()}
+                </div>
+              </button>
+            ))}
+          </>
+        ) : (
+          <div className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+            <p className="text-sm" style={{ fontFamily: customization.fontFamily }}>
+              No conversations yet
+            </p>
+            <p className="text-xs mt-1" style={{ fontFamily: customization.fontFamily }}>
+              Start chatting to see your history here
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
