@@ -33,6 +33,7 @@ interface MainContentProps {
   hideInput?: boolean;
   inputOnly?: boolean;
   customization: CustomizationSettings;
+  isGenerating?: boolean;
 }
 
 export default function MainContent({ 
@@ -43,7 +44,8 @@ export default function MainContent({
   availableModels,
   hideInput = false,
   inputOnly = false,
-  customization
+  customization,
+  isGenerating = false
 }: MainContentProps) {
   // Input state management
   const [inputValue, setInputValue] = useState('');
