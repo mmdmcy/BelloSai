@@ -31,10 +31,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isAuthReady, setIsAuthReady] = useState(false)
 
   useEffect(() => {
-    // Initialize auth
-    const initializeAuth = async () => {
+    // Initialize auth with retry
+    const initializeAuth = async (retryCount = 0) => {
       try {
-        console.log('🔄 Initializing auth...')
+        console.log(`🔄 Initializing auth... (attempt ${retryCount + 1})`)
         
         // Check if supabase client is available
         if (!supabase) {
@@ -42,7 +42,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
           return
         }
         
-        const { data: { session }, error } = await supabase.auth.getSession()
+        // Add timeout to the request itself
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout')), 3000)
+        )
+        
+        const sessionPromise = supabase.auth.getSession()
+        
+        const { data: { session }, error } = await Promise.race([
+          sessionPromise,
+          timeoutPromise
+        ]) as any
         
         if (error) {
           console.error('❌ Error getting session:', error)
@@ -53,12 +63,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setUser(session?.user ?? null)
         }
       } catch (error) {
-        console.error('❌ Error initializing auth:', error)
-        // Continue anyway, don't block the app
+        console.error(`❌ Error initializing auth (attempt ${retryCount + 1}):`, error)
+        
+        // Retry up to 2 times
+        if (retryCount < 2) {
+          console.log('🔄 Retrying auth initialization...')
+          setTimeout(() => initializeAuth(retryCount + 1), 1000)
+          return
+        }
+        
+        // After all retries failed, continue anyway
+        console.warn('⚠️ Auth initialization failed after retries, proceeding without auth')
       } finally {
-        console.log('✅ Auth initialization complete')
-        setLoading(false)
-        setIsAuthReady(true)
+        if (retryCount >= 2) {
+          console.log('✅ Auth initialization complete (with or without success)')
+          setLoading(false)
+          setIsAuthReady(true)
+        }
       }
     }
 
@@ -71,7 +92,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setLoading(false)
         setIsAuthReady(true)
       }
-    }, 5000) // 5 second timeout
+    }, 10000) // 10 second timeout - give more time for slow connections
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
