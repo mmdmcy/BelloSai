@@ -34,23 +34,44 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Initialize auth
     const initializeAuth = async () => {
       try {
+        console.log('🔄 Initializing auth...')
+        
+        // Check if supabase client is available
+        if (!supabase) {
+          console.error('❌ Supabase client not available')
+          return
+        }
+        
         const { data: { session }, error } = await supabase.auth.getSession()
         
         if (error) {
-          console.error('Error getting session:', error)
+          console.error('❌ Error getting session:', error)
+          // Don't throw, just continue without session
         } else {
+          console.log('✅ Session loaded:', session ? 'User logged in' : 'No session')
           setSession(session)
           setUser(session?.user ?? null)
         }
       } catch (error) {
-        console.error('Error initializing auth:', error)
+        console.error('❌ Error initializing auth:', error)
+        // Continue anyway, don't block the app
       } finally {
+        console.log('✅ Auth initialization complete')
         setLoading(false)
         setIsAuthReady(true)
       }
     }
 
     initializeAuth()
+
+    // Fallback timeout in case auth initialization hangs
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        console.warn('⚠️ Auth initialization timeout, proceeding without auth')
+        setLoading(false)
+        setIsAuthReady(true)
+      }
+    }, 5000) // 5 second timeout
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -74,6 +95,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     return () => {
       subscription.unsubscribe()
+      clearTimeout(timeoutId)
     }
   }, [])
 
