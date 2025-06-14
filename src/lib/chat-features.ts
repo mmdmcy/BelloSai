@@ -510,11 +510,7 @@ class ChatFeaturesService {
   async getUserConversations(userId: string) {
     const { data, error } = await supabase
       .from('conversations')
-      .select(`
-        *,
-        messages(count),
-        conversation_branches(count)
-      `)
+      .select('*')
       .eq('user_id', userId)
       .order('updated_at', { ascending: false });
 
