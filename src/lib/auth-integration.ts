@@ -52,24 +52,34 @@ export interface MobileLayoutConfig {
   mobileDesignerMode: { x: number; y: number; width: number; height: number; zIndex: number }
 }
 
-// Default layout with authentication buttons
+// Default layout with authentication buttons - matching the design image
 export const defaultLayoutWithAuth: ExtendedLayoutConfig = {
-  sidebar: { x: 0, y: 5, width: 3, height: 9, zIndex: 1 },
-  mainContent: { x: 5, y: 1, width: 10, height: 12, zIndex: 1 },
-  themeToggle: { x: 17, y: 0, width: 1, height: 1, zIndex: 4 },
-  topBar: { x: 0, y: 0, width: 20, height: 1, zIndex: 2 },
-  inputBox: { x: 4, y: 13, width: 12, height: 2, zIndex: 1 },
-  designerButton: { x: 19, y: 0, width: 1, height: 1, zIndex: 999 },
-  settingsButton: { x: 18, y: 0, width: 1, height: 1, zIndex: 4 },
-  appLogo: { x: 0, y: 1, width: 3, height: 1, zIndex: 3 },
-  newGameButton: { x: 0, y: 2, width: 3, height: 1, zIndex: 3 },
-  newChatButton: { x: 0, y: 3, width: 3, height: 1, zIndex: 3 },
-  searchButton: { x: 0, y: 4, width: 3, height: 1, zIndex: 3 },
-  accountPanel: { x: 0, y: 15, width: 3, height: 1, zIndex: 3 },
-  // Authentication buttons positioned in top bar
-  loginButton: { x: 14, y: 0, width: 1, height: 1, zIndex: 4 },
-  signupButton: { x: 15, y: 0, width: 1, height: 1, zIndex: 4 },
-  accountButton: { x: 16, y: 0, width: 1, height: 1, zIndex: 4 }
+  // Top bar spanning full width
+  topBar: { x: 0, y: 0, width: 20, height: 2, zIndex: 2 },
+  
+  // Left sidebar elements
+  appLogo: { x: 0, y: 2, width: 3, height: 3, zIndex: 3 },
+  newGameButton: { x: 0, y: 5, width: 3, height: 3, zIndex: 3 },
+  newChatButton: { x: 0, y: 8, width: 3, height: 3, zIndex: 3 },
+  searchButton: { x: 0, y: 11, width: 3, height: 3, zIndex: 3 },
+  sidebar: { x: 0, y: 2, width: 3, height: 9, zIndex: 1 },
+  
+  // Main content area (green in the image)
+  mainContent: { x: 3, y: 2, width: 10, height: 12, zIndex: 1 },
+  
+  // Input box at bottom (orange in the image)
+  inputBox: { x: 3, y: 14, width: 12, height: 2, zIndex: 1 },
+  
+  // Top right buttons
+  loginButton: { x: 13, y: 0, width: 1, height: 2, zIndex: 4 },
+  signupButton: { x: 14, y: 0, width: 1, height: 2, zIndex: 4 },
+  accountButton: { x: 15, y: 0, width: 1, height: 2, zIndex: 4 },
+  themeToggle: { x: 16, y: 0, width: 1, height: 2, zIndex: 4 },
+  settingsButton: { x: 17, y: 0, width: 1, height: 2, zIndex: 4 },
+  designerButton: { x: 18, y: 0, width: 1, height: 2, zIndex: 999 },
+  
+  // Account panel at bottom left (yellow in the image)
+  accountPanel: { x: 0, y: 14, width: 3, height: 3, zIndex: 3 }
 }
 
 // Default mobile layout configuration (20x15 grid like desktop)
