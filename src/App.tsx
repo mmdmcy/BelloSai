@@ -39,7 +39,7 @@ import { authService, AuthUser } from './lib/auth';
 import { authManager, layoutManager, ExtendedLayoutConfig, AuthState, defaultLayoutWithAuth, MobileLayoutConfig, defaultMobileLayout } from './lib/auth-integration'
 import { sendChatMessage, DeepSeekModel, ChatMessage } from './lib/supabase-chat';
 import { MessageService } from './lib/messageService';
-import { LogIn, UserPlus, User, Loader2, Menu, X } from 'lucide-react'
+import { LogIn, UserPlus, User, Loader2, Menu, X, Edit3 } from 'lucide-react'
 
 /**
  * Message Interface
@@ -701,13 +701,14 @@ function AppContent() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={toggleDesignerMode}
-                  className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                  className={`p-2 rounded-lg transition-colors ${
                     isDesignerMode 
                       ? 'bg-purple-600 text-white' 
                       : isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
                   }`}
+                  title="Designer Mode"
                 >
-                  Designer Mode
+                  <Edit3 className="w-5 h-5" />
                 </button>
                 <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
                 {user ? (
@@ -763,6 +764,9 @@ function AppContent() {
                   onLayoutChange={updateLayout}
                   isDark={isDark}
                   customization={customization}
+                  onExitDesigner={toggleDesignerMode}
+                  onToggleTheme={toggleTheme}
+                  onCustomizationChange={updateCustomization}
                 />
               ) : currentView === 'chat' ? (
                 messages.length > 0 ? (
