@@ -15,12 +15,14 @@
  * - Account management and settings
  * - Mobile-optimized touch interactions
  * - Clean icon buttons without background colors
+ * - Integrated message tracking and Stripe subscription management
  * 
  * State Management:
  * - Layout configuration for responsive grid system
  * - Theme and customization settings
  * - Chat messages and conversation history
  * - UI state (modals, sidebars, etc.)
+ * - Authentication and subscription state
  */
 
 import React, { useState, useEffect } from 'react';
@@ -32,9 +34,11 @@ import DesignerMode from './components/DesignerMode';
 import MobileDesignerMode from './components/MobileDesignerMode';
 import AccountMenu from './components/AccountMenu';
 import GameSection from './components/GameSection';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { authService, AuthUser } from './lib/auth';
 import { authManager, layoutManager, ExtendedLayoutConfig, AuthState, defaultLayoutWithAuth, MobileLayoutConfig, defaultMobileLayout } from './lib/auth-integration'
 import { sendChatMessage, DeepSeekModel, ChatMessage } from './lib/supabase-chat';
+import { MessageService } from './lib/messageService';
 import { LogIn, UserPlus, User, Loader2, Menu, X } from 'lucide-react'
 
 /**
@@ -67,7 +71,19 @@ export interface CustomizationSettings {
   gradientColors: string[];
 }
 
+// Main App Component wrapped with AuthProvider
 function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+}
+
+function AppContent() {
+  // Use the auth context
+  const { user, loading: authLoading, signOut } = useAuth();
+  
   // Theme state - controls light/dark mode
   const [isDark, setIsDark] = useState(false);
   
@@ -119,11 +135,7 @@ function App() {
     gradientColors: ['#7c3aed', '#a855f7']
   });
 
-  // Authentication state
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
-
-  // Authentication state management
+  // Authentication state management (legacy - keeping for compatibility)
   const [authState, setAuthState] = useState<AuthState>(authManager.getState());
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
@@ -176,8 +188,6 @@ function App() {
   useEffect(() => {
     const unsubscribe = authManager.subscribe((newAuthState) => {
       setAuthState(newAuthState);
-      setUser(newAuthState.user);
-      setAuthLoading(newAuthState.loading);
       
       // Sync layout when user logs in
       if (newAuthState.user && !authState.user) {
@@ -201,13 +211,9 @@ function App() {
     return unsubscribe;
   }, [authState.user]);
 
-
-
-  // Authentication handlers
+  // Handle login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!loginForm.email || !loginForm.password) return;
-
     setAuthModalLoading(true);
     setAuthError(null);
 
@@ -222,1318 +228,574 @@ function App() {
     }
   };
 
+  // Handle signup
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!signupForm.email || !signupForm.password) return;
-
     setAuthModalLoading(true);
     setAuthError(null);
 
     try {
-      const result = await authService.signUp({
-        email: signupForm.email,
-        password: signupForm.password,
+      await authManager.signUp(signupForm.email, signupForm.password, {
         full_name: signupForm.fullName
       });
       
       // Check if email confirmation is required
-      if (result.user && !result.session) {
-        // Email confirmation required
-        setAuthError(`Please check your email (${signupForm.email}) and click the confirmation link to complete your registration.`);
-        // Clear the form but keep modal open to show the message
-        setSignupForm({ email: '', password: '', fullName: '' });
+      const { data } = await authService.supabase.auth.getSession();
+      if (!data.session) {
+        setAuthError('Please check your email for a confirmation link to complete your registration.');
       } else {
-        // User is immediately signed in (email confirmation disabled)
         setShowSignupModal(false);
         setSignupForm({ email: '', password: '', fullName: '' });
       }
     } catch (error: any) {
-      setAuthError(error.message || 'Sign up failed');
+      setAuthError(error.message || 'Signup failed');
     } finally {
       setAuthModalLoading(false);
     }
   };
 
+  // Handle logout
   const handleLogout = async () => {
     try {
-      await authManager.signOut();
+      await signOut();
       setIsAccountMenuOpen(false);
-      setIsMobileMenuOpen(false);
+      // Clear any user-specific state
+      setMessages([]);
+      setMessageCount(0);
     } catch (error) {
       console.error('Logout failed:', error);
     }
   };
 
-  /**
-   * Toggle between light and dark themes
-   */
+  // Theme toggle
   const toggleTheme = () => {
     setIsDark(!isDark);
   };
 
-  /**
-   * Toggle designer mode for layout editing
-   */
+  // Designer mode toggle
   const toggleDesignerMode = () => {
     setIsDesignerMode(!isDesignerMode);
   };
 
-  /**
-   * Toggle account menu visibility
-   */
+  // Account menu toggle
   const toggleAccountMenu = () => {
     setIsAccountMenuOpen(!isAccountMenuOpen);
   };
 
-  /**
-   * Toggle sidebar collapsed state
-   */
+  // Sidebar toggle
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);
   };
 
-  /**
-   * Toggle mobile menu visibility
-   */
+  // Mobile menu toggle
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
-  /**
-   * Handle sending a new message
-   * Creates user message and gets AI response via Supabase Edge Function
-   */
+  // Send message function with message tracking
   const sendMessage = async (content: string) => {
-    // Don't send if already generating
-    if (isGenerating) return;
-
-    // Store the user message for potential regeneration
-    setLastUserMessage(content);
+    if (!content.trim() || isGenerating) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       type: 'user',
-      content,
+      content: content.trim(),
       timestamp: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
-    setMessageCount(prev => prev + 1);
+    setLastUserMessage(content.trim());
     setIsGenerating(true);
 
-    try {
-      // Create AI response placeholder
-      const aiMessageId = (Date.now() + 1).toString();
-      const aiMessage: Message = {
-        id: aiMessageId,
-        type: 'ai',
-        content: '',
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, aiMessage]);
-
-      // Prepare conversation context for Supabase chat
-      const allMessages = [...messages, userMessage];
-      console.log('🔍 All messages before mapping:', allMessages);
-      
-      const chatMessages: ChatMessage[] = allMessages.map(msg => ({
-        type: msg.type,
-        content: msg.content
-      }));
-      
-      console.log('📋 Chat messages after mapping:', chatMessages);
-      console.log('🎯 Selected model:', selectedModel);
-
-      // Get streaming response from Supabase Edge Function
-      let fullResponse = '';
-      const response = await sendChatMessage(
-        chatMessages,
-        selectedModel as DeepSeekModel,
-        (chunk: string) => {
-          fullResponse += chunk;
-          // Update the AI message in real-time
-          setMessages(prev => prev.map(msg => 
-            msg.id === aiMessageId 
-              ? { ...msg, content: fullResponse }
-              : msg
-          ));
-        }
-      );
-
-      // Ensure final response is set
-      setMessages(prev => prev.map(msg => 
-        msg.id === aiMessageId 
-          ? { ...msg, content: response }
-          : msg
-      ));
-
-    } catch (error) {
-      console.error('Error getting AI response:', error);
-      
-      // Add error message
-      const errorMessage: Message = {
-        id: (Date.now() + 2).toString(),
-        type: 'ai',
-        content: error instanceof Error ? error.message : 'Sorry, I encountered an error while processing your request. Please try again.',
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
-
-  /**
-   * Handle regenerating the last AI response with current model
-   */
-  const regenerateResponse = async () => {
-    if (!lastUserMessage || isGenerating) return;
-
-    // Remove the last AI message(s) if any
-    const userMessages = messages.filter(m => m.type === 'user');
-    const lastUserMsg = userMessages[userMessages.length - 1];
-    
-    if (lastUserMsg) {
-      // Find the index of the last user message and remove everything after it
-      const lastUserIndex = messages.findIndex(m => m.id === lastUserMsg.id);
-      if (lastUserIndex !== -1) {
-        setMessages(prev => prev.slice(0, lastUserIndex + 1));
+    // Track the message if user is authenticated
+    if (user) {
+      try {
+        await MessageService.trackMessage(content.trim());
+      } catch (error) {
+        console.error('Failed to track message:', error);
       }
     }
 
-    // Generate new response with current model
-    setIsGenerating(true);
-
     try {
-      // Create AI response placeholder
-      const aiMessageId = Date.now().toString();
-      const aiMessage: Message = {
-        id: aiMessageId,
-        type: 'ai',
-        content: '',
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, aiMessage]);
-
-      // Prepare conversation context for Supabase chat
-      const filteredMessages = messages.filter(m => m.type === 'user' || (m.type === 'ai' && m.content.trim() !== ''));
-      const chatMessages: ChatMessage[] = filteredMessages.map(msg => ({
-        type: msg.type,
+      // Convert our Message format to ChatMessage format for the API
+      const chatHistory: ChatMessage[] = messages.map(msg => ({
+        role: msg.type === 'user' ? 'user' : 'assistant',
         content: msg.content
       }));
 
-      // Get streaming response from Supabase Edge Function
-      let fullResponse = '';
-      const response = await sendChatMessage(
-        chatMessages,
-        selectedModel as DeepSeekModel,
-        (chunk: string) => {
-          fullResponse += chunk;
-          // Update the AI message in real-time
-          setMessages(prev => prev.map(msg => 
-            msg.id === aiMessageId 
-              ? { ...msg, content: fullResponse }
-              : msg
-          ));
-        }
-      );
+      // Add the new user message to history
+      chatHistory.push({
+        role: 'user',
+        content: content.trim()
+      });
 
-      // Ensure final response is set
-      setMessages(prev => prev.map(msg => 
-        msg.id === aiMessageId 
-          ? { ...msg, content: response }
-          : msg
-      ));
+      // Determine model to use
+      let modelToUse: DeepSeekModel = 'deepseek-chat';
+      if (selectedModel === 'DeepSeek-R1') {
+        modelToUse = 'deepseek-reasoner';
+      }
 
-    } catch (error) {
-      console.error('Error regenerating response:', error);
+      // Send to AI
+      const response = await sendChatMessage(chatHistory, modelToUse);
       
-      // Add error message
+      if (response.success && response.data) {
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'ai',
+          content: response.data.content,
+          timestamp: new Date()
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
+        setMessageCount(prev => prev + 1);
+      } else {
+        // Handle error
+        const errorMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'ai',
+          content: `Sorry, I encountered an error: ${response.error || 'Unknown error'}`,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, errorMessage]);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
       const errorMessage: Message = {
-        id: Date.now().toString(),
+        id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: 'Sorry, I encountered an error while processing your request. Please try again.',
+        content: 'Sorry, I encountered an error while processing your message. Please try again.',
         timestamp: new Date()
       };
-
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsGenerating(false);
     }
   };
 
-  /**
-   * Handle new chat creation
-   */
-  const handleNewChat = () => {
-    sendMessage('Hello! I\'d like to start a new conversation.');
+  // Regenerate last AI response
+  const regenerateResponse = async () => {
+    if (!lastUserMessage || isGenerating || messages.length === 0) return;
+
+    // Remove the last AI message if it exists
+    setMessages(prev => {
+      const newMessages = [...prev];
+      if (newMessages.length > 0 && newMessages[newMessages.length - 1].type === 'ai') {
+        newMessages.pop();
+      }
+      return newMessages;
+    });
+
+    setIsGenerating(true);
+
+    try {
+      // Get chat history without the last AI response
+      const chatHistory: ChatMessage[] = messages
+        .filter((_, index) => index < messages.length - 1 || messages[messages.length - 1].type === 'user')
+        .map(msg => ({
+          role: msg.type === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        }));
+
+      // Determine model to use
+      let modelToUse: DeepSeekModel = 'deepseek-chat';
+      if (selectedModel === 'DeepSeek-R1') {
+        modelToUse = 'deepseek-reasoner';
+      }
+
+      // Send to AI
+      const response = await sendChatMessage(chatHistory, modelToUse);
+      
+      if (response.success && response.data) {
+        const aiMessage: Message = {
+          id: Date.now().toString(),
+          type: 'ai',
+          content: response.data.content,
+          timestamp: new Date()
+        };
+
+        setMessages(prev => [...prev, aiMessage]);
+      } else {
+        // Handle error
+        const errorMessage: Message = {
+          id: Date.now().toString(),
+          type: 'ai',
+          content: `Sorry, I encountered an error: ${response.error || 'Unknown error'}`,
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, errorMessage]);
+      }
+    } catch (error) {
+      console.error('Error regenerating response:', error);
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        type: 'ai',
+        content: 'Sorry, I encountered an error while regenerating the response. Please try again.',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
-  /**
-   * Handle search functionality
-   */
+  // New chat function
+  const handleNewChat = () => {
+    setMessages([]);
+    setMessageCount(0);
+    setLastUserMessage('');
+  };
+
+  // Search function
   const handleSearch = () => {
     if (searchQuery.trim()) {
-      sendMessage(`Search my chat history for: ${searchQuery.trim()}`);
+      // For now, just send the search query as a message
+      sendMessage(`Search: ${searchQuery.trim()}`);
       setSearchQuery('');
       setIsSearchFocused(false);
     }
   };
 
-  /**
-   * Update layout configuration with automatic saving
-   */
+  // Layout update function
   const updateLayout = (newLayout: ExtendedLayoutConfig) => {
-    const updatedLayout = {
-      ...newLayout,
-      designerButton: {
-        ...newLayout.designerButton,
-        zIndex: 999
-      }
-    };
-    setLayout(updatedLayout);
-    layoutManager.saveLayout(updatedLayout);
+    setLayout(newLayout);
+    layoutManager.saveLayout(newLayout);
     
-    // Save to cloud if user is authenticated
+    // Sync to cloud if user is authenticated
     if (authState.user) {
-      authService.updateProfile({
-        api_keys: {
-          ...authState.user.api_keys,
-          layout_config: JSON.stringify(updatedLayout)
+      const syncToCloud = async () => {
+        try {
+          await authService.updateUserProfile({
+            api_keys: {
+              layout_config: JSON.stringify(newLayout)
+            }
+          });
+        } catch (error) {
+          console.error('Failed to sync layout to cloud:', error);
         }
-      }).catch(error => console.error('Failed to save layout to cloud:', error));
+      };
+      syncToCloud();
     }
   };
 
-  /**
-   * Update mobile layout configuration with automatic saving
-   */
+  // Mobile layout update function
   const updateMobileLayout = (newMobileLayout: MobileLayoutConfig) => {
-    console.log('App - Updating mobile layout:', newMobileLayout);
     setMobileLayout(newMobileLayout);
     layoutManager.saveMobileLayout(newMobileLayout);
     
-    // Save to cloud if user is authenticated
+    // Sync to cloud if user is authenticated
     if (authState.user) {
-      authService.updateProfile({
-        api_keys: {
-          ...authState.user.api_keys,
-          mobile_layout_config: JSON.stringify(newMobileLayout)
+      const syncToCloud = async () => {
+        try {
+          await authService.updateUserProfile({
+            api_keys: {
+              mobile_layout_config: JSON.stringify(newMobileLayout)
+            }
+          });
+        } catch (error) {
+          console.error('Failed to sync mobile layout to cloud:', error);
         }
-      }).catch(error => console.error('Failed to save mobile layout to cloud:', error));
+      };
+      syncToCloud();
     }
   };
 
-  /**
-   * Update customization settings
-   */
+  // Customization update function
   const updateCustomization = (newSettings: Partial<CustomizationSettings>) => {
     setCustomization(prev => ({ ...prev, ...newSettings }));
   };
 
-  /**
-   * Navigate back to chat view from game section
-   */
+  // Back to chat function
   const handleBackToChat = () => {
     setCurrentView('chat');
   };
 
-  /**
-   * Navigate to game section
-   */
+  // New game function
   const handleNewGame = () => {
-    setCurrentView('game');
+    // Game logic here
   };
 
-  // Render designer mode if active
-  if (isDesignerMode) {
-    if (isMobile) {
-      return (
-        <MobileDesignerMode
-          isDark={isDark}
-          mobileLayout={mobileLayout}
-          onMobileLayoutChange={updateMobileLayout}
-          onExitDesigner={() => {
-            setIsDesignerMode(false);
-          }}
-          onToggleTheme={toggleTheme}
-          customization={customization}
-          onCustomizationChange={updateCustomization}
-          isAuthenticated={!!authState.user}
-        />
-      );
-    } else {
-      return (
-        <DesignerMode
-          isDark={isDark}
-          layout={layout}
-          onLayoutChange={updateLayout}
-          onExitDesigner={() => {
-            console.log('App - Exiting desktop designer mode, current layout:', layout);
-            setIsDesignerMode(false);
-          }}
-          onToggleTheme={toggleTheme}
-          customization={customization}
-          onCustomizationChange={updateCustomization}
-        />
-      );
-    }
-  }
+  // Get user display name and initial
+  const getUserDisplayName = () => {
+    if (!user) return 'Guest';
+    return user.full_name || user.email.split('@')[0] || 'User';
+  };
 
-  // Render game section if selected
-  if (currentView === 'game') {
-    return (
-      <GameSection
-        isDark={isDark}
-        customization={customization}
-        onBackToChat={handleBackToChat}
-        onToggleTheme={toggleTheme}
-      />
-    );
-  }
+  const getUserInitial = () => {
+    if (!user) return 'G';
+    const name = getUserDisplayName();
+    return name.charAt(0).toUpperCase();
+  };
 
-  /**
-   * Calculate the actual used grid area to eliminate empty space
-   * This optimizes the grid layout by only using necessary columns/rows
-   */
+  // Get used grid area for layout calculations
   const getUsedGridArea = () => {
     const elements = Object.values(layout);
     const maxX = Math.max(...elements.map(el => el.x + el.width));
     const maxY = Math.max(...elements.map(el => el.y + el.height));
-    return { maxX, maxY };
+    return { width: maxX, height: maxY };
   };
 
-  const { maxX, maxY } = getUsedGridArea();
-
-  /**
-   * Get sorted elements by z-index for proper rendering order
-   * Elements with higher z-index should be rendered last (on top)
-   */
+  // Get sorted elements for rendering order
   const getSortedElements = () => {
     return Object.entries(layout).sort(([, a], [, b]) => a.zIndex - b.zIndex);
   };
 
+  // Show loading screen while auth is initializing
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-purple-500 mx-auto mb-4" />
+          <p className="text-gray-400">Loading BelloSai...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div 
-      className={`h-screen overflow-hidden ${isDark ? 'dark bg-gray-900' : 'bg-purple-50'}`}
+      className={`min-h-screen transition-colors duration-300 ${
+        isDark ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'
+      }`}
       style={{ fontFamily: customization.fontFamily }}
     >
-      {/* Mobile Layout - Dynamic Grid Based */}
+      {/* Mobile Layout */}
       {isMobile ? (
-        <div 
-          className="h-full w-full grid relative"
-          style={{
-            gridTemplateColumns: `repeat(20, 1fr)`,
-            gridTemplateRows: `repeat(15, 1fr)`
-          }}
-        >
-          {/* Debug: Grid visualization */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="absolute inset-0 pointer-events-none">
-              {Array.from({ length: 21 }).map((_, i) => (
-                <div
-                  key={`v-${i}`}
-                  className="absolute top-0 bottom-0 border-l border-red-200 opacity-30"
-                  style={{ left: `${(i / 20) * 100}%` }}
-                />
-              ))}
-              {Array.from({ length: 16 }).map((_, i) => (
-                <div
-                  key={`h-${i}`}
-                  className="absolute left-0 right-0 border-t border-red-200 opacity-30"
-                  style={{ top: `${(i / 15) * 100}%` }}
-                />
-              ))}
-            </div>
-          )}
-
+        <div className="h-screen flex flex-col">
           {/* Mobile Header */}
-          {mobileLayout.mobileHeader && (
-            <div 
-              className={`w-full ${isDark ? 'bg-gray-800 text-white' : 'bg-white text-gray-900'} border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
-              style={{
-                gridColumn: `${mobileLayout.mobileHeader.x + 1} / ${mobileLayout.mobileHeader.x + mobileLayout.mobileHeader.width + 1}`,
-                gridRow: `${mobileLayout.mobileHeader.y + 1} / ${mobileLayout.mobileHeader.y + mobileLayout.mobileHeader.height + 1}`,
-                zIndex: mobileLayout.mobileHeader.zIndex,
-                background: customization.gradientEnabled && !isDark 
-                  ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
-                  : undefined
-              }}
-            >
-              {/* Empty header container - other elements will position themselves here */}
-            </div>
-          )}
-
-          {/* Mobile Menu Button - Now separate draggable */}
-          {mobileLayout.mobileMenuButton && (
-            <div 
-              style={{
-                gridColumn: `${mobileLayout.mobileMenuButton.x + 1} / ${mobileLayout.mobileMenuButton.x + mobileLayout.mobileMenuButton.width + 1}`,
-                gridRow: `${mobileLayout.mobileMenuButton.y + 1} / ${mobileLayout.mobileMenuButton.y + mobileLayout.mobileMenuButton.height + 1}`,
-                zIndex: mobileLayout.mobileMenuButton.zIndex
-              }}
-              className="flex items-center justify-center pointer-events-auto"
-            >
+          <div className={`flex items-center justify-between p-4 border-b ${
+            isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+          }`}>
+            <div className="flex items-center gap-3">
               <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className={`p-3 rounded-lg transition-colors pointer-events-auto ${
-                  isDark 
-                    ? 'text-gray-300 hover:text-white hover:bg-gray-700' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                onClick={toggleMobileMenu}
+                className={`p-2 rounded-lg ${
+                  isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
                 }`}
-                onTouchStart={(e) => e.stopPropagation()}
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
+                {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
+              <h1 className="text-lg font-semibold">BelloSai</h1>
             </div>
-          )}
-
-          {/* Mobile App Logo - Now separate draggable */}
-          {mobileLayout.mobileAppLogo && (
-            <div 
-              style={{
-                gridColumn: `${mobileLayout.mobileAppLogo.x + 1} / ${mobileLayout.mobileAppLogo.x + mobileLayout.mobileAppLogo.width + 1}`,
-                gridRow: `${mobileLayout.mobileAppLogo.y + 1} / ${mobileLayout.mobileAppLogo.y + mobileLayout.mobileAppLogo.height + 1}`,
-                zIndex: mobileLayout.mobileAppLogo.zIndex
-              }}
-              className="flex items-center justify-center pointer-events-auto"
-            >
-              <h1 
-                className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}
-                style={{ 
-                  fontFamily: customization.fontFamily,
-                  color: isDark 
-                    ? (customization.primaryColor !== '#7c3aed' ? customization.primaryColor : undefined)
-                    : customization.primaryColor 
-                }}
-              >
-                BelloSai
-              </h1>
-            </div>
-          )}
-
-          {/* Mobile Theme Toggle - Now separate draggable */}
-          {mobileLayout.mobileThemeToggle && (
-            <div 
-              style={{
-                gridColumn: `${mobileLayout.mobileThemeToggle.x + 1} / ${mobileLayout.mobileThemeToggle.x + mobileLayout.mobileThemeToggle.width + 1}`,
-                gridRow: `${mobileLayout.mobileThemeToggle.y + 1} / ${mobileLayout.mobileThemeToggle.y + mobileLayout.mobileThemeToggle.height + 1}`,
-                zIndex: mobileLayout.mobileThemeToggle.zIndex
-              }}
-              className="flex items-center justify-center pointer-events-auto"
-            >
-              <button
-                onClick={() => setIsDark(!isDark)}
-                className={`p-3 rounded-lg transition-colors pointer-events-auto ${
-                  isDark 
-                    ? 'text-yellow-400 hover:text-yellow-300 hover:bg-gray-700' 
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-                onTouchStart={(e) => e.stopPropagation()}
-              >
-                {isDark ? (
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12,9c1.65,0 3,1.35 3,3s-1.35,3 -3,3s-3,-1.35 -3,-3S10.35,9 12,9M12,7c-2.76,0 -5,2.24 -5,5s2.24,5 5,5s5,-2.24 5,-5S14.76,7 12,7L12,7z"/>
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.4 6.35,17.41C9.37,20.43 14,20.54 17.33,17.97Z"/>
-                  </svg>
-                )}
-              </button>
-            </div>
-          )}
-
-          {/* Mobile Auth Button - Now separate draggable */}
-          {mobileLayout.mobileAuthButton && (
-            <div 
-              style={{
-                gridColumn: `${mobileLayout.mobileAuthButton.x + 1} / ${mobileLayout.mobileAuthButton.x + mobileLayout.mobileAuthButton.width + 1}`,
-                gridRow: `${mobileLayout.mobileAuthButton.y + 1} / ${mobileLayout.mobileAuthButton.y + mobileLayout.mobileAuthButton.height + 1}`,
-                zIndex: mobileLayout.mobileAuthButton.zIndex
-              }}
-              className="flex items-center justify-center pointer-events-auto"
-            >
-              <button
-                onClick={() => user ? setIsAccountMenuOpen(true) : setShowLoginModal(true)}
-                className={`px-4 py-2 rounded-lg transition-colors text-white pointer-events-auto ${
-                  user ? 'hover:opacity-80' : 'hover:opacity-90'
-                }`}
-                style={{ 
-                  background: customization.gradientEnabled 
-                    ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                    : customization.primaryColor,
-                  fontFamily: customization.fontFamily
-                }}
-                onTouchStart={(e) => e.stopPropagation()}
-              >
-                {user ? 'Account' : 'Login'}
-              </button>
-            </div>
-          )}
-
-          {/* Mobile Menu Overlay */}
-          {isMobileMenuOpen && (
-            <div 
-              className="absolute inset-0 bg-black/50 z-40"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <div 
-                className={`w-80 max-w-[85vw] h-full ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-xl`}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="p-6 space-y-4">
-                  {/* Menu Header */}
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                      Menu
-                    </h3>
-                    <button
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className={`p-2 rounded-lg ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
+            
+            <div className="flex items-center gap-2">
+              <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
+              {user ? (
+                <button
+                  onClick={toggleAccountMenu}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                    isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                       style={{ 
+                         background: customization.gradientEnabled 
+                           ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                           : customization.primaryColor
+                       }}>
+                    {getUserInitial()}
                   </div>
-
-                  {/* Menu Items */}
+                  <span className="text-sm font-medium">{getUserDisplayName()}</span>
+                </button>
+              ) : (
+                <div className="flex gap-2">
                   <button
-                    onClick={() => {
-                      handleNewChat();
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`w-full p-4 rounded-lg text-left transition-colors ${
-                      isDark ? 'hover:bg-gray-700 text-white' : 'hover:bg-gray-100 text-gray-900'
+                    onClick={() => setShowLoginModal(true)}
+                    className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                      isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                      </svg>
-                      <span className="font-medium">New Chat</span>
-                    </div>
+                    <LogIn className="w-4 h-4" />
                   </button>
-
                   <button
-                    onClick={() => {
-                      handleNewGame();
-                      setIsMobileMenuOpen(false);
+                    onClick={() => setShowSignupModal(true)}
+                    className="px-3 py-2 text-sm rounded-lg text-white transition-colors"
+                    style={{ 
+                      background: customization.gradientEnabled 
+                        ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                        : customization.primaryColor
                     }}
-                    className={`w-full p-4 rounded-lg text-left transition-colors ${
-                      isDark ? 'hover:bg-gray-700 text-white' : 'hover:bg-gray-100 text-gray-900'
-                    }`}
                   >
-                    <div className="flex items-center gap-3">
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M7.5,4A5.5,5.5 0 0,0 2,9.5C2,10.82 2.5,12 3.3,12.9L12,21.5L20.7,12.9C21.5,12 22,10.82 22,9.5A5.5,5.5 0 0,0 16.5,4C14.64,4 13,4.93 12,6.34C11,4.93 9.36,4 7.5,4V4Z"/>
-                      </svg>
-                      <span className="font-medium">New Game</span>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setIsSearchFocused(true);
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`w-full p-4 rounded-lg text-left transition-colors ${
-                      isDark ? 'hover:bg-gray-700 text-white' : 'hover:bg-gray-100 text-gray-900'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/>
-                      </svg>
-                      <span className="font-medium">Search Chats</span>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setIsDesignerMode(true);
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className={`w-full p-4 rounded-lg text-left transition-colors ${
-                      isDark ? 'hover:bg-gray-700 text-white' : 'hover:bg-gray-100 text-gray-900'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-                      </svg>
-                      <span className="font-medium">Designer Mode</span>
-                    </div>
+                    <UserPlus className="w-4 h-4" />
                   </button>
                 </div>
-              </div>
+              )}
             </div>
-          )}
+          </div>
 
-          {/* Mobile Main Content - Now positioned using grid */}
-          <div 
-            className="overflow-hidden pointer-events-auto"
-            style={{
-              gridColumn: `${mobileLayout.mobileMainContent.x + 1} / ${mobileLayout.mobileMainContent.x + mobileLayout.mobileMainContent.width + 1}`,
-              gridRow: `${mobileLayout.mobileMainContent.y + 1} / ${mobileLayout.mobileMainContent.y + mobileLayout.mobileMainContent.height + 1}`,
-              zIndex: mobileLayout.mobileMainContent.zIndex
-            }}
-          >
-            {messages.length === 0 ? (
-              <MainContent 
-                isDark={isDark} 
-                onSendMessage={sendMessage}
-                selectedModel={selectedModel}
-                onModelChange={setSelectedModel}
-                availableModels={availableModels}
+          {/* Mobile Content */}
+          <div className="flex-1 overflow-hidden">
+            {isDesignerMode ? (
+              <MobileDesignerMode
+                layout={mobileLayout}
+                onLayoutChange={updateMobileLayout}
+                isDark={isDark}
                 customization={customization}
               />
+            ) : currentView === 'chat' ? (
+              messages.length > 0 ? (
+                <ChatView
+                  messages={messages}
+                  onSendMessage={sendMessage}
+                  onRegenerateResponse={regenerateResponse}
+                  selectedModel={selectedModel}
+                  onModelChange={setSelectedModel}
+                  availableModels={availableModels}
+                  isDark={isDark}
+                  isGenerating={isGenerating}
+                  customization={customization}
+                />
+              ) : (
+                <MainContent
+                  isDark={isDark}
+                  onSendMessage={sendMessage}
+                  selectedModel={selectedModel}
+                  onModelChange={setSelectedModel}
+                  availableModels={availableModels}
+                  customization={customization}
+                />
+              )
             ) : (
-              <ChatView 
-                isDark={isDark} 
-                messages={messages}
-                onSendMessage={sendMessage}
-                selectedModel={selectedModel}
-                onModelChange={setSelectedModel}
-                availableModels={availableModels}
+              <GameSection
+                isDark={isDark}
+                onBackToChat={handleBackToChat}
+                onNewGame={handleNewGame}
                 customization={customization}
-                onRegenerateResponse={regenerateResponse}
-                isGenerating={isGenerating}
               />
             )}
           </div>
-
-          {/* Mobile Chat Area - Separate draggable element */}
-          {mobileLayout.mobileChatArea && (
-            <div 
-              className="overflow-hidden pointer-events-auto"
-              style={{
-                gridColumn: `${mobileLayout.mobileChatArea.x + 1} / ${mobileLayout.mobileChatArea.x + mobileLayout.mobileChatArea.width + 1}`,
-                gridRow: `${mobileLayout.mobileChatArea.y + 1} / ${mobileLayout.mobileChatArea.y + mobileLayout.mobileChatArea.height + 1}`,
-                zIndex: mobileLayout.mobileChatArea.zIndex
-              }}
-            >
-              {messages.length > 0 ? (
-                <ChatView
-                  isDark={isDark}
-                  messages={messages}
-                  onSendMessage={sendMessage}
-                  selectedModel={selectedModel}
-                  onModelChange={setSelectedModel}
-                  availableModels={availableModels}
-                  hideInput={true}
-                  customization={customization}
-                  onRegenerateResponse={regenerateResponse}
-                  isGenerating={isGenerating}
-                />
-              ) : (
-                <MainContent 
-                  isDark={isDark} 
-                  onSendMessage={sendMessage}
-                  selectedModel={selectedModel}
-                  onModelChange={setSelectedModel}
-                  availableModels={availableModels}
-                  inputOnly={false}
-                  customization={customization}
-                />
-              )}
-            </div>
-          )}
-
-          {/* Mobile Input Box - Separate draggable element */}
-          {mobileLayout.mobileInputBox && (
-            <div 
-              className="pointer-events-auto"
-              style={{
-                gridColumn: `${mobileLayout.mobileInputBox.x + 1} / ${mobileLayout.mobileInputBox.x + mobileLayout.mobileInputBox.width + 1}`,
-                gridRow: `${mobileLayout.mobileInputBox.y + 1} / ${mobileLayout.mobileInputBox.y + mobileLayout.mobileInputBox.height + 1}`,
-                zIndex: mobileLayout.mobileInputBox.zIndex
-              }}
-            >
-              <div className="h-full flex items-end p-4">
-                <div className="w-full">
-                  <form onSubmit={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    const input = e.currentTarget.querySelector('textarea') as HTMLTextAreaElement;
-                    if (input?.value.trim()) {
-                      sendMessage(input.value);
-                      input.value = '';
-                    }
-                  }}>
-                    {/* Message Input Container - Exact PC styling */}
-                    <div className={`relative rounded-2xl border ${
-                      isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-purple-200'
-                    } shadow-sm pointer-events-auto`}>
-                      <textarea
-                        placeholder="Type your message here..."
-                        className={`w-full px-6 py-4 pr-32 rounded-2xl resize-none focus:outline-none min-h-[60px] max-h-32 pointer-events-auto ${
-                          isDark 
-                            ? 'bg-gray-700 text-white placeholder-gray-400' 
-                            : 'bg-white text-gray-900 placeholder-gray-500'
-                        }`}
-                        style={{ 
-                          fontFamily: customization.fontFamily,
-                          touchAction: 'manipulation' // Ensures touch events work properly
-                        }}
-                        rows={1}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.shiftKey && e.currentTarget.value.trim()) {
-                            e.preventDefault();
-                            sendMessage(e.currentTarget.value);
-                            e.currentTarget.value = '';
-                          }
-                        }}
-                        onTouchStart={(e) => {
-                          // Ensure textarea can be focused on touch
-                          e.stopPropagation();
-                        }}
-                        onFocus={(e) => {
-                          // Make sure the input is scrolled into view on focus
-                          e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }}
-                      />
-                      
-                      {/* Bottom Controls - Exact PC styling */}
-                      <div className="flex items-center justify-between px-6 pb-4">
-                        <div className="flex items-center gap-4">
-                          {/* Model Selector */}
-                          <select
-                            value={selectedModel}
-                            onChange={(e) => setSelectedModel(e.target.value)}
-                            className={`text-xs px-2 py-1 rounded-md border pointer-events-auto ${
-                              isDark 
-                                ? 'bg-gray-600 border-gray-500 text-gray-300' 
-                                : 'bg-white border-gray-300 text-gray-700'
-                            }`}
-                            style={{ fontFamily: customization.fontFamily }}
-                            onTouchStart={(e) => e.stopPropagation()}
-                          >
-                            {availableModels.map(model => (
-                              <option key={model} value={model}>{model}</option>
-                            ))}
-                          </select>
-                          {/* Search Button */}
-                          <button 
-                            type="button"
-                            className={`p-1 pointer-events-auto ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
-                            style={{ color: isDark ? undefined : customization.primaryColor }}
-                            onTouchStart={(e) => e.stopPropagation()}
-                          >
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/>
-                            </svg>
-                          </button>
-                          {/* Attachment Button */}
-                          <button 
-                            type="button"
-                            className={`p-1 pointer-events-auto ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
-                            style={{ color: isDark ? undefined : customization.primaryColor }}
-                            onTouchStart={(e) => e.stopPropagation()}
-                          >
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M16.5,6V17.5A4,4 0 0,1 12.5,21.5A4,4 0 0,1 8.5,17.5V5A2.5,2.5 0 0,1 11,2.5A2.5,2.5 0 0,1 13.5,5V15.5A1,1 0 0,1 12.5,16.5A1,1 0 0,1 11.5,15.5V6H10V15.5A2.5,2.5 0 0,0 12.5,18A2.5,2.5 0 0,0 15,15.5V5A4,4 0 0,0 11,1A4,4 0 0,0 7,5V17.5A5.5,5.5 0 0,0 12.5,23A5.5,5.5 0 0,0 18,17.5V6H16.5Z"/>
-                            </svg>
-                          </button>
-                        </div>
-                        
-                        {/* Send Button - Exact PC styling */}
-                        <button 
-                          type="submit"
-                          className="text-white p-2.5 rounded-xl transition-colors hover:opacity-90 pointer-events-auto"
-                          style={{ 
-                            background: customization.gradientEnabled 
-                              ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                              : customization.primaryColor 
-                          }}
-                          onTouchStart={(e) => e.stopPropagation()}
-                        >
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M4,12l1.41,1.41L11,7.83V20h2V7.83l5.58,5.59L20,12l-8-8L4,12z"/>
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       ) : (
-        /* Desktop Layout - Dynamic Grid Container */
-      <div 
-        className="h-full w-full grid relative"
-        style={{
-          gridTemplateColumns: `repeat(${maxX}, 1fr)`,
-          gridTemplateRows: `repeat(${maxY}, 1fr)`
-        }}
-      >
-        {/* Render elements in z-index order (lowest to highest) */}
-        {getSortedElements().map(([key, config]) => {
-          const elementKey = key as keyof ExtendedLayoutConfig;
-          
-          return (
-            <div
-              key={elementKey}
-              className="relative"
-              style={{
-                gridColumn: `${config.x + 1} / ${Math.min(config.x + config.width + 1, maxX + 1)}`,
-                gridRow: `${config.y + 1} / ${Math.min(config.y + config.height + 1, maxY + 1)}`,
-                zIndex: config.zIndex
-              }}
-            >
-              {/* Top Header Bar */}
-              {elementKey === 'topBar' && (
-                <div 
-                  className="h-full w-full text-white"
-                  style={{
-                    background: customization.gradientEnabled 
-                      ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                      : customization.primaryColor
-                  }}
-                />
-              )}
+        /* Desktop Layout */
+        <div className="h-screen flex">
+          {/* Sidebar */}
+          <div className={`${isSidebarCollapsed ? 'w-16' : 'w-64'} transition-all duration-300`}>
+            <Sidebar
+              isDark={isDark}
+              onAccountClick={toggleAccountMenu}
+              customization={customization}
+              isCollapsed={isSidebarCollapsed}
+              onToggleCollapse={toggleSidebar}
+              onSendMessage={sendMessage}
+              onNewGame={handleNewGame}
+            />
+          </div>
+
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col">
+            {/* Top Bar */}
+            <div className={`flex items-center justify-between p-4 border-b ${
+              isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+            }`}>
+              <div className="flex items-center gap-4">
+                <h1 className="text-xl font-semibold">BelloSai</h1>
+                <button
+                  onClick={handleNewChat}
+                  className={`px-4 py-2 text-sm rounded-lg transition-colors ${
+                    isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                  }`}
+                >
+                  New Chat
+                </button>
+              </div>
               
-              {/* Sidebar Component - Now reduced and without detached components */}
-              {elementKey === 'sidebar' && (
-                <Sidebar 
-                  isDark={isDark} 
-                  onAccountClick={toggleAccountMenu}
-                  customization={customization}
-                  isCollapsed={isSidebarCollapsed}
-                  onToggleCollapse={toggleSidebar}
-                  onSendMessage={sendMessage}
-                  onNewGame={handleNewGame}
-                  detachedMode={true} // New prop to indicate detached components
-                />
-              )}
-
-              {/* App Logo - Detached from sidebar */}
-              {elementKey === 'appLogo' && (
-                <div 
-                  className={`h-full w-full ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-purple-50 border-purple-100'} border-r flex items-center justify-center`}
-                  style={{
-                    background: customization.gradientEnabled && !isDark 
-                      ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
-                      : undefined
-                  }}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={toggleDesignerMode}
+                  className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                    isDesignerMode 
+                      ? 'bg-purple-600 text-white' 
+                      : isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                  }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className={`p-1 rounded ${isDark ? 'bg-gray-700' : 'bg-purple-200'}`}>
-                      <svg className={`w-4 h-4 ${isDark ? 'text-white' : 'text-purple-700'}`} fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/>
-                      </svg>
-                    </div>
-                    <span 
-                      className={`font-semibold text-lg ${isDark ? 'text-white' : 'text-purple-700'}`}
-                      style={{ 
-                        fontFamily: customization.fontFamily,
-                        color: isDark ? undefined : customization.primaryColor
-                      }}
-                    >
-                      BelloSai
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* New Game Button - Detached with proper styling */}
-              {elementKey === 'newGameButton' && (
-                <div 
-                  className={`h-full w-full ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-purple-50 border-purple-100'} border-r flex items-center justify-center p-2`}
-                  style={{
-                    background: customization.gradientEnabled && !isDark 
-                      ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
-                      : undefined
-                  }}
-                >
-                  <button 
-                    onClick={handleNewGame}
-                    className="w-full py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors text-white hover:opacity-90"
-                    style={{ 
-                      background: customization.gradientEnabled 
-                        ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                        : customization.primaryColor,
-                      fontFamily: customization.fontFamily
-                    }}
-                    title="New Game"
-                  >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M7.5,4A5.5,5.5 0 0,0 2,9.5C2,10.82 2.5,12 3.3,12.9L12,21.5L20.7,12.9C21.5,12 22,10.82 22,9.5A5.5,5.5 0 0,0 16.5,4C14.64,4 13,4.93 12,6.34C11,4.93 9.36,4 7.5,4V4Z"/>
-                    </svg>
-                    New Game
-                  </button>
-                </div>
-              )}
-
-              {/* New Chat Button - Detached with proper styling */}
-              {elementKey === 'newChatButton' && (
-                <div 
-                  className={`h-full w-full ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-purple-50 border-purple-100'} border-r flex items-center justify-center p-2`}
-                  style={{
-                    background: customization.gradientEnabled && !isDark 
-                      ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
-                      : undefined
-                  }}
-                >
-                  <button 
-                    onClick={handleNewChat}
-                    className="w-full py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors text-white hover:opacity-90"
-                    style={{ 
-                      background: customization.gradientEnabled 
-                        ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                        : customization.primaryColor,
-                      fontFamily: customization.fontFamily
-                    }}
-                    title="New Chat"
-                  >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                    </svg>
-                    New Chat
-                  </button>
-                </div>
-              )}
-
-              {/* Search Button - Detached and moved above sidebar */}
-              {elementKey === 'searchButton' && (
-                <div 
-                  className={`h-full w-full ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-purple-50 border-purple-100'} border-r flex items-center justify-center px-2`}
-                  style={{
-                    background: customization.gradientEnabled && !isDark 
-                      ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
-                      : undefined
-                  }}
-                >
+                  Designer Mode
+                </button>
+                <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
+                {user ? (
                   <button
-                    onClick={() => setIsSearchFocused(true)}
-                    className={`w-full h-full flex items-center justify-center gap-2 rounded-lg transition-colors ${
-                      isDark 
-                        ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700' 
-                        : 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50'
-                    } border`}
-                    style={{ fontFamily: customization.fontFamily }}
-                    title="Search Chats"
-                  >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/>
-                    </svg>
-                    <span className="text-xs">Search</span>
-                  </button>
-                </div>
-              )}
-
-              {/* Account Panel - Detached */}
-              {elementKey === 'accountPanel' && (
-                <div 
-                  className={`h-full w-full ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-purple-50 border-purple-100'} border-r flex items-center justify-center`}
-                  style={{
-                    background: customization.gradientEnabled && !isDark 
-                      ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
-                      : undefined
-                  }}
-                >
-                  <button 
                     onClick={toggleAccountMenu}
-                    className={`w-full h-full flex items-center justify-center gap-2 transition-colors ${
-                      isDark ? 'text-gray-300 hover:bg-gray-700 hover:text-white' : 'text-purple-600 hover:bg-purple-100 hover:text-purple-700'
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                      isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
                     }`}
-                    style={{ fontFamily: customization.fontFamily }}
-                    title="Account Settings"
                   >
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white font-semibold text-xs`}
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
                          style={{ 
                            background: customization.gradientEnabled 
                              ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                             : customization.primaryColor 
+                             : customization.primaryColor
                          }}>
-                      D
+                      {getUserInitial()}
                     </div>
-                    <div className="text-xs">Dmitry</div>
+                    <span className="text-sm font-medium">{getUserDisplayName()}</span>
                   </button>
-                </div>
-              )}
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowLoginModal(true)}
+                      className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                        isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                      }`}
+                    >
+                      <LogIn className="w-4 h-4" />
+                      Sign In
+                    </button>
+                    <button
+                      onClick={() => setShowSignupModal(true)}
+                      className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg text-white transition-colors"
+                      style={{ 
+                        background: customization.gradientEnabled 
+                          ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                          : customization.primaryColor
+                      }}
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      Sign Up
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
 
-              {/* Main Content Area */}
-              {elementKey === 'mainContent' && (
-                <div className={`h-full w-full ${isDark ? 'bg-gray-900' : 'bg-purple-50'}`}>
-                  {messages.length === 0 ? (
-                    <MainContent 
-                      isDark={isDark} 
-                      onSendMessage={sendMessage}
-                      selectedModel={selectedModel}
-                      onModelChange={setSelectedModel}
-                      availableModels={availableModels}
-                      hideInput={true}
-                      customization={customization}
-                    />
-                  ) : (
-                    <ChatView 
-                      isDark={isDark} 
-                      messages={messages}
-                      onSendMessage={sendMessage}
-                      selectedModel={selectedModel}
-                      onModelChange={setSelectedModel}
-                      availableModels={availableModels}
-                      hideInput={true}
-                      customization={customization}
-                      onRegenerateResponse={regenerateResponse}
-                      isGenerating={isGenerating}
-                    />
-                  )}
-                </div>
-              )}
-
-              {/* Input Box */}
-              {elementKey === 'inputBox' && (
-                <div className={`h-full w-full ${isDark ? 'bg-gray-900' : 'bg-purple-50'} p-4`}>
-                  {messages.length === 0 ? (
-                    <MainContent 
-                      isDark={isDark} 
-                      onSendMessage={sendMessage}
-                      selectedModel={selectedModel}
-                      onModelChange={setSelectedModel}
-                      availableModels={availableModels}
-                      inputOnly={true}
-                      customization={customization}
-                    />
-                  ) : (
-                    <ChatView 
-                      isDark={isDark} 
-                      messages={messages}
-                      onSendMessage={sendMessage}
-                      selectedModel={selectedModel}
-                      onModelChange={setSelectedModel}
-                      availableModels={availableModels}
-                      inputOnly={true}
-                      customization={customization}
-                      onRegenerateResponse={regenerateResponse}
-                      isGenerating={isGenerating}
-                    />
-                  )}
-                </div>
-              )}
-
-              {/* Theme Toggle Button - Clean without background */}
-              {elementKey === 'themeToggle' && (
-                <div className="h-full w-full flex items-center justify-center">
-                  <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
-                </div>
-              )}
-
-              {/* Settings Button - Clean without background */}
-              {elementKey === 'settingsButton' && (
-                <div className="h-full w-full flex items-center justify-center">
-                  <button
-                    onClick={toggleAccountMenu}
-                    className={`p-2.5 rounded-lg transition-colors ${
-                      isDark 
-                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-                        : 'bg-white text-gray-800 hover:bg-gray-50 border border-gray-200'
-                    }`}
-                    title="Settings"
-                  >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97 0-.33-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.31-.61-.22l-2.49 1c-.52-.39-1.06-.73-1.69-.98l-.37-2.65A.506.506 0 0 0 14 2h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.63.25-1.17.59-1.69.98l-2.49-1c-.22-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1 0 .33.03.65.07.97l-2.11 1.66c-.19.15-.25.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1.01c.52.4 1.06.74 1.69.99l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.63-.26 1.17-.59 1.69-.99l2.49 1.01c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.66Z"/>
-                    </svg>
-                  </button>
-                </div>
-              )}
-
-              {/* Designer Mode Toggle - Clean without background */}
-              {elementKey === 'designerButton' && (
-                <div className="h-full w-full flex items-center justify-center">
-                  <button
-                    onClick={toggleDesignerMode}
-                    className={`p-2.5 rounded-lg transition-colors ${
-                      isDark 
-                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-                        : 'bg-white text-gray-800 hover:bg-gray-50 border border-gray-200'
-                    }`}
-                    title="Designer Mode"
-                  >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-                    </svg>
-                  </button>
-                </div>
-              )}
-
-              {/* Login Button - Shows when not authenticated */}
-              {elementKey === 'loginButton' && !authState.user && (
-                <div 
-                  className="h-full w-full flex items-center justify-center"
-                  style={{
-                    background: isDesignerMode 
-                      ? (isDark ? '#1f2937' : '#f3f4f6') 
-                      : (customization.gradientEnabled && !isDark 
-                          ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
-                          : undefined)
-                  }}
-                >
-                  <button
-                    onClick={() => setShowLoginModal(true)}
-                    className={`p-2.5 rounded-lg transition-colors ${
-                      isDark 
-                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-                        : 'bg-white text-gray-800 hover:bg-gray-50 border border-gray-200'
-                    }`}
-                    style={{
-                      background: isDesignerMode 
-                        ? '#3b82f6' 
-                        : undefined
-                    }}
-                    title="Login"
-                  >
-                    {authModalLoading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <LogIn className="w-5 h-5" />
-                    )}
-                  </button>
-                </div>
-              )}
-
-              {/* Signup Button - Shows when not authenticated */}
-              {elementKey === 'signupButton' && !authState.user && (
-                <div 
-                  className="h-full w-full flex items-center justify-center"
-                  style={{
-                    background: isDesignerMode 
-                      ? (isDark ? '#1f2937' : '#f3f4f6') 
-                      : (customization.gradientEnabled && !isDark 
-                          ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
-                          : undefined)
-                  }}
-                >
-                  <button
-                    onClick={() => setShowSignupModal(true)}
-                    className={`p-2.5 rounded-lg transition-colors ${
-                      isDark 
-                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-                        : 'bg-white text-gray-800 hover:bg-gray-50 border border-gray-200'
-                    }`}
-                    style={{
-                      background: isDesignerMode 
-                        ? '#10b981' 
-                        : undefined
-                    }}
-                    title="Sign Up"
-                  >
-                    {authModalLoading ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <UserPlus className="w-5 h-5" />
-                    )}
-                  </button>
-                </div>
-              )}
-
-              {/* Account Button - Shows when authenticated */}
-              {elementKey === 'accountButton' && authState.user && (
-                <div 
-                  className="h-full w-full flex items-center justify-center"
-                  style={{
-                    background: isDesignerMode 
-                      ? (isDark ? '#1f2937' : '#f3f4f6') 
-                      : (customization.gradientEnabled && !isDark 
-                          ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
-                          : undefined)
-                  }}
-                >
-                  <button
-                    onClick={toggleAccountMenu}
-                    className={`p-2.5 rounded-lg transition-colors ${
-                      isDark 
-                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-                        : 'bg-white text-gray-800 hover:bg-gray-50 border border-gray-200'
-                    }`}
-                    style={{
-                      background: isDesignerMode 
-                        ? '#f59e0b' 
-                        : undefined
-                    }}
-                    title={`Account: ${authState.user.email}`}
-                  >
-                    <User className="w-5 h-5" />
-                  </button>
-                </div>
+            {/* Content */}
+            <div className="flex-1 overflow-hidden">
+              {isDesignerMode ? (
+                <DesignerMode
+                  layout={layout}
+                  onLayoutChange={updateLayout}
+                  isDark={isDark}
+                  customization={customization}
+                />
+              ) : currentView === 'chat' ? (
+                messages.length > 0 ? (
+                  <ChatView
+                    messages={messages}
+                    onSendMessage={sendMessage}
+                    onRegenerateResponse={regenerateResponse}
+                    selectedModel={selectedModel}
+                    onModelChange={setSelectedModel}
+                    availableModels={availableModels}
+                    isDark={isDark}
+                    isGenerating={isGenerating}
+                    customization={customization}
+                  />
+                ) : (
+                  <MainContent
+                    isDark={isDark}
+                    onSendMessage={sendMessage}
+                    selectedModel={selectedModel}
+                    onModelChange={setSelectedModel}
+                    availableModels={availableModels}
+                    customization={customization}
+                  />
+                )
+              ) : (
+                <GameSection
+                  isDark={isDark}
+                  onBackToChat={handleBackToChat}
+                  onNewGame={handleNewGame}
+                  customization={customization}
+                />
               )}
             </div>
-          );
-        })}
-      </div>
-      )}
-
-      {/* Search Modal - Fixed positioning with high z-index */}
-      {isSearchFocused && (
-        <div 
-          className="fixed inset-0 bg-black/50 flex items-center justify-center"
-          style={{ zIndex: 9999 }}
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setIsSearchFocused(false);
-            }
-          }}
-        >
-          <div 
-            className={`w-96 max-w-[90vw] p-6 rounded-lg shadow-xl ${isDark ? 'bg-gray-800' : 'bg-white'}`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Search Chat History
-            </h3>
-            <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }}>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search your conversations..."
-                className={`w-full p-3 rounded-lg border ${
-                  isDark 
-                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                } focus:outline-none focus:ring-2 focus:border-transparent`}
-                style={{ 
-                  '--tw-ring-color': customization.primaryColor 
-                } as React.CSSProperties}
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') {
-                    setIsSearchFocused(false);
-                  }
-                }}
-              />
-              <div className="flex gap-3 mt-4">
-                <button
-                  type="submit"
-                  className="flex-1 py-2 px-4 rounded-lg text-white transition-colors hover:opacity-90"
-                  style={{ 
-                    background: customization.gradientEnabled 
-                      ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                      : customization.primaryColor
-                  }}
-                >
-                  Search
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setIsSearchFocused(false)}
-                  className={`px-4 py-2 rounded-lg transition-colors ${
-                    isDark 
-                      ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}
@@ -1555,7 +817,7 @@ function App() {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className={`text-xl font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Sign In to BelloSai
+              Welcome back
             </h3>
             {authError && (
               <div className="mb-4 p-3 rounded-lg bg-red-100 border border-red-300 text-red-700 text-sm">
@@ -1607,10 +869,10 @@ function App() {
                   {authModalLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Signing In...
+                      Signing in...
                     </>
                   ) : (
-                    'Sign In'
+                    'Sign in'
                   )}
                 </button>
                 <button
@@ -1802,7 +1064,7 @@ function App() {
               onClose={() => setIsAccountMenuOpen(false)}
               customization={customization}
               onCustomizationChange={updateCustomization}
-              user={authState.user}
+              user={user}
               onLogout={handleLogout}
             />
           </div>

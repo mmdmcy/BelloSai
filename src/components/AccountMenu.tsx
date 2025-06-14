@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { X, ChevronLeft, Palette, Type, Eye, EyeOff, Sparkles, Save, Check, RotateCcw, LogOut } from 'lucide-react';
 import { CustomizationSettings } from '../App';
 import type { AuthUser } from '../lib/auth';
+import { useSubscription } from '../hooks/useSubscription';
+import { SUBSCRIPTION_PLANS } from '../lib/stripeService';
 
 interface AccountMenuProps {
   isDark: boolean;
@@ -17,6 +19,14 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
   const [tempCustomization, setTempCustomization] = useState<CustomizationSettings>(customization);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  
+  // Use subscription hook
+  const { 
+    subscription, 
+    hasActiveSubscription, 
+    loading: subscriptionLoading, 
+    createCheckoutSession 
+  } = useSubscription();
 
   const tabs = ['Account', 'Customization', 'History & Sync', 'Models', 'API Keys', 'Attachments', 'Contact Us'];
 
@@ -76,6 +86,37 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
     setSaveStatus('idle');
   };
 
+  // Get user display name and initial
+  const getUserDisplayName = () => {
+    if (!user) return 'Guest';
+    return user.full_name || user.email.split('@')[0] || 'User';
+  };
+
+  const getUserInitial = () => {
+    if (!user) return 'G';
+    const name = getUserDisplayName();
+    return name.charAt(0).toUpperCase();
+  };
+
+  const getPlanStatus = () => {
+    if (subscriptionLoading) return 'Loading...';
+    if (hasActiveSubscription) return 'Pro Plan';
+    return 'Free Plan';
+  };
+
+  const getPlanColor = () => {
+    if (hasActiveSubscription) return 'bg-green-600 text-white';
+    return 'bg-gray-700 text-white';
+  };
+
+  const handleUpgradeClick = async () => {
+    try {
+      await createCheckoutSession(SUBSCRIPTION_PLANS.MONTHLY.priceId);
+    } catch (error) {
+      console.error('Failed to create checkout session:', error);
+    }
+  };
+
   const renderAccountTab = () => (
     <div className="space-y-6" style={{ fontFamily: customization.fontFamily }}>
       {/* Profile Section */}
@@ -86,17 +127,17 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
                  ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
                  : customization.primaryColor
              }}>
-          {user ? user.full_name?.charAt(0).toUpperCase() || user.email.charAt(0).toUpperCase() : 'U'}
+          {getUserInitial()}
         </div>
         <div className="flex-1">
           <h2 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            {user?.full_name || 'User'}
+            {getUserDisplayName()}
           </h2>
           <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
             {user?.email || 'Not logged in'}
           </p>
-          <span className="inline-block px-3 py-1 bg-gray-700 text-white text-sm rounded-full mt-2">
-            Free Plan
+          <span className={`inline-block px-3 py-1 text-sm rounded-full mt-2 ${getPlanColor()}`}>
+            {getPlanStatus()}
           </span>
         </div>
         {user && onLogout && (
@@ -114,70 +155,108 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
         )}
       </div>
 
-      {/* Upgrade Section */}
-      <div className={`p-6 rounded-lg border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-        <div className="flex justify-between items-start mb-4">
-          <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            Upgrade to Pro
-          </h3>
-          <span className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            $8<span className="text-sm font-normal">/month</span>
-          </span>
-        </div>
+      {/* Upgrade Section - Only show if not already subscribed */}
+      {!hasActiveSubscription && (
+        <div className={`p-6 rounded-lg border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <div className="flex justify-between items-start mb-4">
+            <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Upgrade to Pro
+            </h3>
+            <span className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              €6.99<span className="text-sm font-normal">/month</span>
+            </span>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="flex items-start gap-3">
-            <Sparkles className="w-5 h-5 text-pink-500 mt-0.5" />
-            <div>
-              <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                Access to All Models
-              </h4>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Get access to our full suite of models including Claude, o3-mini-high, and more!
-              </p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="flex items-start gap-3">
+              <Sparkles className="w-5 h-5 text-pink-500 mt-0.5" />
+              <div>
+                <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Access to All Models
+                </h4>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Get access to our full suite of models including Claude, o3-mini-high, and more!
+                </p>
+              </div>
             </div>
+            
+            <div className="flex items-start gap-3">
+              <Sparkles className="w-5 h-5 text-pink-500 mt-0.5" />
+              <div>
+                <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Generous Limits
+                </h4>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Receive <strong>1500 standard credits</strong> per month, plus <strong>100 premium credits*</strong> per month.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-start gap-3">
+              <Sparkles className="w-5 h-5 text-pink-500 mt-0.5" />
+              <div>
+                <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Priority Support
+                </h4>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Get faster responses and dedicated assistance from the BelloSai team whenever you need help!
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <button 
+            onClick={handleUpgradeClick}
+            disabled={subscriptionLoading}
+            className="w-full py-3 rounded-lg font-medium transition-colors text-white hover:opacity-90 disabled:opacity-50"
+            style={{ 
+              background: customization.gradientEnabled 
+                ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                : customization.primaryColor
+            }}
+          >
+            {subscriptionLoading ? 'Loading...' : 'Upgrade Now'}
+          </button>
+
+          <p className={`text-xs mt-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+            * Premium credits are used for GPT Image Gen, Claude Sonnet, and Grok 3. Additional Premium credits can be purchased separately.
+          </p>
+        </div>
+      )}
+
+      {/* Current Subscription Info - Show if subscribed */}
+      {hasActiveSubscription && subscription && (
+        <div className={`p-6 rounded-lg border ${isDark ? 'bg-green-900/20 border-green-700' : 'bg-green-50 border-green-200'}`}>
+          <div className="flex justify-between items-start mb-4">
+            <h3 className={`text-lg font-semibold ${isDark ? 'text-green-300' : 'text-green-800'}`}>
+              Pro Subscription Active
+            </h3>
+            <span className={`text-sm px-3 py-1 rounded-full ${isDark ? 'bg-green-800 text-green-200' : 'bg-green-200 text-green-800'}`}>
+              {subscription.subscription_status}
+            </span>
           </div>
           
-          <div className="flex items-start gap-3">
-            <Sparkles className="w-5 h-5 text-pink-500 mt-0.5" />
-            <div>
-              <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                Generous Limits
-              </h4>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Receive <strong>1500 standard credits</strong> per month, plus <strong>100 premium credits*</strong> per month.
-              </p>
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>Plan:</span>
+              <span className={isDark ? 'text-white' : 'text-gray-900'}>Pro Monthly</span>
             </div>
-          </div>
-          
-          <div className="flex items-start gap-3">
-            <Sparkles className="w-5 h-5 text-pink-500 mt-0.5" />
-            <div>
-              <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                Priority Support
-              </h4>
-              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Get faster responses and dedicated assistance from the BelloSai team whenever you need help!
-              </p>
-            </div>
+            {subscription.current_period_end && (
+              <div className="flex justify-between">
+                <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>Next billing:</span>
+                <span className={isDark ? 'text-white' : 'text-gray-900'}>
+                  {new Date(subscription.current_period_end * 1000).toLocaleDateString()}
+                </span>
+              </div>
+            )}
+            {subscription.cancel_at_period_end && (
+              <div className={`text-sm p-3 rounded-lg ${isDark ? 'bg-yellow-900/20 text-yellow-300' : 'bg-yellow-50 text-yellow-800'}`}>
+                Your subscription will cancel at the end of the current billing period.
+              </div>
+            )}
           </div>
         </div>
-
-        <button 
-          className="w-full py-3 rounded-lg font-medium transition-colors text-white hover:opacity-90"
-          style={{ 
-            background: customization.gradientEnabled 
-              ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-              : customization.primaryColor
-          }}
-        >
-          Upgrade Now
-        </button>
-
-        <p className={`text-xs mt-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-          * Premium credits are used for GPT Image Gen, Claude Sonnet, and Grok 3. Additional Premium credits can be purchased separately.
-        </p>
-      </div>
+      )}
 
       {/* Usage Stats */}
       <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
@@ -192,55 +271,38 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
         
         <div className="flex justify-between items-center mb-2">
           <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Standard</span>
-          <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>3/20</span>
+          <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+            {hasActiveSubscription ? '150/1500' : '3/20'}
+          </span>
         </div>
         
         <div className="w-full bg-gray-600 rounded-full h-2 mb-4">
           <div 
             className="h-2 rounded-full" 
             style={{ 
-              width: '15%',
+              width: hasActiveSubscription ? '10%' : '15%',
               background: customization.gradientEnabled 
                 ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
                 : customization.primaryColor
             }}
-          ></div>
+          />
         </div>
         
-        <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-          17 messages remaining
-        </p>
-      </div>
-
-      {/* Keyboard Shortcuts */}
-      <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
-        <h4 className={`font-medium mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Keyboard Shortcuts
-        </h4>
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Search</span>
-            <div className="flex gap-1">
-              <kbd className={`px-2 py-1 text-xs rounded ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}>Ctrl</kbd>
-              <kbd className={`px-2 py-1 text-xs rounded ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}>K</kbd>
+        {hasActiveSubscription && (
+          <>
+            <div className="flex justify-between items-center mb-2">
+              <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Premium</span>
+              <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>5/100</span>
             </div>
-          </div>
-          <div className="flex justify-between">
-            <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>New Chat</span>
-            <div className="flex gap-1">
-              <kbd className={`px-2 py-1 text-xs rounded ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}>Ctrl</kbd>
-              <kbd className={`px-2 py-1 text-xs rounded ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}>Shift</kbd>
-              <kbd className={`px-2 py-1 text-xs rounded ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}>O</kbd>
+            
+            <div className="w-full bg-gray-600 rounded-full h-2">
+              <div 
+                className="h-2 rounded-full bg-gradient-to-r from-pink-500 to-purple-500" 
+                style={{ width: '5%' }}
+              />
             </div>
-          </div>
-          <div className="flex justify-between">
-            <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Toggle Sidebar</span>
-            <div className="flex gap-1">
-              <kbd className={`px-2 py-1 text-xs rounded ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}>Ctrl</kbd>
-              <kbd className={`px-2 py-1 text-xs rounded ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}>B</kbd>
-            </div>
-          </div>
-        </div>
+          </>
+        )}
       </div>
 
       {/* Danger Zone */}
@@ -451,93 +513,82 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
     </div>
   );
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className={`w-full max-w-6xl h-[90vh] rounded-lg shadow-xl ${
-        isDark ? 'bg-gray-900' : 'bg-white'
-      } flex overflow-hidden`} style={{ fontFamily: customization.fontFamily }}>
-        
-        {/* Header */}
-        <div className="w-full">
-          <div className={`flex items-center justify-between p-6 border-b ${
-            isDark ? 'border-gray-700' : 'border-gray-200'
-          }`}>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={onClose}
-                className={`p-2 rounded-lg transition-colors ${
-                  isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'
-                }`}
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <h1 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                Back to Chat
-              </h1>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <button className={`p-2 rounded-lg transition-colors ${
-                isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'
-              }`}>
-                <span className="text-sm">Sign out</span>
-              </button>
-            </div>
-          </div>
+  const renderGenericTab = (title: string) => (
+    <div className="space-y-6" style={{ fontFamily: customization.fontFamily }}>
+      <div className={`p-8 text-center rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+        <h3 className={`text-xl font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          {title}
+        </h3>
+        <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+          This section is coming soon. We're working hard to bring you more features!
+        </p>
+      </div>
+    </div>
+  );
 
-          {/* Tab Navigation */}
-          <div className={`flex border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'Account':
+        return renderAccountTab();
+      case 'Customization':
+        return renderCustomizationTab();
+      default:
+        return renderGenericTab(activeTab);
+    }
+  };
+
+  return (
+    <div 
+      className={`w-[800px] max-w-[90vw] max-h-[90vh] rounded-lg shadow-2xl overflow-hidden ${
+        isDark ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'
+      }`}
+      style={{ fontFamily: customization.fontFamily }}
+    >
+      {/* Header */}
+      <div className={`flex items-center justify-between p-6 border-b ${
+        isDark ? 'border-gray-700' : 'border-gray-200'
+      }`}>
+        <h2 className="text-2xl font-bold">Account Settings</h2>
+        <button
+          onClick={onClose}
+          className={`p-2 rounded-lg transition-colors ${
+            isDark 
+              ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
+              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+          }`}
+        >
+          <X className="w-6 h-6" />
+        </button>
+      </div>
+
+      <div className="flex h-[600px]">
+        {/* Sidebar */}
+        <div className={`w-64 border-r ${isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-gray-50'}`}>
+          <nav className="p-4 space-y-2">
             {tabs.map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-6 py-3 text-sm font-medium transition-colors relative ${
+                className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
                   activeTab === tab
                     ? isDark
-                      ? 'text-white border-b-2 border-purple-500 bg-gray-800'
-                      : 'text-gray-900 border-b-2 border-purple-500 bg-gray-50'
+                      ? 'bg-gray-700 text-white'
+                      : 'bg-white text-gray-900 shadow-sm'
                     : isDark
-                      ? 'text-gray-400 hover:text-gray-300 hover:bg-gray-800'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                      : 'text-gray-600 hover:bg-white hover:text-gray-900'
                 }`}
               >
                 {tab}
-                {tab === 'Customization' && hasUnsavedChanges && (
-                  <div className="absolute top-2 right-2 w-2 h-2 bg-orange-500 rounded-full"></div>
-                )}
               </button>
             ))}
-          </div>
+          </nav>
+        </div>
 
-          {/* Content */}
-          <div className="p-6 overflow-y-auto h-[calc(90vh-140px)]">
-            {activeTab === 'Account' && renderAccountTab()}
-            {activeTab === 'Customization' && renderCustomizationTab()}
-            {activeTab === 'History & Sync' && (
-              <div className={`text-center py-12 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                History & Sync settings coming soon...
-              </div>
-            )}
-            {activeTab === 'Models' && (
-              <div className={`text-center py-12 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Model settings coming soon...
-              </div>
-            )}
-            {activeTab === 'API Keys' && (
-              <div className={`text-center py-12 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                API Keys management coming soon...
-              </div>
-            )}
-            {activeTab === 'Attachments' && (
-              <div className={`text-center py-12 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Attachment settings coming soon...
-              </div>
-            )}
-            {activeTab === 'Contact Us' && (
-              <div className={`text-center py-12 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Contact information coming soon...
-              </div>
-            )}
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-6">
+            {renderTabContent()}
           </div>
         </div>
       </div>
