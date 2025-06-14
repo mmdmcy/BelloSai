@@ -665,142 +665,328 @@ function AppContent() {
           </div>
         </div>
       ) : (
-        /* Desktop Layout */
-        <div className="h-screen flex">
+        /* Desktop Layout - Grid-based system that matches Designer Mode */
+        <div 
+          className={`h-screen grid gap-1 p-2 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}
+          style={{
+            gridTemplateColumns: 'repeat(20, 1fr)',
+            gridTemplateRows: 'repeat(18, 1fr)',
+            fontFamily: customization.fontFamily
+          }}
+        >
+          {/* Top Bar */}
+          <div 
+            className={`flex items-center justify-between px-4 border-b ${
+              isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+            } rounded-lg`}
+            style={{
+              gridColumn: `${layout.topBar.x + 1} / ${layout.topBar.x + layout.topBar.width + 1}`,
+              gridRow: `${layout.topBar.y + 1} / ${layout.topBar.y + layout.topBar.height + 1}`,
+              zIndex: layout.topBar.zIndex
+            }}
+          >
+            <div className="flex items-center gap-4">
+              <h1 className="text-xl font-semibold">BelloSai</h1>
+            </div>
+            <div className="flex items-center gap-3">
+              {/* These buttons will be positioned separately based on layout */}
+            </div>
+          </div>
+
+          {/* App Logo */}
+          <div 
+            className={`flex items-center justify-center ${
+              isDark ? 'bg-gray-800' : 'bg-white'
+            } rounded-lg border ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
+            style={{
+              gridColumn: `${layout.appLogo.x + 1} / ${layout.appLogo.x + layout.appLogo.width + 1}`,
+              gridRow: `${layout.appLogo.y + 1} / ${layout.appLogo.y + layout.appLogo.height + 1}`,
+              zIndex: layout.appLogo.zIndex
+            }}
+          >
+            <h2 className="text-lg font-bold" style={{ color: customization.primaryColor }}>
+              BelloSai
+            </h2>
+          </div>
+
+          {/* New Chat Button */}
+          <button
+            onClick={handleNewChat}
+            className={`flex items-center justify-center px-4 py-2 text-sm rounded-lg transition-colors ${
+              isDark ? 'bg-gray-800 hover:bg-gray-700 border-gray-700' : 'bg-white hover:bg-gray-100 border-gray-200'
+            } border`}
+            style={{
+              gridColumn: `${layout.newChatButton.x + 1} / ${layout.newChatButton.x + layout.newChatButton.width + 1}`,
+              gridRow: `${layout.newChatButton.y + 1} / ${layout.newChatButton.y + layout.newChatButton.height + 1}`,
+              zIndex: layout.newChatButton.zIndex
+            }}
+          >
+            New Chat
+          </button>
+
+          {/* New Game Button */}
+          <button
+            onClick={handleNewGame}
+            className={`flex items-center justify-center px-4 py-2 text-sm rounded-lg transition-colors ${
+              isDark ? 'bg-gray-800 hover:bg-gray-700 border-gray-700' : 'bg-white hover:bg-gray-100 border-gray-200'
+            } border`}
+            style={{
+              gridColumn: `${layout.newGameButton.x + 1} / ${layout.newGameButton.x + layout.newGameButton.width + 1}`,
+              gridRow: `${layout.newGameButton.y + 1} / ${layout.newGameButton.y + layout.newGameButton.height + 1}`,
+              zIndex: layout.newGameButton.zIndex
+            }}
+          >
+            New Game
+          </button>
+
+          {/* Search Button */}
+          <button
+            onClick={handleSearch}
+            className={`flex items-center justify-center px-4 py-2 text-sm rounded-lg transition-colors ${
+              isDark ? 'bg-gray-800 hover:bg-gray-700 border-gray-700' : 'bg-white hover:bg-gray-100 border-gray-200'
+            } border`}
+            style={{
+              gridColumn: `${layout.searchButton.x + 1} / ${layout.searchButton.x + layout.searchButton.width + 1}`,
+              gridRow: `${layout.searchButton.y + 1} / ${layout.searchButton.y + layout.searchButton.height + 1}`,
+              zIndex: layout.searchButton.zIndex
+            }}
+          >
+            Search
+          </button>
+
           {/* Sidebar */}
-          <div className={`${isSidebarCollapsed ? 'w-16' : 'w-64'} transition-all duration-300`}>
+          <div 
+            className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-lg border ${
+              isDark ? 'border-gray-700' : 'border-gray-200'
+            } overflow-hidden`}
+            style={{
+              gridColumn: `${layout.sidebar.x + 1} / ${layout.sidebar.x + layout.sidebar.width + 1}`,
+              gridRow: `${layout.sidebar.y + 1} / ${layout.sidebar.y + layout.sidebar.height + 1}`,
+              zIndex: layout.sidebar.zIndex
+            }}
+          >
             <Sidebar
               isDark={isDark}
               onAccountClick={toggleAccountMenu}
               customization={customization}
-              isCollapsed={isSidebarCollapsed}
+              isCollapsed={false}
               onToggleCollapse={toggleSidebar}
               onSendMessage={sendMessage}
               onNewGame={handleNewGame}
             />
           </div>
 
-          {/* Main Content Area */}
-          <div className="flex-1 flex flex-col">
-            {/* Top Bar */}
-            <div className={`flex items-center justify-between p-4 border-b ${
-              isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-            }`}>
-              <div className="flex items-center gap-4">
-                <h1 className="text-xl font-semibold">BelloSai</h1>
-                <button
-                  onClick={handleNewChat}
-                  className={`px-4 py-2 text-sm rounded-lg transition-colors ${
-                    isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                  }`}
-                >
-                  New Chat
-                </button>
-              </div>
-              
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={toggleDesignerMode}
-                  className={`p-2 rounded-lg transition-colors ${
-                    isDesignerMode 
-                      ? 'bg-purple-600 text-white' 
-                      : isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                  }`}
-                  title="Designer Mode"
-                >
-                  <Edit3 className="w-5 h-5" />
-                </button>
-                <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
-                {user ? (
-                  <button
-                    onClick={toggleAccountMenu}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                      isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                         style={{ 
-                           background: customization.gradientEnabled 
-                             ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                             : customization.primaryColor
-                         }}>
-                      {getUserInitial()}
-                    </div>
-                    <span className="text-sm font-medium">{getUserDisplayName()}</span>
-                  </button>
-                ) : (
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setShowLoginModal(true)}
-                      className={`flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
-                        isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
-                      }`}
-                    >
-                      <LogIn className="w-4 h-4" />
-                      Sign In
-                    </button>
-                    <button
-                      onClick={() => setShowSignupModal(true)}
-                      className="flex items-center gap-2 px-3 py-2 text-sm rounded-lg text-white transition-colors"
-                      style={{ 
-                        background: customization.gradientEnabled 
-                          ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                          : customization.primaryColor
-                      }}
-                    >
-                      <UserPlus className="w-4 h-4" />
-                      Sign Up
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="flex-1 overflow-hidden">
-              {isDesignerMode ? (
-                <DesignerMode
-                  layout={layout}
-                  onLayoutChange={updateLayout}
+          {/* Main Content */}
+          <div 
+            className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-lg border ${
+              isDark ? 'border-gray-700' : 'border-gray-200'
+            } overflow-hidden`}
+            style={{
+              gridColumn: `${layout.mainContent.x + 1} / ${layout.mainContent.x + layout.mainContent.width + 1}`,
+              gridRow: `${layout.mainContent.y + 1} / ${layout.mainContent.y + layout.mainContent.height + 1}`,
+              zIndex: layout.mainContent.zIndex
+            }}
+          >
+            {isDesignerMode ? (
+              <DesignerMode
+                layout={layout}
+                onLayoutChange={updateLayout}
+                isDark={isDark}
+                customization={customization}
+                onExitDesigner={toggleDesignerMode}
+                onToggleTheme={toggleTheme}
+                onCustomizationChange={updateCustomization}
+              />
+            ) : currentView === 'chat' ? (
+              messages.length > 0 ? (
+                <ChatView
+                  messages={messages}
+                  onSendMessage={sendMessage}
+                  onRegenerateResponse={regenerateResponse}
+                  selectedModel={selectedModel}
+                  onModelChange={setSelectedModel}
+                  availableModels={availableModels}
                   isDark={isDark}
+                  isGenerating={isGenerating}
                   customization={customization}
-                  onExitDesigner={toggleDesignerMode}
-                  onToggleTheme={toggleTheme}
-                  onCustomizationChange={updateCustomization}
                 />
-              ) : currentView === 'chat' ? (
-                messages.length > 0 ? (
-                  <ChatView
-                    messages={messages}
-                    onSendMessage={sendMessage}
-                    onRegenerateResponse={regenerateResponse}
-                    selectedModel={selectedModel}
-                    onModelChange={setSelectedModel}
-                    availableModels={availableModels}
-                    isDark={isDark}
-                    isGenerating={isGenerating}
-                    customization={customization}
-                  />
-                ) : (
-                  <MainContent
-                    isDark={isDark}
-                    onSendMessage={sendMessage}
-                    selectedModel={selectedModel}
-                    onModelChange={setSelectedModel}
-                    availableModels={availableModels}
-                    customization={customization}
-                  />
-                )
               ) : (
-                <GameSection
+                <MainContent
                   isDark={isDark}
-                  onBackToChat={handleBackToChat}
-                  onNewGame={handleNewGame}
+                  onSendMessage={sendMessage}
+                  selectedModel={selectedModel}
+                  onModelChange={setSelectedModel}
+                  availableModels={availableModels}
                   customization={customization}
                 />
-              )}
-            </div>
+              )
+            ) : (
+              <GameSection
+                isDark={isDark}
+                onBackToChat={handleBackToChat}
+                onNewGame={handleNewGame}
+                customization={customization}
+              />
+            )}
           </div>
+
+          {/* Input Box */}
+          <div 
+            className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-lg border ${
+              isDark ? 'border-gray-700' : 'border-gray-200'
+            } p-4`}
+            style={{
+              gridColumn: `${layout.inputBox.x + 1} / ${layout.inputBox.x + layout.inputBox.width + 1}`,
+              gridRow: `${layout.inputBox.y + 1} / ${layout.inputBox.y + layout.inputBox.height + 1}`,
+              zIndex: layout.inputBox.zIndex
+            }}
+          >
+            <MainContent
+              isDark={isDark}
+              onSendMessage={sendMessage}
+              selectedModel={selectedModel}
+              onModelChange={setSelectedModel}
+              availableModels={availableModels}
+              customization={customization}
+              inputOnly={true}
+            />
+          </div>
+
+          {/* Account Panel */}
+          <div 
+            className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-lg border ${
+              isDark ? 'border-gray-700' : 'border-gray-200'
+            } p-2 flex items-center justify-center`}
+            style={{
+              gridColumn: `${layout.accountPanel.x + 1} / ${layout.accountPanel.x + layout.accountPanel.width + 1}`,
+              gridRow: `${layout.accountPanel.y + 1} / ${layout.accountPanel.y + layout.accountPanel.height + 1}`,
+              zIndex: layout.accountPanel.zIndex
+            }}
+          >
+            {user ? (
+              <button
+                onClick={toggleAccountMenu}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors w-full ${
+                  isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'
+                }`}
+              >
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                     style={{ 
+                       background: customization.gradientEnabled 
+                         ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                         : customization.primaryColor
+                     }}>
+                  {getUserInitial()}
+                </div>
+                <span className="text-sm font-medium truncate">{getUserDisplayName()}</span>
+              </button>
+            ) : (
+              <div className="text-center">
+                <div className="text-xs text-gray-500 mb-1">Account</div>
+                <div className="text-xs">Not signed in</div>
+              </div>
+            )}
+          </div>
+
+          {/* Login Button (when not authenticated) */}
+          {!user && (
+            <button
+              onClick={() => setShowLoginModal(true)}
+              className={`flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors ${
+                isDark ? 'bg-gray-800 hover:bg-gray-700 border-gray-700' : 'bg-white hover:bg-gray-100 border-gray-200'
+              } border`}
+              style={{
+                gridColumn: `${layout.loginButton.x + 1} / ${layout.loginButton.x + layout.loginButton.width + 1}`,
+                gridRow: `${layout.loginButton.y + 1} / ${layout.loginButton.y + layout.loginButton.height + 1}`,
+                zIndex: layout.loginButton.zIndex
+              }}
+            >
+              <LogIn className="w-4 h-4" />
+              Sign In
+            </button>
+          )}
+
+          {/* Signup Button (when not authenticated) */}
+          {!user && (
+            <button
+              onClick={() => setShowSignupModal(true)}
+              className="flex items-center justify-center gap-2 px-3 py-2 text-sm rounded-lg text-white transition-colors"
+              style={{ 
+                gridColumn: `${layout.signupButton.x + 1} / ${layout.signupButton.x + layout.signupButton.width + 1}`,
+                gridRow: `${layout.signupButton.y + 1} / ${layout.signupButton.y + layout.signupButton.height + 1}`,
+                zIndex: layout.signupButton.zIndex,
+                background: customization.gradientEnabled 
+                  ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                  : customization.primaryColor
+              }}
+            >
+              <UserPlus className="w-4 h-4" />
+              Sign Up
+            </button>
+          )}
+
+          {/* Account Button (when authenticated) */}
+          {user && (
+            <button
+              onClick={toggleAccountMenu}
+              className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                isDark ? 'bg-gray-800 hover:bg-gray-700 border-gray-700' : 'bg-white hover:bg-gray-100 border-gray-200'
+              } border`}
+              style={{
+                gridColumn: `${layout.accountButton.x + 1} / ${layout.accountButton.x + layout.accountButton.width + 1}`,
+                gridRow: `${layout.accountButton.y + 1} / ${layout.accountButton.y + layout.accountButton.height + 1}`,
+                zIndex: layout.accountButton.zIndex
+              }}
+            >
+              <User className="w-4 h-4" />
+              Account
+            </button>
+          )}
+
+          {/* Theme Toggle */}
+          <div 
+            style={{
+              gridColumn: `${layout.themeToggle.x + 1} / ${layout.themeToggle.x + layout.themeToggle.width + 1}`,
+              gridRow: `${layout.themeToggle.y + 1} / ${layout.themeToggle.y + layout.themeToggle.height + 1}`,
+              zIndex: layout.themeToggle.zIndex
+            }}
+          >
+            <ThemeToggle isDark={isDark} onToggle={toggleTheme} />
+          </div>
+
+          {/* Settings Button */}
+          <button
+            onClick={toggleAccountMenu}
+            className={`flex items-center justify-center p-2 rounded-lg transition-colors ${
+              isDark ? 'bg-gray-800 hover:bg-gray-700 border-gray-700' : 'bg-white hover:bg-gray-100 border-gray-200'
+            } border`}
+            style={{
+              gridColumn: `${layout.settingsButton.x + 1} / ${layout.settingsButton.x + layout.settingsButton.width + 1}`,
+              gridRow: `${layout.settingsButton.y + 1} / ${layout.settingsButton.y + layout.settingsButton.height + 1}`,
+              zIndex: layout.settingsButton.zIndex
+            }}
+            title="Settings"
+          >
+            <User className="w-5 h-5" />
+          </button>
+
+          {/* Designer Button */}
+          <button
+            onClick={toggleDesignerMode}
+            className={`flex items-center justify-center p-2 rounded-lg transition-colors ${
+              isDesignerMode 
+                ? 'bg-purple-600 text-white' 
+                : isDark ? 'bg-gray-800 hover:bg-gray-700 border-gray-700' : 'bg-white hover:bg-gray-100 border-gray-200'
+            } ${!isDesignerMode ? 'border' : ''}`}
+            style={{
+              gridColumn: `${layout.designerButton.x + 1} / ${layout.designerButton.x + layout.designerButton.width + 1}`,
+              gridRow: `${layout.designerButton.y + 1} / ${layout.designerButton.y + layout.designerButton.height + 1}`,
+              zIndex: layout.designerButton.zIndex
+            }}
+            title="Designer Mode"
+          >
+            <Edit3 className="w-5 h-5" />
+          </button>
         </div>
       )}
 
