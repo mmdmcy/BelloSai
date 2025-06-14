@@ -32,6 +32,7 @@ import DesignerMode from './components/DesignerMode';
 import MobileDesignerMode from './components/MobileDesignerMode';
 import AccountMenu from './components/AccountMenu';
 import GameSection from './components/GameSection';
+import APIKeyManager from './components/APIKeyManager';
 import { useAuth } from './contexts/AuthContext';
 import { supabase } from './lib/supabase';
 import { sendChatMessage, DeepSeekModel, ChatMessage } from './lib/supabase-chat';
@@ -123,6 +124,7 @@ function App() {
   // Authentication modals and forms
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
+  const [showAPIKeyManager, setShowAPIKeyManager] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [signupForm, setSignupForm] = useState({ email: '', password: '', fullName: '' });
   const [authModalLoading, setAuthModalLoading] = useState(false);
@@ -1707,10 +1709,21 @@ function App() {
               onCustomizationChange={updateCustomization}
               user={user}
               onLogout={handleLogout}
+              onOpenAPIKeyManager={() => {
+                setIsAccountMenuOpen(false);
+                setShowAPIKeyManager(true);
+              }}
             />
           </div>
         </div>
       )}
+
+      {/* API Key Manager Modal */}
+      <APIKeyManager
+        isDark={isDark}
+        isOpen={showAPIKeyManager}
+        onClose={() => setShowAPIKeyManager(false)}
+      />
     </div>
   );
 }
