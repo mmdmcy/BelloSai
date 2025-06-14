@@ -416,6 +416,17 @@ function App() {
     setCurrentView('game');
   };
 
+  // Helper functions for user display
+  const getUserDisplayName = () => {
+    if (!authState.user) return 'User';
+    return authState.user.full_name || authState.user.email.split('@')[0] || 'User';
+  };
+
+  const getUserInitial = () => {
+    const name = getUserDisplayName();
+    return name.charAt(0).toUpperCase();
+  };
+
   // Render designer mode if active
   if (isDesignerMode) {
     if (isMobile) {
@@ -1116,9 +1127,9 @@ function App() {
                              ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
                              : customization.primaryColor 
                          }}>
-                      D
+                      {getUserInitial()}
                     </div>
-                    <div className="text-xs">Dmitry</div>
+                    <div className="text-xs">{getUserDisplayName()}</div>
                   </button>
                 </div>
               )}
