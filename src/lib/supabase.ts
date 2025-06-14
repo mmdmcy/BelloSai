@@ -20,6 +20,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: true,
     storage: localStorage,
+    storageKey: 'bellosai-auth-token',
     flowType: 'pkce',
     debug: import.meta.env.DEV,
   },
