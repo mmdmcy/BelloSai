@@ -12,9 +12,10 @@ interface DeepSeekMessage {
 }
 
 interface ChatRequest {
-  messages: Array<{ type: 'user' | 'ai'; content: string }>;
+  messages: Array<{ type: 'user' | 'ai'; content: string } | { role: string; content: string }>;
   model: 'DeepSeek-V3' | 'DeepSeek-R1';
   conversationId?: string;
+  stream?: boolean;
 }
 
 const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY') || '';
@@ -97,7 +98,7 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { messages, model, conversationId }: ChatRequest = await req.json()
+    const { messages, model, conversationId, stream: enableStreaming = true }: ChatRequest = await req.json()
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(
@@ -116,16 +117,25 @@ serve(async (req) => {
 
     // Add conversation history
     for (const msg of messages) {
-      deepSeekMessages.push({
-        role: msg.type === 'user' ? 'user' : 'assistant',
-        content: msg.content
-      });
+      if ('type' in msg) {
+        // Old format for backward compatibility
+        deepSeekMessages.push({
+          role: msg.type === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        });
+      } else {
+        // New format with role directly
+        deepSeekMessages.push({
+          role: msg.role as 'user' | 'assistant',
+          content: msg.content
+        });
+      }
     }
 
     // Get the DeepSeek model ID
     const modelId = DEEPSEEK_MODELS[model] || 'deepseek-chat';
 
-    // Call DeepSeek API with streaming
+    // Call DeepSeek API
     const deepSeekResponse = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -135,9 +145,9 @@ serve(async (req) => {
       body: JSON.stringify({
         model: modelId,
         messages: deepSeekMessages,
-        stream: true,
+        stream: enableStreaming,
         temperature: 0.7,
-        max_tokens: 4000
+        max_tokens: enableStreaming ? 4000 : 500 // Shorter responses for title generation
       })
     });
 
@@ -159,6 +169,27 @@ serve(async (req) => {
 
     if (incrementError) {
       console.error('Failed to increment message count:', incrementError)
+    }
+
+    // Handle non-streaming response
+    if (!enableStreaming) {
+      const responseData = await deepSeekResponse.json()
+      const content = responseData.choices?.[0]?.message?.content || ''
+      
+      return new Response(
+        JSON.stringify({ 
+          response: content,
+          model: model,
+          messageCount: userData.message_count + 1,
+          messageLimit: userData.message_limit
+        }),
+        { 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      )
     }
 
     // Set up streaming response

@@ -585,6 +585,87 @@ class ChatFeaturesService {
     if (error) throw error;
     return data || [];
   }
+
+  /**
+   * Generate an AI-powered conversation title based on the content
+   */
+  async generateConversationTitle(messages: Array<{role: string, content: string}>): Promise<string> {
+    if (messages.length === 0) return 'Nieuwe Conversatie';
+    
+    // Take first few messages to understand the topic
+    const contextMessages = messages.slice(0, 4); // First 4 messages for context
+    const conversationContext = contextMessages
+      .map(msg => `${msg.role}: ${msg.content}`)
+      .join('\n');
+    
+    // Truncate if too long
+    const truncatedContext = conversationContext.length > 500 
+      ? conversationContext.substring(0, 500) + '...'
+      : conversationContext;
+    
+    try {
+      // Get current session for authentication
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.log('No authentication for title generation, using fallback');
+        return this.generateFallbackTitle(messages[0].content);
+      }
+
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: 'system',
+              content: 'Je bent een assistent die korte, informatieve titels maakt voor gesprekken. Maak een titel van maximaal 40 karakters die het hoofdonderwerp van de conversatie weergeeft. Antwoord alleen met de titel, geen verdere uitleg.'
+            },
+            {
+              role: 'user',
+              content: `Maak een korte, informatieve titel voor deze conversatie:\n\n${truncatedContext}`
+            }
+          ],
+          model: 'DeepSeek-V3',
+          stream: false
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const generatedTitle = data.response?.trim() || '';
+        
+        // Clean up the title and ensure it's not too long
+        let title = generatedTitle
+          .replace(/^["']|["']$/g, '') // Remove quotes
+          .replace(/\n/g, ' ') // Replace newlines with spaces
+          .trim();
+        
+        if (title.length > 40) {
+          title = title.substring(0, 37) + '...';
+        }
+        
+        return title || this.generateFallbackTitle(messages[0].content);
+      }
+    } catch (error) {
+      console.log('AI title generation failed, using fallback');
+    }
+    
+    // Fallback to first message method
+    return this.generateFallbackTitle(messages[0].content);
+  }
+
+  /**
+   * Generate fallback title from first message
+   */
+  private generateFallbackTitle(firstMessage: string): string {
+    const title = firstMessage.trim().slice(0, 40);
+    return title.length < firstMessage.trim().length ? title + '...' : title;
+  }
 }
 
 export const chatFeaturesService = new ChatFeaturesService(); 
