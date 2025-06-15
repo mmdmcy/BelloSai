@@ -205,10 +205,15 @@ function App() {
   }, [user]);
 
   const loadConversations = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user found, skipping conversation loading');
+      return;
+    }
     
+    console.log('Loading conversations for user:', user.id);
     try {
       const userConversations = await chatFeaturesService.getUserConversations(user.id);
+      console.log('Loaded conversations:', userConversations.length, userConversations);
       setConversations(userConversations);
     } catch (error) {
       console.error('Failed to load conversations:', error);
@@ -351,11 +356,12 @@ function App() {
       // Create new conversation if this is the first message
       if (!conversationId && user) {
         try {
-          const title = content.trim().slice(0, 50) + (content.length > 50 ? '...' : '');
-          const newConversation = await chatFeaturesService.createConversation(user.id, title, selectedModel);
+          // Create conversation with temporary title first
+          const tempTitle = content.trim().slice(0, 40) + (content.length > 40 ? '...' : '');
+          const newConversation = await chatFeaturesService.createConversation(user.id, tempTitle, selectedModel);
           conversationId = newConversation.id;
           setCurrentConversationId(conversationId);
-          setConversationTitle(title);
+          setConversationTitle(tempTitle);
           
           // Reload conversations to update sidebar
           await loadConversations();
@@ -417,6 +423,26 @@ function App() {
       if (conversationId && user) {
         try {
           await chatFeaturesService.saveMessage(conversationId, 'assistant', fullResponse);
+          
+          // Generate better title after first AI response
+          if (messages.length === 0) { // This was the first exchange
+            try {
+              const conversationMessages = [
+                { role: 'user', content: content },
+                { role: 'assistant', content: fullResponse }
+              ];
+              const betterTitle = await chatFeaturesService.generateConversationTitle(conversationMessages);
+              
+              // Update the conversation title in database
+              await chatFeaturesService.updateConversationTitle(conversationId, betterTitle);
+              setConversationTitle(betterTitle);
+              
+              // Reload conversations to update sidebar
+              await loadConversations();
+            } catch (error) {
+              console.error('Failed to generate better title:', error);
+            }
+          }
         } catch (error) {
           console.error('Failed to save AI response:', error);
           // Continue without database storage
@@ -456,31 +482,41 @@ function App() {
   const handleConversationSelect = async (conversationId: string) => {
     if (!user) return;
     
+    // Find conversation title first
+    const conversation = conversations.find(c => c.id === conversationId);
+    setCurrentConversationId(conversationId);
+    setConversationTitle(conversation?.title || 'Conversatie wordt geladen...');
+    
     try {
       // Load messages for the selected conversation
       const conversationMessages = await chatFeaturesService.getConversationMessages(conversationId);
       
-      // Convert to Message format
-      const messages: Message[] = conversationMessages.map((msg: any) => ({
-        id: msg.id,
-        type: msg.role === 'user' ? 'user' : 'ai',
-        content: msg.content,
-        timestamp: new Date(msg.created_at)
-      }));
+      if (conversationMessages && conversationMessages.length > 0) {
+        // Convert to Message format
+        const messages: Message[] = conversationMessages.map((msg: any) => ({
+          id: msg.id,
+          type: msg.role === 'user' ? 'user' : 'ai',
+          content: msg.content,
+          timestamp: new Date(msg.created_at)
+        }));
+        
+        setMessages(messages);
+        console.log(`Loaded ${messages.length} messages for conversation ${conversationId}`);
+      } else {
+        console.log('No messages found for conversation', conversationId);
+        setMessages([]);
+      }
       
-      // Find conversation title
-      const conversation = conversations.find(c => c.id === conversationId);
-      
-      setMessages(messages);
-      setCurrentConversationId(conversationId);
+      // Update title once loaded
       setConversationTitle(conversation?.title || 'Untitled Conversation');
     } catch (error) {
-      console.error('Failed to load conversation:', error);
-      // Just switch to the conversation without loading messages
-      const conversation = conversations.find(c => c.id === conversationId);
-      setCurrentConversationId(conversationId);
-      setConversationTitle(conversation?.title || 'Untitled Conversation');
+      console.error('Failed to load conversation messages:', error);
+      // Show error but still allow user to use the conversation
       setMessages([]);
+      setConversationTitle(conversation?.title || 'Conversatie (laden mislukt)');
+      
+      // You could show a toast notification here
+      console.warn('Conversation loaded but messages could not be retrieved. You can still continue chatting.');
     }
   };
 
@@ -1120,6 +1156,7 @@ function App() {
                   onToggleCollapse={toggleSidebar}
                   onSendMessage={sendMessage}
                   onNewGame={handleNewGame}
+                  onNewChat={handleNewChat}
                   detachedMode={true} // New prop to indicate detached components
                   conversations={conversations}
                   currentConversationId={currentConversationId}
