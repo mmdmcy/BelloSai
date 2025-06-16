@@ -660,6 +660,8 @@ class ChatFeaturesService {
    * Get messages for a conversation
    */
   async getConversationMessages(conversationId: string) {
+    console.log('📡 ChatFeaturesService: Getting messages for conversation:', conversationId);
+    
     const { data, error } = await supabase
       .from('messages')
       .select('*')
@@ -667,10 +669,11 @@ class ChatFeaturesService {
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Error fetching messages:', error);
+      console.error('❌ Error fetching messages:', error);
       throw error;
     }
     
+    console.log('📨 ChatFeaturesService: Retrieved messages:', data);
     return data || [];
   }
 
