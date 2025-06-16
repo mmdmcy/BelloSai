@@ -14,7 +14,7 @@
  */
 
 import React from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import { CustomizationSettings } from '../App';
 
 interface SidebarProps {
@@ -30,6 +30,7 @@ interface SidebarProps {
   conversations?: any[];
   currentConversationId?: string | null;
   onConversationSelect?: (conversationId: string) => void;
+  onConversationDelete?: (conversationId: string) => void;
 }
 
 export default function Sidebar({ 
@@ -44,7 +45,8 @@ export default function Sidebar({
   detachedMode = false,
   conversations = [],
   currentConversationId,
-  onConversationSelect
+  onConversationSelect,
+  onConversationDelete
 }: SidebarProps) {
   
 
@@ -156,13 +158,12 @@ export default function Sidebar({
             </div>
             
             {conversations.map((conversation) => (
-              <button 
+              <div 
                 key={conversation.id}
-                onClick={() => onConversationSelect?.(conversation.id)}
-                className={`w-full text-left px-3 py-2 rounded-lg mb-2 transition-colors ${
+                className={`group relative rounded-lg mb-2 transition-colors ${
                   currentConversationId === conversation.id
-                    ? (isDark ? 'bg-gray-700 text-white' : 'text-purple-800')
-                    : (isDark ? 'text-gray-300 hover:bg-gray-700 hover:text-white' : 'hover:text-purple-800')
+                    ? (isDark ? 'bg-gray-700' : 'bg-purple-50')
+                    : (isDark ? 'hover:bg-gray-700' : 'hover:bg-purple-50')
                 }`}
                 style={{ 
                   background: currentConversationId === conversation.id
@@ -172,33 +173,50 @@ export default function Sidebar({
                           ? `linear-gradient(135deg, ${customization.secondaryColor}40, ${customization.primaryColor}20)`
                           : customization.secondaryColor + '40')
                     : 'transparent',
-                  fontFamily: customization.fontFamily,
-                  color: currentConversationId === conversation.id
-                    ? (isDark 
-                        ? (customization.secondaryColor !== '#a855f7' ? customization.secondaryColor : undefined)
-                        : customization.primaryColor)
-                    : getTextColor(customization.primaryColor + 'CC', isDark)
-                }}
-                onMouseEnter={(e) => {
-                  if (!isDark && currentConversationId !== conversation.id) {
-                    e.currentTarget.style.backgroundColor = customization.gradientEnabled
-                      ? `linear-gradient(135deg, ${customization.primaryColor}20, ${customization.secondaryColor}10)`
-                      : customization.primaryColor + '20';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isDark && currentConversationId !== conversation.id) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }
                 }}
               >
-                <div className="truncate text-sm">
-                  {conversation.title || 'Untitled Conversation'}
-                </div>
-                <div className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                  {new Date(conversation.updated_at).toLocaleDateString()}
-                </div>
-              </button>
+                <button 
+                  onClick={() => onConversationSelect?.(conversation.id)}
+                  className={`w-full text-left px-3 py-2 pr-10 transition-colors ${
+                    currentConversationId === conversation.id
+                      ? (isDark ? 'text-white' : 'text-purple-800')
+                      : (isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-800')
+                  }`}
+                  style={{ 
+                    fontFamily: customization.fontFamily,
+                    color: currentConversationId === conversation.id
+                      ? (isDark 
+                          ? (customization.secondaryColor !== '#a855f7' ? customization.secondaryColor : undefined)
+                          : customization.primaryColor)
+                      : getTextColor(customization.primaryColor + 'CC', isDark)
+                  }}
+                >
+                  <div className="truncate text-sm">
+                    {conversation.title || 'Untitled Conversation'}
+                  </div>
+                  <div className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                    {new Date(conversation.updated_at).toLocaleDateString()}
+                  </div>
+                </button>
+                
+                {/* Delete Button */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (window.confirm(`Weet je zeker dat je "${conversation.title || 'Untitled Conversation'}" wilt verwijderen?`)) {
+                      onConversationDelete?.(conversation.id);
+                    }
+                  }}
+                  className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${
+                    isDark 
+                      ? 'text-gray-400 hover:text-red-400 hover:bg-gray-600' 
+                      : 'text-gray-500 hover:text-red-600 hover:bg-white'
+                  }`}
+                  title="Conversatie verwijderen"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             ))}
           </>
         ) : (
