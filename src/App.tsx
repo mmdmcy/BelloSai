@@ -403,21 +403,33 @@ function App() {
         content: msg.content
       }));
 
+      console.log('🔄 About to call sendChatMessage...');
+      console.log('📋 Chat messages:', chatMessages);
+      console.log('🤖 Selected model:', selectedModel);
+
       // Send to DeepSeek with streaming
       console.log('📡 Calling sendChatMessage with:', { chatMessages, selectedModel });
-      const fullResponse = await sendChatMessage(
-        chatMessages,
-        selectedModel as DeepSeekModel,
-        (chunk: string) => {
-          console.log('📦 Received streaming chunk:', chunk);
-          // Update the AI message with streaming content
-          setMessages(prev => prev.map(msg => 
-            msg.id === aiMessageId 
-              ? { ...msg, content: msg.content + chunk }
-              : msg
-          ));
-        }
-      );
+      
+      let fullResponse = '';
+      try {
+        fullResponse = await sendChatMessage(
+          chatMessages,
+          selectedModel as DeepSeekModel,
+          (chunk: string) => {
+            console.log('📦 Received streaming chunk:', chunk);
+            // Update the AI message with streaming content
+            setMessages(prev => prev.map(msg => 
+              msg.id === aiMessageId 
+                ? { ...msg, content: msg.content + chunk }
+                : msg
+            ));
+          }
+        );
+        console.log('✅ sendChatMessage completed successfully');
+      } catch (sendError) {
+        console.error('❌ sendChatMessage failed:', sendError);
+        throw sendError; // Re-throw to be caught by outer try-catch
+      }
 
       console.log('✅ Full response received:', fullResponse);
       // Update with final response (in case streaming didn't capture everything)
