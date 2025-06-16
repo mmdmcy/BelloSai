@@ -354,53 +354,65 @@ function App() {
       console.log('📝 Adding user message:', userMessage);
       setMessages(prev => [...prev, userMessage]);
       setMessageCount(prev => prev + 1);
-      setIsGenerating(true);
+            setIsGenerating(true);
       console.log('🔄 Set isGenerating to true');
       
       // Add a small delay to ensure state is updated
       await new Promise(resolve => setTimeout(resolve, 10));
+      console.log('⏰ Delay completed, proceeding with message processing');
 
-    try {
-      let conversationId = currentConversationId;
+      try {
+        console.log('🔄 Starting main message processing logic');
+        let conversationId = currentConversationId;
+        console.log('💬 Current conversation ID:', conversationId);
       
-      // Create new conversation if this is the first message
-      if (!conversationId && user) {
-        try {
-          // Create conversation with temporary title first
-          const tempTitle = content.trim().slice(0, 40) + (content.length > 40 ? '...' : '');
-          const newConversation = await chatFeaturesService.createConversation(user.id, tempTitle, selectedModel);
-          conversationId = newConversation.id;
-          setCurrentConversationId(conversationId);
-          setConversationTitle(tempTitle);
-          
-          // Reload conversations to update sidebar
-          await loadConversations();
-        } catch (error) {
-          console.error('Failed to create conversation:', error);
-          // Continue without database storage
+              // Create new conversation if this is the first message
+        if (!conversationId && user) {
+          console.log('🆕 Creating new conversation for user:', user.id);
+          try {
+            // Create conversation with temporary title first
+            const tempTitle = content.trim().slice(0, 40) + (content.length > 40 ? '...' : '');
+            console.log('📝 Creating conversation with title:', tempTitle);
+            const newConversation = await chatFeaturesService.createConversation(user.id, tempTitle, selectedModel);
+            conversationId = newConversation.id;
+            console.log('✅ New conversation created:', conversationId);
+            setCurrentConversationId(conversationId);
+            setConversationTitle(tempTitle);
+            
+            // Reload conversations to update sidebar
+            console.log('🔄 Reloading conversations...');
+            await loadConversations();
+            console.log('✅ Conversations reloaded');
+          } catch (error) {
+            console.error('❌ Failed to create conversation:', error);
+            // Continue without database storage
+          }
         }
-      }
 
-      // Save user message to database if we have a conversation
-      if (conversationId && user) {
-        try {
-          await chatFeaturesService.saveMessage(conversationId, 'user', content.trim());
-        } catch (error) {
-          console.error('Failed to save user message:', error);
-          // Continue without database storage
+              // Save user message to database if we have a conversation
+        if (conversationId && user) {
+          console.log('💾 Saving user message to database...');
+          try {
+            await chatFeaturesService.saveMessage(conversationId, 'user', content.trim());
+            console.log('✅ User message saved');
+          } catch (error) {
+            console.error('❌ Failed to save user message:', error);
+            // Continue without database storage
+          }
         }
-      }
 
-      // Create AI message placeholder for streaming
-      const aiMessageId = (Date.now() + 1).toString();
-      const aiMessage: Message = {
-        id: aiMessageId,
-        type: 'ai',
-        content: '',
-        timestamp: new Date()
-      };
+              // Create AI message placeholder for streaming
+        console.log('🤖 Creating AI message placeholder...');
+        const aiMessageId = (Date.now() + 1).toString();
+        const aiMessage: Message = {
+          id: aiMessageId,
+          type: 'ai',
+          content: '',
+          timestamp: new Date()
+        };
 
-      setMessages(prev => [...prev, aiMessage]);
+        console.log('📝 Adding AI message placeholder:', aiMessageId);
+        setMessages(prev => [...prev, aiMessage]);
 
       // Convert messages to ChatMessage format
       const chatMessages: ChatMessage[] = [...messages, userMessage].map(msg => ({
