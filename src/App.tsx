@@ -335,25 +335,30 @@ function App() {
    * Creates user message and gets AI response from DeepSeek
    */
   const sendMessage = async (content: string) => {
-    console.log('🚀 sendMessage called with:', content);
-    
-    if (isGenerating) {
-      console.log('⚠️ Already generating, skipping request');
-      return; // Prevent multiple simultaneous requests
-    }
-    
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      type: 'user',
-      content,
-      timestamp: new Date()
-    };
+    try {
+      console.log('🚀 sendMessage called with:', content);
+      console.log('🔍 Current isGenerating state:', isGenerating);
+      
+      if (isGenerating) {
+        console.log('⚠️ Already generating, skipping request');
+        return; // Prevent multiple simultaneous requests
+      }
+      
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        type: 'user',
+        content,
+        timestamp: new Date()
+      };
 
-    console.log('📝 Adding user message:', userMessage);
-    setMessages(prev => [...prev, userMessage]);
-    setMessageCount(prev => prev + 1);
-    setIsGenerating(true);
-    console.log('🔄 Set isGenerating to true');
+      console.log('📝 Adding user message:', userMessage);
+      setMessages(prev => [...prev, userMessage]);
+      setMessageCount(prev => prev + 1);
+      setIsGenerating(true);
+      console.log('🔄 Set isGenerating to true');
+      
+      // Add a small delay to ensure state is updated
+      await new Promise(resolve => setTimeout(resolve, 10));
 
     try {
       let conversationId = currentConversationId;
@@ -485,6 +490,12 @@ function App() {
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       console.log('🏁 Setting isGenerating to false');
+      console.log('🔍 isGenerating before reset:', isGenerating);
+      setIsGenerating(false);
+      console.log('✅ isGenerating reset completed');
+    }
+    } catch (outerError) {
+      console.error('💥 Outer sendMessage error:', outerError);
       setIsGenerating(false);
     }
   };
