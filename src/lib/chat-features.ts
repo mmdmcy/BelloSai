@@ -508,13 +508,20 @@ class ChatFeaturesService {
    * Get user's conversations with metadata
    */
   async getUserConversations(userId: string) {
+    console.log('Getting conversations for user:', userId);
+    
     const { data, error } = await supabase
       .from('conversations')
       .select('*')
       .eq('user_id', userId)
       .order('updated_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error getting user conversations:', error);
+      throw error;
+    }
+    
+    console.log('Retrieved conversations:', data);
     return data || [];
   }
 
@@ -551,17 +558,25 @@ class ChatFeaturesService {
    * Save a message to a conversation
    */
   async saveMessage(conversationId: string, role: 'user' | 'assistant', content: string) {
+    console.log('Saving message:', { conversationId, role, content: content.substring(0, 100) + '...' });
+    
     const { data, error } = await supabase
       .from('messages')
       .insert({
         conversation_id: conversationId,
-        role: role,
+        role: role, // Use role column directly
+        type: role === 'assistant' ? 'ai' : role, // Keep type for backward compatibility
         content: content
       })
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error saving message:', error);
+      throw error;
+    }
+    
+    console.log('Message saved successfully:', data);
     
     // Update conversation's updated_at timestamp
     await supabase
@@ -576,13 +591,20 @@ class ChatFeaturesService {
    * Get messages for a conversation
    */
   async getConversationMessages(conversationId: string) {
+    console.log('Fetching messages for conversation:', conversationId);
+    
     const { data, error } = await supabase
       .from('messages')
       .select('*')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching messages:', error);
+      throw error;
+    }
+    
+    console.log('Fetched messages:', data);
     return data || [];
   }
 

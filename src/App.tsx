@@ -205,8 +205,11 @@ function App() {
   }, [user]);
 
   const loadConversations = async () => {
+    console.log('loadConversations called, user:', user);
+    
     if (!user) {
       console.log('No user found, skipping conversation loading');
+      setConversations([]);
       return;
     }
     
@@ -480,26 +483,40 @@ function App() {
    * Handle conversation selection from sidebar
    */
   const handleConversationSelect = async (conversationId: string) => {
-    if (!user) return;
+    console.log('handleConversationSelect called with:', conversationId);
+    console.log('Current user:', user);
+    console.log('Available conversations:', conversations);
+    
+    if (!user) {
+      console.log('No user found, cannot select conversation');
+      return;
+    }
+    
+    console.log('Selecting conversation:', conversationId);
     
     // Find conversation title first
     const conversation = conversations.find(c => c.id === conversationId);
+    console.log('Found conversation:', conversation);
+    
     setCurrentConversationId(conversationId);
     setConversationTitle(conversation?.title || 'Conversatie wordt geladen...');
     
     try {
       // Load messages for the selected conversation
+      console.log('Loading messages for conversation:', conversationId);
       const conversationMessages = await chatFeaturesService.getConversationMessages(conversationId);
+      console.log('Raw messages from database:', conversationMessages);
       
       if (conversationMessages && conversationMessages.length > 0) {
         // Convert to Message format
         const messages: Message[] = conversationMessages.map((msg: any) => ({
           id: msg.id,
-          type: msg.role === 'user' ? 'user' : 'ai',
+          type: (msg.role || msg.type) === 'user' ? 'user' : 'ai',
           content: msg.content,
           timestamp: new Date(msg.created_at)
         }));
         
+        console.log('Converted messages:', messages);
         setMessages(messages);
         console.log(`Loaded ${messages.length} messages for conversation ${conversationId}`);
       } else {
