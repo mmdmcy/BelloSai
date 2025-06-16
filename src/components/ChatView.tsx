@@ -27,6 +27,7 @@ import { CustomizationSettings } from '../App';
 import ModelSelector from './ModelSelector';
 import AttachmentUpload from './AttachmentUpload';
 import ChatSharing from './ChatSharing';
+import AnonymousUsageIndicator from './AnonymousUsageIndicator';
 
 interface ChatViewProps {
   isDark: boolean;
@@ -42,6 +43,8 @@ interface ChatViewProps {
   isGenerating?: boolean;
   conversationId?: string;
   conversationTitle?: string;
+  isLoggedIn?: boolean;
+  onLoginClick?: () => void;
 }
 
 export default function ChatView({ 
@@ -57,7 +60,9 @@ export default function ChatView({
   onRegenerateResponse,
   isGenerating = false,
   conversationId,
-  conversationTitle = 'Untitled Conversation'
+  conversationTitle = 'Untitled Conversation',
+  isLoggedIn = false,
+  onLoginClick
 }: ChatViewProps) {
   // Input state management
   const [inputValue, setInputValue] = useState('');
@@ -663,6 +668,11 @@ export default function ChatView({
       {!hideInput && (
         <div className={`pb-6 ${getResponsivePadding()}`}>
           <div className="w-full mx-auto" style={{ maxWidth: getResponsiveMaxWidth() }}>
+            {/* Anonymous Usage Indicator */}
+            {!isLoggedIn && onLoginClick && (
+              <AnonymousUsageIndicator onLoginClick={onLoginClick} />
+            )}
+            
             <form onSubmit={handleSubmit}>
               {/* Message Input */}
               <div className={`relative rounded-2xl border ${

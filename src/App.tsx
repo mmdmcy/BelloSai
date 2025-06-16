@@ -37,6 +37,7 @@ import { useAuth } from './contexts/AuthContext';
 import { supabase } from './lib/supabase';
 import { sendChatMessage, DeepSeekModel, ChatMessage } from './lib/supabase-chat';
 import { chatFeaturesService } from './lib/chat-features';
+import { anonymousUsageService } from './lib/anonymous-usage';
 import { layoutManager, ExtendedLayoutConfig, MobileLayoutConfig, defaultMobileLayout } from './lib/auth-integration'
 import { LogIn, UserPlus, User, Loader2, Menu, X } from 'lucide-react'
 
@@ -335,6 +336,7 @@ function App() {
   /**
    * Handle sending a new message
    * Creates user message and gets AI response from DeepSeek
+   * Supports both authenticated and anonymous users
    */
   const sendMessage = async (content: string) => {
     try {
@@ -344,6 +346,24 @@ function App() {
       if (isGenerating) {
         console.log('⚠️ Already generating, skipping request');
         return; // Prevent multiple simultaneous requests
+      }
+
+      // Check anonymous user limits if not logged in
+      if (!user) {
+        if (!anonymousUsageService.canSendMessage()) {
+          const stats = anonymousUsageService.getUsageStats();
+          const errorMessage: Message = {
+            id: Date.now().toString(),
+            type: 'ai',
+            content: `Je hebt je dagelijkse limiet van ${stats.limit} berichten bereikt. Log in voor onbeperkt gebruik of probeer het morgen opnieuw. Je limiet wordt gereset om ${stats.resetTime}.`,
+            timestamp: new Date()
+          };
+          setMessages(prev => [...prev, errorMessage]);
+          return;
+        }
+        
+        // Increment usage for anonymous users
+        anonymousUsageService.incrementMessageCount();
       }
       
       const userMessage: Message = {
@@ -356,7 +376,7 @@ function App() {
       console.log('📝 Adding user message:', userMessage);
       setMessages(prev => [...prev, userMessage]);
       setMessageCount(prev => prev + 1);
-            setIsGenerating(true);
+      setIsGenerating(true);
       console.log('🔄 Set isGenerating to true');
       
       // Add a small delay to ensure state is updated
@@ -1065,6 +1085,8 @@ function App() {
                 onModelChange={setSelectedModel}
                 availableModels={availableModels}
                 customization={customization}
+                isLoggedIn={!!user}
+                onLoginClick={() => setShowLoginModal(true)}
               />
             ) : (
               <ChatView 
@@ -1075,6 +1097,8 @@ function App() {
                 onModelChange={setSelectedModel}
                 availableModels={availableModels}
                 customization={customization}
+                isLoggedIn={!!user}
+                onLoginClick={() => setShowLoginModal(true)}
               />
             )}
           </div>
@@ -1099,6 +1123,8 @@ function App() {
                   availableModels={availableModels}
                   hideInput={true}
                   customization={customization}
+                  isLoggedIn={!!user}
+                  onLoginClick={() => setShowLoginModal(true)}
                 />
               ) : (
                 <MainContent 
@@ -1109,6 +1135,8 @@ function App() {
                   availableModels={availableModels}
                   inputOnly={false}
                   customization={customization}
+                  isLoggedIn={!!user}
+                  onLoginClick={() => setShowLoginModal(true)}
                 />
               )}
             </div>
@@ -1447,6 +1475,8 @@ function App() {
                       hideInput={true}
                       customization={customization}
                       isGenerating={isGenerating}
+                      isLoggedIn={!!user}
+                      onLoginClick={() => setShowLoginModal(true)}
                     />
                   ) : (
                     <ChatView 
@@ -1461,6 +1491,8 @@ function App() {
                       isGenerating={isGenerating}
                       conversationId={currentConversationId || undefined}
                       conversationTitle={conversationTitle}
+                      isLoggedIn={!!user}
+                      onLoginClick={() => setShowLoginModal(true)}
                     />
                   )}
                 </div>
@@ -1479,6 +1511,8 @@ function App() {
                       inputOnly={true}
                       customization={customization}
                       isGenerating={isGenerating}
+                      isLoggedIn={!!user}
+                      onLoginClick={() => setShowLoginModal(true)}
                     />
                   ) : (
                     <ChatView 
@@ -1493,6 +1527,8 @@ function App() {
                       isGenerating={isGenerating}
                       conversationId={currentConversationId || undefined}
                       conversationTitle={conversationTitle}
+                      isLoggedIn={!!user}
+                      onLoginClick={() => setShowLoginModal(true)}
                     />
                   )}
                 </div>

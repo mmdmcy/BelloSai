@@ -23,6 +23,7 @@ import { Sparkles, Compass, Code, GraduationCap, ChevronDown, Search, Paperclip,
 import ActionButton from './ActionButton';
 import ModelSelector from './ModelSelector';
 import { CustomizationSettings } from '../App';
+import AnonymousUsageIndicator from './AnonymousUsageIndicator';
 
 interface MainContentProps {
   isDark: boolean;
@@ -34,6 +35,8 @@ interface MainContentProps {
   inputOnly?: boolean;
   customization: CustomizationSettings;
   isGenerating?: boolean;
+  isLoggedIn?: boolean;
+  onLoginClick?: () => void;
 }
 
 export default function MainContent({ 
@@ -45,7 +48,9 @@ export default function MainContent({
   hideInput = false,
   inputOnly = false,
   customization,
-  isGenerating = false
+  isGenerating = false,
+  isLoggedIn = false,
+  onLoginClick
 }: MainContentProps) {
   // Input state management
   const [inputValue, setInputValue] = useState('');
@@ -154,8 +159,13 @@ export default function MainContent({
   // Input-only mode - renders just the message input interface with responsive sizing
   if (inputOnly) {
     return (
-      <div className="h-full flex items-end\" ref={containerRef}>
+      <div className="h-full flex items-end" ref={containerRef}>
         <div className="w-full">
+          {/* Anonymous Usage Indicator */}
+          {!isLoggedIn && onLoginClick && (
+            <AnonymousUsageIndicator onLoginClick={onLoginClick} />
+          )}
+          
           <form onSubmit={handleSubmit}>
             {/* Message Input Container */}
             <div className={`relative rounded-2xl border ${
@@ -302,6 +312,11 @@ export default function MainContent({
       {!hideInput && (
         <div className="px-8 pb-6">
           <div className="w-full mx-auto" style={{ maxWidth: getResponsiveMaxWidth() }}>
+            {/* Anonymous Usage Indicator */}
+            {!isLoggedIn && onLoginClick && (
+              <AnonymousUsageIndicator onLoginClick={onLoginClick} />
+            )}
+            
             {/* Terms and Privacy Links */}
             <p 
               className={`text-xs text-center mb-6 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
