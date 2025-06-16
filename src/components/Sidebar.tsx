@@ -46,6 +46,13 @@ export default function Sidebar({
   currentConversationId,
   onConversationSelect
 }: SidebarProps) {
+  
+  // DEBUG: Log when component renders
+  console.log('🔧 Sidebar component rendered with:', {
+    conversationsCount: conversations.length,
+    currentConversationId,
+    onConversationSelect: !!onConversationSelect
+  });
 
   /**
    * Helper function to get appropriate text color in dark mode
@@ -142,7 +149,11 @@ export default function Sidebar({
           </button>
         )}
         
-        {conversations.length > 0 ? (
+        {(() => {
+          console.log('Sidebar: Rendering conversations, count:', conversations.length);
+          console.log('Sidebar: Conversations data:', conversations);
+          return conversations.length > 0;
+        })() ? (
           <>
             {/* Today Section */}
             <div className={`text-xs font-medium mb-2`}
@@ -156,7 +167,19 @@ export default function Sidebar({
             {conversations.map((conversation) => (
               <button 
                 key={conversation.id}
-                onClick={() => onConversationSelect?.(conversation.id)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('🚀 CONVERSATION CLICKED!', conversation.id, conversation.title);
+                  alert(`Clicked conversation: ${conversation.title}`);
+                  console.log('onConversationSelect function:', onConversationSelect);
+                  if (onConversationSelect) {
+                    console.log('Calling onConversationSelect...');
+                    onConversationSelect(conversation.id);
+                  } else {
+                    console.error('onConversationSelect is not defined!');
+                  }
+                }}
                 className={`w-full text-left px-3 py-2 rounded-lg mb-2 transition-colors ${
                   currentConversationId === conversation.id
                     ? (isDark ? 'bg-gray-700 text-white' : 'text-purple-800')

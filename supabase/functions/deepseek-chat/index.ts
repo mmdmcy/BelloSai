@@ -119,10 +119,10 @@ serve(async (req) => {
     for (const msg of messages) {
       if ('type' in msg) {
         // Old format for backward compatibility
-        deepSeekMessages.push({
-          role: msg.type === 'user' ? 'user' : 'assistant',
-          content: msg.content
-        });
+      deepSeekMessages.push({
+        role: msg.type === 'user' ? 'user' : 'assistant',
+        content: msg.content
+      });
       } else {
         // New format with role directly
         deepSeekMessages.push({
