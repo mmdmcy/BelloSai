@@ -205,18 +205,13 @@ function App() {
   }, [user]);
 
   const loadConversations = async () => {
-    console.log('loadConversations called, user:', user);
-    
     if (!user) {
-      console.log('No user found, skipping conversation loading');
       setConversations([]);
       return;
     }
     
-    console.log('Loading conversations for user:', user.id);
     try {
       const userConversations = await chatFeaturesService.getUserConversations(user.id);
-      console.log('Loaded conversations:', userConversations.length, userConversations);
       setConversations(userConversations);
     } catch (error) {
       console.error('Failed to load conversations:', error);
@@ -477,35 +472,26 @@ function App() {
     setMessages([]);
     setCurrentConversationId(null);
     setConversationTitle('Untitled Conversation');
+    setIsGenerating(false); // Reset generating state
   };
 
   /**
    * Handle conversation selection from sidebar
    */
   const handleConversationSelect = async (conversationId: string) => {
-    console.log('handleConversationSelect called with:', conversationId);
-    console.log('Current user:', user);
-    console.log('Available conversations:', conversations);
+    if (!user) return;
     
-    if (!user) {
-      console.log('No user found, cannot select conversation');
-      return;
-    }
-    
-    console.log('Selecting conversation:', conversationId);
+    // Reset generating state when switching conversations
+    setIsGenerating(false);
     
     // Find conversation title first
     const conversation = conversations.find(c => c.id === conversationId);
-    console.log('Found conversation:', conversation);
-    
     setCurrentConversationId(conversationId);
     setConversationTitle(conversation?.title || 'Conversatie wordt geladen...');
     
     try {
       // Load messages for the selected conversation
-      console.log('Loading messages for conversation:', conversationId);
       const conversationMessages = await chatFeaturesService.getConversationMessages(conversationId);
-      console.log('Raw messages from database:', conversationMessages);
       
       if (conversationMessages && conversationMessages.length > 0) {
         // Convert to Message format
@@ -516,11 +502,8 @@ function App() {
           timestamp: new Date(msg.created_at)
         }));
         
-        console.log('Converted messages:', messages);
         setMessages(messages);
-        console.log(`Loaded ${messages.length} messages for conversation ${conversationId}`);
       } else {
-        console.log('No messages found for conversation', conversationId);
         setMessages([]);
       }
       
@@ -531,9 +514,35 @@ function App() {
       // Show error but still allow user to use the conversation
       setMessages([]);
       setConversationTitle(conversation?.title || 'Conversatie (laden mislukt)');
+    }
+  };
+
+  /**
+   * Handle conversation deletion from sidebar
+   */
+  const handleConversationDelete = async (conversationId: string) => {
+    if (!user) return;
+    
+    try {
+      console.log('Deleting conversation:', conversationId);
       
-      // You could show a toast notification here
-      console.warn('Conversation loaded but messages could not be retrieved. You can still continue chatting.');
+      // Delete from database
+      await chatFeaturesService.deleteConversation(conversationId);
+      
+      // If we're currently viewing this conversation, clear the view
+      if (currentConversationId === conversationId) {
+        setMessages([]);
+        setCurrentConversationId(null);
+        setConversationTitle('Untitled Conversation');
+      }
+      
+      // Reload conversations to update sidebar
+      await loadConversations();
+      
+      console.log('Conversation deleted successfully');
+    } catch (error) {
+      console.error('Failed to delete conversation:', error);
+      alert('Er is een fout opgetreden bij het verwijderen van de conversatie.');
     }
   };
 
@@ -1178,6 +1187,7 @@ function App() {
                   conversations={conversations}
                   currentConversationId={currentConversationId}
                   onConversationSelect={handleConversationSelect}
+                  onConversationDelete={handleConversationDelete}
                 />
               )}
 

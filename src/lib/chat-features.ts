@@ -508,8 +508,6 @@ class ChatFeaturesService {
    * Get user's conversations with metadata
    */
   async getUserConversations(userId: string) {
-    console.log('Getting conversations for user:', userId);
-    
     const { data, error } = await supabase
       .from('conversations')
       .select('*')
@@ -521,7 +519,6 @@ class ChatFeaturesService {
       throw error;
     }
     
-    console.log('Retrieved conversations:', data);
     return data || [];
   }
 
@@ -558,8 +555,6 @@ class ChatFeaturesService {
    * Save a message to a conversation
    */
   async saveMessage(conversationId: string, role: 'user' | 'assistant', content: string) {
-    console.log('Saving message:', { conversationId, role, content: content.substring(0, 100) + '...' });
-    
     const { data, error } = await supabase
       .from('messages')
       .insert({
@@ -576,8 +571,6 @@ class ChatFeaturesService {
       throw error;
     }
     
-    console.log('Message saved successfully:', data);
-    
     // Update conversation's updated_at timestamp
     await supabase
       .from('conversations')
@@ -591,8 +584,6 @@ class ChatFeaturesService {
    * Get messages for a conversation
    */
   async getConversationMessages(conversationId: string) {
-    console.log('Fetching messages for conversation:', conversationId);
-    
     const { data, error } = await supabase
       .from('messages')
       .select('*')
@@ -604,7 +595,6 @@ class ChatFeaturesService {
       throw error;
     }
     
-    console.log('Fetched messages:', data);
     return data || [];
   }
 
