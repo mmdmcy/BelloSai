@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session } from '@supabase/supabase-js'
-import { supabase } from '../lib/supabase'
+import { supabase, forceSessionRestore, checkAuthStatus } from '../lib/supabase'
 
 interface AuthContextType {
   user: User | null
@@ -37,9 +37,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const storedSession = localStorage.getItem('bellosai-auth-token')
         if (storedSession) {
           console.log('🔍 Found stored auth token, waiting for session restoration...')
+          console.log('🔍 Token preview:', storedSession.substring(0, 50) + '...')
         } else {
           console.log('🔍 No stored auth token found')
         }
+        
+        // Also check for any other Supabase auth keys
+        const allKeys = Object.keys(localStorage).filter(key => key.includes('supabase') || key.includes('auth'))
+        console.log('🔍 All auth-related localStorage keys:', allKeys)
       } catch (error) {
         console.warn('⚠️ Could not check stored session:', error)
       }
@@ -63,11 +68,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         
         // Clear the fallback timeout since we got a response
         if (fallbackTimeoutId) {
+          console.log('✅ Clearing fallback timeout - auth event received')
           clearTimeout(fallbackTimeoutId)
           fallbackTimeoutId = null
         }
         
-        // Update state
+        // Update state immediately
         setSession(session)
         setUser(session?.user ?? null)
         setLoading(false)
@@ -78,6 +84,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           console.log('✅ User signed in:', session?.user?.email)
         } else if (event === 'SIGNED_OUT') {
           console.log('✅ User signed out')
+          // Clear any stored tokens on sign out
+          localStorage.removeItem('bellosai-auth-token')
         } else if (event === 'TOKEN_REFRESHED') {
           console.log('🔄 Token refreshed for user:', session?.user?.email)
         } else if (event === 'INITIAL_SESSION') {
@@ -90,25 +98,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const getInitialSession = async () => {
       try {
         console.log('🔄 Getting initial session...')
-        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        // First check if we have a token
+        const hasToken = checkAuthStatus()
+        
+        // Try to get session
+        const session = await forceSessionRestore()
         
         if (!mounted) return
         
-        if (error) {
-          console.error('❌ Error getting initial session:', error)
-          // Clear timeout and mark as ready even if there's an error
-          if (fallbackTimeoutId) {
-            clearTimeout(fallbackTimeoutId)
-            fallbackTimeoutId = null
+        if (!session && hasToken) {
+          console.warn('⚠️ Have token but no session - attempting refresh...')
+          // Try to refresh the session
+          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession()
+          if (refreshError) {
+            console.error('❌ Error refreshing session:', refreshError)
+            // Clear invalid token
+            localStorage.removeItem('bellosai-auth-token')
+          } else if (refreshData.session) {
+            console.log('✅ Session refreshed successfully')
+            return // Let the auth state change handler deal with it
           }
-          setLoading(false)
-          setIsAuthReady(true)
-          return
         }
         
-        // Start fallback timeout only after we've tried to get the session
-        // and if we don't have a session yet
-        if (!session && mounted) {
+        // Only start fallback timeout if we have no stored token at all
+        const hasStoredToken = localStorage.getItem('bellosai-auth-token')
+        if (!session && !hasStoredToken && mounted) {
+          console.log('🕐 No session and no stored token - starting fallback timeout')
           fallbackTimeoutId = setTimeout(() => {
             if (mounted) {
               setLoading(currentLoading => {
@@ -121,7 +137,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
               })
               fallbackTimeoutId = null
             }
-          }, 5000) // Shorter timeout since we already tried to get session
+          }, 3000) // Even shorter timeout since no token exists
+        } else if (!session && hasStoredToken && mounted) {
+          console.log('🕐 No session but stored token exists - waiting longer for restoration')
+          // Longer timeout when we have a stored token - give it time to restore
+          fallbackTimeoutId = setTimeout(() => {
+            if (mounted) {
+              setLoading(currentLoading => {
+                if (currentLoading) {
+                  console.warn('⚠️ Auth fallback timeout - stored token failed to restore session')
+                  setIsAuthReady(true)
+                  return false
+                }
+                return currentLoading
+              })
+              fallbackTimeoutId = null
+            }
+          }, 15000) // Much longer timeout when we expect a session to be restored
         }
         
         // Note: We don't set the session here because onAuthStateChange will handle it
