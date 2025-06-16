@@ -660,21 +660,24 @@ class ChatFeaturesService {
    * Get messages for a conversation
    */
   async getConversationMessages(conversationId: string) {
-    console.log('📡 ChatFeaturesService: Getting messages for conversation:', conversationId);
-    
-    const { data, error } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true });
+    try {
+      // Simple direct query without timeout complexity
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
 
-    if (error) {
-      console.error('❌ Error fetching messages:', error);
-      throw error;
+      if (error) {
+        console.error('Error fetching messages:', error);
+        return []; // Return empty array instead of throwing
+      }
+      
+      return data || [];
+    } catch (error) {
+      console.error('ChatFeaturesService: Query failed:', error);
+      return []; // Always return empty array on error
     }
-    
-    console.log('📨 ChatFeaturesService: Retrieved messages:', data);
-    return data || [];
   }
 
   /**

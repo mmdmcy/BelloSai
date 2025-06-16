@@ -108,6 +108,8 @@ function App() {
   const [conversations, setConversations] = useState<any[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [conversationTitle, setConversationTitle] = useState('Untitled Conversation');
+  const [isLoadingConversation, setIsLoadingConversation] = useState(false);
+  const [conversationCache, setConversationCache] = useState<Map<string, Message[]>>(new Map());
 
   // Search state for detached search functionality
   const [searchQuery, setSearchQuery] = useState('');
@@ -530,56 +532,61 @@ function App() {
    * Handle conversation selection from sidebar
    */
   const handleConversationSelect = async (conversationId: string) => {
-    console.log('🔄 handleConversationSelect called with ID:', conversationId);
+    if (!user) return;
     
-    if (!user) {
-      console.log('❌ No user found, returning');
+    // Prevent rapid clicking on the same conversation
+    if (currentConversationId === conversationId) {
       return;
     }
     
-    console.log('👤 User found:', user.id);
-    
     // Reset generating state when switching conversations
     setIsGenerating(false);
+    setIsLoadingConversation(true);
     
     // Find conversation title first
     const conversation = conversations.find(c => c.id === conversationId);
-    console.log('💬 Found conversation:', conversation);
     
     setCurrentConversationId(conversationId);
     setConversationTitle(conversation?.title || 'Conversatie wordt geladen...');
     
     try {
-      console.log('📡 Loading messages for conversation:', conversationId);
-      // Load messages for the selected conversation
-      const conversationMessages = await chatFeaturesService.getConversationMessages(conversationId);
-      console.log('📨 Raw messages from database:', conversationMessages);
-      
-      if (conversationMessages && conversationMessages.length > 0) {
-        console.log('✅ Found', conversationMessages.length, 'messages');
-        // Convert to Message format
-        const messages: Message[] = conversationMessages.map((msg: any) => ({
-          id: msg.id,
-          type: (msg.role || msg.type) === 'user' ? 'user' : 'ai',
-          content: msg.content,
-          timestamp: new Date(msg.created_at)
-        }));
-        
-        console.log('🔄 Converted messages:', messages);
-        setMessages(messages);
+      // Check cache first
+      if (conversationCache.has(conversationId)) {
+        const cachedMessages = conversationCache.get(conversationId)!;
+        setMessages(cachedMessages);
       } else {
-        console.log('⚠️ No messages found, setting empty array');
-        setMessages([]);
+        // Simple direct call - the service handles errors gracefully
+        const conversationMessages = await chatFeaturesService.getConversationMessages(conversationId);
+        
+        if (conversationMessages && conversationMessages.length > 0) {
+          // Convert to Message format
+          const messages: Message[] = conversationMessages.map((msg: any) => ({
+            id: msg.id,
+            type: (msg.role || msg.type) === 'user' ? 'user' : 'ai',
+            content: msg.content,
+            timestamp: new Date(msg.created_at)
+          }));
+          
+          setMessages(messages);
+          
+          // Cache the messages
+          setConversationCache(prev => new Map(prev.set(conversationId, messages)));
+        } else {
+          setMessages([]);
+          // Cache empty array too
+          setConversationCache(prev => new Map(prev.set(conversationId, [])));
+        }
       }
       
       // Update title once loaded
       setConversationTitle(conversation?.title || 'Untitled Conversation');
-      console.log('✅ Conversation loaded successfully');
     } catch (error) {
-      console.error('❌ Failed to load conversation messages:', error);
+      console.error('Failed to load conversation messages:', error);
       // Show error but still allow user to use the conversation
       setMessages([]);
       setConversationTitle(conversation?.title || 'Conversatie (laden mislukt)');
+    } finally {
+      setIsLoadingConversation(false);
     }
   };
 
