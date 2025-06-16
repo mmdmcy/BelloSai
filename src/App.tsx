@@ -530,21 +530,33 @@ function App() {
    * Handle conversation selection from sidebar
    */
   const handleConversationSelect = async (conversationId: string) => {
-    if (!user) return;
+    console.log('🔄 handleConversationSelect called with ID:', conversationId);
+    
+    if (!user) {
+      console.log('❌ No user found, returning');
+      return;
+    }
+    
+    console.log('👤 User found:', user.id);
     
     // Reset generating state when switching conversations
     setIsGenerating(false);
     
     // Find conversation title first
     const conversation = conversations.find(c => c.id === conversationId);
+    console.log('💬 Found conversation:', conversation);
+    
     setCurrentConversationId(conversationId);
     setConversationTitle(conversation?.title || 'Conversatie wordt geladen...');
     
     try {
+      console.log('📡 Loading messages for conversation:', conversationId);
       // Load messages for the selected conversation
       const conversationMessages = await chatFeaturesService.getConversationMessages(conversationId);
+      console.log('📨 Raw messages from database:', conversationMessages);
       
       if (conversationMessages && conversationMessages.length > 0) {
+        console.log('✅ Found', conversationMessages.length, 'messages');
         // Convert to Message format
         const messages: Message[] = conversationMessages.map((msg: any) => ({
           id: msg.id,
@@ -553,15 +565,18 @@ function App() {
           timestamp: new Date(msg.created_at)
         }));
         
+        console.log('🔄 Converted messages:', messages);
         setMessages(messages);
       } else {
+        console.log('⚠️ No messages found, setting empty array');
         setMessages([]);
       }
       
       // Update title once loaded
       setConversationTitle(conversation?.title || 'Untitled Conversation');
+      console.log('✅ Conversation loaded successfully');
     } catch (error) {
-      console.error('Failed to load conversation messages:', error);
+      console.error('❌ Failed to load conversation messages:', error);
       // Show error but still allow user to use the conversation
       setMessages([]);
       setConversationTitle(conversation?.title || 'Conversatie (laden mislukt)');

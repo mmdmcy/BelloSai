@@ -176,7 +176,11 @@ export default function Sidebar({
                 }}
               >
                 <button 
-                  onClick={() => onConversationSelect?.(conversation.id)}
+                  onClick={() => {
+                    console.log('🖱️ Sidebar: Conversation clicked:', conversation.id);
+                    console.log('🔗 onConversationSelect function:', onConversationSelect);
+                    onConversationSelect?.(conversation.id);
+                  }}
                   className={`w-full text-left px-3 py-2 pr-10 transition-colors ${
                     currentConversationId === conversation.id
                       ? (isDark ? 'text-white' : 'text-purple-800')
