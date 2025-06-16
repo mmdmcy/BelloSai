@@ -473,13 +473,6 @@ function App() {
           await chatFeaturesService.saveMessage(conversationId, 'assistant', fullResponse);
           console.log('✅ AI response saved successfully');
           
-          // Clear cache for this conversation so it reloads fresh data
-          setConversationCache(prev => {
-            const newCache = new Map(prev);
-            newCache.delete(conversationId);
-            return newCache;
-          });
-          
           // Generate better title after first AI response
           if (messages.length === 0) { // This was the first exchange
             try {
@@ -544,6 +537,9 @@ function App() {
     setCurrentConversationId(null);
     setConversationTitle('Untitled Conversation');
     setIsGenerating(false); // Reset generating state
+    
+    // Clear all cache when starting new chat to ensure fresh data
+    setConversationCache(new Map());
   };
 
   /**
@@ -554,36 +550,8 @@ function App() {
     
     console.log('🔄 Force refreshing conversation messages:', conversationId);
     
-    // Clear cache for this conversation
-    setConversationCache(prev => {
-      const newCache = new Map(prev);
-      newCache.delete(conversationId);
-      return newCache;
-    });
-    
-    // Reload messages
-    try {
-      const conversationMessages = await chatFeaturesService.getConversationMessages(conversationId);
-      
-      if (conversationMessages && conversationMessages.length > 0) {
-        const messages: Message[] = conversationMessages.map((msg: any) => ({
-          id: msg.id,
-          type: (msg.role || msg.type) === 'user' ? 'user' : 'ai',
-          content: msg.content,
-          timestamp: new Date(msg.created_at)
-        }));
-        
-        setMessages(messages);
-        setConversationCache(prev => new Map(prev.set(conversationId, messages)));
-        console.log('✅ Conversation refreshed with', messages.length, 'messages');
-      } else {
-        setMessages([]);
-        setConversationCache(prev => new Map(prev.set(conversationId, [])));
-        console.log('⚠️ No messages found after refresh');
-      }
-    } catch (error) {
-      console.error('❌ Failed to refresh conversation:', error);
-    }
+    // Since we always load fresh data now, just call handleConversationSelect
+    await handleConversationSelect(conversationId);
   };
 
   /**
@@ -592,11 +560,10 @@ function App() {
   const handleConversationSelect = async (conversationId: string) => {
     if (!user) return;
     
-    // Prevent rapid clicking on the same conversation
+    // If clicking the same conversation, just reload it fresh
     if (currentConversationId === conversationId) {
-      // If clicking the same conversation, refresh it
-      await refreshConversationMessages(conversationId);
-      return;
+      console.log('🔄 Reloading same conversation with fresh data');
+      // Continue with normal loading process to get fresh data
     }
     
     // Reset generating state when switching conversations
@@ -610,32 +577,29 @@ function App() {
     setConversationTitle(conversation?.title || 'Conversatie wordt geladen...');
     
     try {
-      // Check cache first
-      if (conversationCache.has(conversationId)) {
-        const cachedMessages = conversationCache.get(conversationId)!;
-        setMessages(cachedMessages);
-      } else {
-        // Simple direct call - the service handles errors gracefully
-        const conversationMessages = await chatFeaturesService.getConversationMessages(conversationId);
+      // Always fetch fresh data from database (don't use cache for now)
+      console.log('🔄 Loading fresh messages from database for:', conversationId);
+      const conversationMessages = await chatFeaturesService.getConversationMessages(conversationId);
+      
+      if (conversationMessages && conversationMessages.length > 0) {
+        // Convert to Message format
+        const messages: Message[] = conversationMessages.map((msg: any) => ({
+          id: msg.id,
+          type: (msg.role || msg.type) === 'user' ? 'user' : 'ai',
+          content: msg.content,
+          timestamp: new Date(msg.created_at)
+        }));
         
-        if (conversationMessages && conversationMessages.length > 0) {
-          // Convert to Message format
-          const messages: Message[] = conversationMessages.map((msg: any) => ({
-            id: msg.id,
-            type: (msg.role || msg.type) === 'user' ? 'user' : 'ai',
-            content: msg.content,
-            timestamp: new Date(msg.created_at)
-          }));
-          
-          setMessages(messages);
-          
-          // Cache the messages
-          setConversationCache(prev => new Map(prev.set(conversationId, messages)));
-        } else {
-          setMessages([]);
-          // Cache empty array too
-          setConversationCache(prev => new Map(prev.set(conversationId, [])));
-        }
+        console.log('✅ Loaded', messages.length, 'messages from database');
+        setMessages(messages);
+        
+        // Update cache with fresh data
+        setConversationCache(prev => new Map(prev.set(conversationId, messages)));
+      } else {
+        console.log('⚠️ No messages found in database');
+        setMessages([]);
+        // Cache empty array too
+        setConversationCache(prev => new Map(prev.set(conversationId, [])));
       }
       
       // Update title once loaded
