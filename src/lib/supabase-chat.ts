@@ -38,6 +38,9 @@ export async function sendChatMessage(
   onChunk?: (chunk: string) => void,
   conversationId?: string
 ): Promise<string> {
+  console.log('🎯 sendChatMessage function called');
+  console.log('📥 Parameters:', { messages, model, conversationId, onChunk: !!onChunk });
+  
   try {
     console.log('🚀 Starting chat message request:', { messages, model, conversationId });
     
