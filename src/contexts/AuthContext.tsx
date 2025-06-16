@@ -103,7 +103,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
           setLoading(false)
           setIsAuthReady(true)
+          return
         }
+        
+        // Start fallback timeout only after we've tried to get the session
+        // and if we don't have a session yet
+        if (!session && mounted) {
+          fallbackTimeoutId = setTimeout(() => {
+            if (mounted) {
+              setLoading(currentLoading => {
+                if (currentLoading) {
+                  console.warn('⚠️ Auth fallback timeout - marking as ready without session')
+                  setIsAuthReady(true)
+                  return false
+                }
+                return currentLoading
+              })
+              fallbackTimeoutId = null
+            }
+          }, 5000) // Shorter timeout since we already tried to get session
+        }
+        
         // Note: We don't set the session here because onAuthStateChange will handle it
         // This prevents double-setting and ensures consistency
       } catch (error) {
@@ -122,16 +142,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     // Start the initialization
     getInitialSession()
-
-    // Fallback timeout - if nothing happens in 10 seconds, mark as ready anyway
-    fallbackTimeoutId = setTimeout(() => {
-      if (mounted) {
-        console.warn('⚠️ Auth fallback timeout - marking as ready without session')
-        setLoading(false)
-        setIsAuthReady(true)
-        fallbackTimeoutId = null
-      }
-    }, 10000)
 
     return () => {
       console.log('🧹 Cleaning up auth subscription')
