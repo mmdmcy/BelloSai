@@ -430,6 +430,10 @@ function App() {
             ));
           }
         );
+        
+        // Stop loading immediately when streaming is complete
+        console.log('🛑 Stopping loading icon - streaming completed');
+        setIsGenerating(false);
         console.log('✅ sendChatMessage completed successfully');
       } catch (sendError) {
         console.error('❌ sendChatMessage failed:', sendError);
@@ -489,9 +493,9 @@ function App() {
       console.log('💥 Adding error message:', errorMessage);
       setMessages(prev => [...prev, errorMessage]);
     } finally {
-      console.log('🏁 Setting isGenerating to false');
+      console.log('🏁 Finally block - ensuring isGenerating is false');
       console.log('🔍 isGenerating before reset:', isGenerating);
-      setIsGenerating(false);
+      setIsGenerating(false); // Ensure it's always false, even if there was an error
       console.log('✅ isGenerating reset completed');
     }
     } catch (outerError) {
