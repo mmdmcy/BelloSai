@@ -62,32 +62,53 @@ class ChatFeaturesService {
    * Create a new conversation branch from a specific message
    */
   async createBranch(conversationId: string, parentMessageId: string, title: string): Promise<ChatBranch> {
-    const { data, error } = await supabase
-      .from('conversation_branches')
-      .insert({
-        conversation_id: conversationId,
-        parent_message_id: parentMessageId,
-        title: title
-      })
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('conversation_branches')
+        .insert({
+          conversation_id: conversationId,
+          parent_message_id: parentMessageId,
+          title: title
+        })
+        .select()
+        .single();
 
-    if (error) throw error;
-    return data;
+      if (error) {
+        if (error.code === '42P01') {
+          throw new Error('Conversation branches feature is not available - table does not exist');
+        }
+        throw error;
+      }
+      return data;
+    } catch (error) {
+      console.error('Error creating branch:', error);
+      throw error;
+    }
   }
 
   /**
    * Get all branches for a conversation
    */
   async getConversationBranches(conversationId: string): Promise<ChatBranch[]> {
-    const { data, error } = await supabase
-      .from('conversation_branches')
-      .select('*')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('conversation_branches')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: false });
 
-    if (error) throw error;
-    return data || [];
+      if (error) {
+        if (error.code === '42P01') {
+          // Table doesn't exist, return empty array
+          return [];
+        }
+        throw error;
+      }
+      return data || [];
+    } catch (error) {
+      console.warn('Error getting conversation branches:', error);
+      return [];
+    }
   }
 
   /**
@@ -330,40 +351,63 @@ class ChatFeaturesService {
    * Save stream state for resumability
    */
   async saveStreamState(conversationId: string, messageId: string, partialContent: string): Promise<void> {
-    await supabase
-      .from('stream_states')
-      .upsert({
-        conversation_id: conversationId,
-        message_id: messageId,
-        partial_content: partialContent,
-        updated_at: new Date().toISOString()
-      });
+    try {
+      const { error } = await supabase
+        .from('stream_states')
+        .upsert({
+          conversation_id: conversationId,
+          message_id: messageId,
+          partial_content: partialContent,
+          updated_at: new Date().toISOString()
+        });
+      
+      if (error && error.code !== '42P01') {
+        console.warn('Error saving stream state:', error);
+      }
+    } catch (error) {
+      // Silently fail if table doesn't exist
+      console.debug('Stream states table not available');
+    }
   }
 
   /**
    * Resume stream from saved state
    */
   async resumeStream(conversationId: string, messageId: string): Promise<string | null> {
-    const { data, error } = await supabase
-      .from('stream_states')
-      .select('partial_content')
-      .eq('conversation_id', conversationId)
-      .eq('message_id', messageId)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('stream_states')
+        .select('partial_content')
+        .eq('conversation_id', conversationId)
+        .eq('message_id', messageId)
+        .single();
 
-    if (error) return null;
-    return data?.partial_content || null;
+      if (error) return null;
+      return data?.partial_content || null;
+    } catch (error) {
+      // Return null if table doesn't exist
+      return null;
+    }
   }
 
   /**
    * Clear stream state after completion
    */
   async clearStreamState(conversationId: string, messageId: string): Promise<void> {
-    await supabase
-      .from('stream_states')
-      .delete()
-      .eq('conversation_id', conversationId)
-      .eq('message_id', messageId);
+    try {
+      const { error } = await supabase
+        .from('stream_states')
+        .delete()
+        .eq('conversation_id', conversationId)
+        .eq('message_id', messageId);
+      
+      if (error && error.code !== '42P01') {
+        console.warn('Error clearing stream state:', error);
+      }
+    } catch (error) {
+      // Silently fail if table doesn't exist
+      console.debug('Stream states table not available');
+    }
   }
 
   // ========================================
@@ -538,17 +582,49 @@ class ChatFeaturesService {
    * Delete conversation and all related data
    */
   async deleteConversation(conversationId: string): Promise<void> {
-    // Delete in order: stream_states, messages, branches, conversation
-    await supabase.from('stream_states').delete().eq('conversation_id', conversationId);
-    await supabase.from('messages').delete().eq('conversation_id', conversationId);
-    await supabase.from('conversation_branches').delete().eq('conversation_id', conversationId);
-    
-    const { error } = await supabase
-      .from('conversations')
-      .delete()
-      .eq('id', conversationId);
+    try {
+      // Delete stream_states if table exists (ignore 404 errors)
+      const { error: streamError } = await supabase
+        .from('stream_states')
+        .delete()
+        .eq('conversation_id', conversationId);
+      
+      if (streamError && streamError.code !== '42P01') {
+        console.warn('Error deleting stream states:', streamError);
+      }
 
-    if (error) throw error;
+      // Delete conversation_branches if table exists (ignore 404 errors)  
+      const { error: branchError } = await supabase
+        .from('conversation_branches')
+        .delete()
+        .eq('conversation_id', conversationId);
+      
+      if (branchError && branchError.code !== '42P01') {
+        console.warn('Error deleting conversation branches:', branchError);
+      }
+
+      // Delete messages (this table should exist)
+      const { error: messageError } = await supabase
+        .from('messages')
+        .delete()
+        .eq('conversation_id', conversationId);
+      
+      if (messageError) {
+        console.error('Error deleting messages:', messageError);
+        throw messageError;
+      }
+
+      // Delete the conversation itself
+      const { error } = await supabase
+        .from('conversations')
+        .delete()
+        .eq('id', conversationId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error in deleteConversation:', error);
+      throw error;
+    }
   }
 
   /**
