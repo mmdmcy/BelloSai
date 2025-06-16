@@ -335,7 +335,12 @@ function App() {
    * Creates user message and gets AI response from DeepSeek
    */
   const sendMessage = async (content: string) => {
-    if (isGenerating) return; // Prevent multiple simultaneous requests
+    console.log('🚀 sendMessage called with:', content);
+    
+    if (isGenerating) {
+      console.log('⚠️ Already generating, skipping request');
+      return; // Prevent multiple simultaneous requests
+    }
     
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -344,9 +349,11 @@ function App() {
       timestamp: new Date()
     };
 
+    console.log('📝 Adding user message:', userMessage);
     setMessages(prev => [...prev, userMessage]);
     setMessageCount(prev => prev + 1);
     setIsGenerating(true);
+    console.log('🔄 Set isGenerating to true');
 
     try {
       let conversationId = currentConversationId;
@@ -397,10 +404,12 @@ function App() {
       }));
 
       // Send to DeepSeek with streaming
+      console.log('📡 Calling sendChatMessage with:', { chatMessages, selectedModel });
       const fullResponse = await sendChatMessage(
         chatMessages,
         selectedModel as DeepSeekModel,
         (chunk: string) => {
+          console.log('📦 Received streaming chunk:', chunk);
           // Update the AI message with streaming content
           setMessages(prev => prev.map(msg => 
             msg.id === aiMessageId 
@@ -410,6 +419,7 @@ function App() {
         }
       );
 
+      console.log('✅ Full response received:', fullResponse);
       // Update with final response (in case streaming didn't capture everything)
       setMessages(prev => prev.map(msg => 
         msg.id === aiMessageId 
@@ -448,7 +458,7 @@ function App() {
       }
 
     } catch (error: any) {
-      console.error('Error sending message:', error);
+      console.error('❌ Error sending message:', error);
       
       // Create AI message with error
       const aiMessageId = (Date.now() + 1).toString();
@@ -459,8 +469,10 @@ function App() {
         timestamp: new Date()
       };
       
+      console.log('💥 Adding error message:', errorMessage);
       setMessages(prev => [...prev, errorMessage]);
     } finally {
+      console.log('🏁 Setting isGenerating to false');
       setIsGenerating(false);
     }
   };
