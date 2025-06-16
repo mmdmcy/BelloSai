@@ -357,12 +357,6 @@ function App() {
             setIsGenerating(true);
       console.log('🔄 Set isGenerating to true');
       
-      // Safety timeout to reset isGenerating if something goes wrong
-      const safetyTimeout = setTimeout(() => {
-        console.warn('⚠️ Safety timeout triggered - resetting isGenerating');
-        setIsGenerating(false);
-      }, 30000); // 30 seconds timeout
-      
       // Add a small delay to ensure state is updated
       await new Promise(resolve => setTimeout(resolve, 10));
       console.log('⏰ Delay completed, proceeding with message processing');
@@ -513,7 +507,6 @@ function App() {
     } finally {
       console.log('🏁 Finally block - ensuring isGenerating is false');
       console.log('🔍 isGenerating before reset:', isGenerating);
-      clearTimeout(safetyTimeout); // Clear the safety timeout
       setIsGenerating(false); // Ensure it's always false, even if there was an error
       console.log('✅ isGenerating reset completed');
     }
