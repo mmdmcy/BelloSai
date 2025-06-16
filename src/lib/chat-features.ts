@@ -631,27 +631,50 @@ class ChatFeaturesService {
    * Save a message to a conversation
    */
   async saveMessage(conversationId: string, role: 'user' | 'assistant', content: string) {
+    console.log('💾 ChatFeaturesService: Saving message...');
+    console.log('📝 Conversation ID:', conversationId);
+    console.log('📝 Role:', role);
+    console.log('📝 Content length:', content.length);
+    console.log('📝 Content preview:', content.substring(0, 100) + '...');
+    
+    const messageData = {
+      conversation_id: conversationId,
+      role: role, // Use role column directly
+      type: role === 'assistant' ? 'ai' : role, // Keep type for backward compatibility
+      content: content
+    };
+    
+    console.log('📝 Message data to insert:', messageData);
+    
     const { data, error } = await supabase
       .from('messages')
-      .insert({
-        conversation_id: conversationId,
-        role: role, // Use role column directly
-        type: role === 'assistant' ? 'ai' : role, // Keep type for backward compatibility
-        content: content
-      })
+      .insert(messageData)
       .select()
       .single();
 
     if (error) {
-      console.error('Error saving message:', error);
+      console.error('❌ Error saving message:', error);
+      console.error('❌ Error code:', error.code);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error details:', error.details);
       throw error;
     }
     
+    console.log('✅ Message saved successfully:', data.id);
+    
     // Update conversation's updated_at timestamp
-    await supabase
+    console.log('🔄 Updating conversation timestamp...');
+    const { error: updateError } = await supabase
       .from('conversations')
       .update({ updated_at: new Date().toISOString() })
       .eq('id', conversationId);
+      
+    if (updateError) {
+      console.error('⚠️ Failed to update conversation timestamp:', updateError);
+      // Don't throw here, message was saved successfully
+    } else {
+      console.log('✅ Conversation timestamp updated');
+    }
 
     return data;
   }

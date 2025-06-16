@@ -464,8 +464,21 @@ function App() {
 
       // Save AI response to database if we have a conversation
       if (conversationId && user) {
+        console.log('💾 Attempting to save AI response to database...');
+        console.log('📝 Conversation ID:', conversationId);
+        console.log('📝 User ID:', user.id);
+        console.log('📝 Response length:', fullResponse.length);
+        
         try {
           await chatFeaturesService.saveMessage(conversationId, 'assistant', fullResponse);
+          console.log('✅ AI response saved successfully');
+          
+          // Clear cache for this conversation so it reloads fresh data
+          setConversationCache(prev => {
+            const newCache = new Map(prev);
+            newCache.delete(conversationId);
+            return newCache;
+          });
           
           // Generate better title after first AI response
           if (messages.length === 0) { // This was the first exchange
@@ -487,9 +500,14 @@ function App() {
             }
           }
         } catch (error) {
-          console.error('Failed to save AI response:', error);
+          console.error('❌ Failed to save AI response:', error);
+          console.error('❌ Error details:', error);
           // Continue without database storage
         }
+      } else {
+        console.log('⚠️ Cannot save AI response - missing conversationId or user');
+        console.log('📝 conversationId:', conversationId);
+        console.log('📝 user:', user?.id);
       }
 
     } catch (error: any) {
@@ -529,6 +547,46 @@ function App() {
   };
 
   /**
+   * Force refresh conversation messages (clear cache and reload)
+   */
+  const refreshConversationMessages = async (conversationId: string) => {
+    if (!user || !conversationId) return;
+    
+    console.log('🔄 Force refreshing conversation messages:', conversationId);
+    
+    // Clear cache for this conversation
+    setConversationCache(prev => {
+      const newCache = new Map(prev);
+      newCache.delete(conversationId);
+      return newCache;
+    });
+    
+    // Reload messages
+    try {
+      const conversationMessages = await chatFeaturesService.getConversationMessages(conversationId);
+      
+      if (conversationMessages && conversationMessages.length > 0) {
+        const messages: Message[] = conversationMessages.map((msg: any) => ({
+          id: msg.id,
+          type: (msg.role || msg.type) === 'user' ? 'user' : 'ai',
+          content: msg.content,
+          timestamp: new Date(msg.created_at)
+        }));
+        
+        setMessages(messages);
+        setConversationCache(prev => new Map(prev.set(conversationId, messages)));
+        console.log('✅ Conversation refreshed with', messages.length, 'messages');
+      } else {
+        setMessages([]);
+        setConversationCache(prev => new Map(prev.set(conversationId, [])));
+        console.log('⚠️ No messages found after refresh');
+      }
+    } catch (error) {
+      console.error('❌ Failed to refresh conversation:', error);
+    }
+  };
+
+  /**
    * Handle conversation selection from sidebar
    */
   const handleConversationSelect = async (conversationId: string) => {
@@ -536,6 +594,8 @@ function App() {
     
     // Prevent rapid clicking on the same conversation
     if (currentConversationId === conversationId) {
+      // If clicking the same conversation, refresh it
+      await refreshConversationMessages(conversationId);
       return;
     }
     
