@@ -52,6 +52,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     console.log('🔄 Starting auth initialization...')
     
     let mounted = true
+    let fallbackTimeoutId: NodeJS.Timeout | null = null
 
     // Listen for auth changes first - this handles both initial session and changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -59,6 +60,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (!mounted) return
         
         console.log('🔄 Auth state changed:', event, session ? `User logged in: ${session.user.email}` : 'No session')
+        
+        // Clear the fallback timeout since we got a response
+        if (fallbackTimeoutId) {
+          clearTimeout(fallbackTimeoutId)
+          fallbackTimeoutId = null
+        }
         
         // Update state
         setSession(session)
@@ -89,7 +96,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         
         if (error) {
           console.error('❌ Error getting initial session:', error)
-          // Still mark as ready even if there's an error
+          // Clear timeout and mark as ready even if there's an error
+          if (fallbackTimeoutId) {
+            clearTimeout(fallbackTimeoutId)
+            fallbackTimeoutId = null
+          }
           setLoading(false)
           setIsAuthReady(true)
         }
@@ -98,6 +109,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       } catch (error) {
         console.error('❌ Error in getInitialSession:', error)
         if (mounted) {
+          // Clear timeout and mark as ready
+          if (fallbackTimeoutId) {
+            clearTimeout(fallbackTimeoutId)
+            fallbackTimeoutId = null
+          }
           setLoading(false)
           setIsAuthReady(true)
         }
@@ -108,18 +124,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     getInitialSession()
 
     // Fallback timeout - if nothing happens in 10 seconds, mark as ready anyway
-    const fallbackTimeoutId = setTimeout(() => {
-      if (mounted && loading) {
+    fallbackTimeoutId = setTimeout(() => {
+      if (mounted) {
         console.warn('⚠️ Auth fallback timeout - marking as ready without session')
         setLoading(false)
         setIsAuthReady(true)
+        fallbackTimeoutId = null
       }
     }, 10000)
 
     return () => {
       console.log('🧹 Cleaning up auth subscription')
       mounted = false
-      clearTimeout(fallbackTimeoutId)
+      if (fallbackTimeoutId) {
+        clearTimeout(fallbackTimeoutId)
+      }
       subscription.unsubscribe()
     }
   }, [])
