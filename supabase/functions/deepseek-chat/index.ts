@@ -280,22 +280,8 @@ serve(async (req) => {
         try {
           console.log('🌊 Starting streaming loop...');
           
-          // Save user message first before starting stream
-          if (conversationId) {
-            try {
-              await supabaseAdmin.from('messages').insert({
-                conversation_id: conversationId,
-                type: 'user',
-                content: messages[messages.length - 1].content,
-                model: model
-              })
-              console.log('✅ User message saved successfully');
-            } catch (dbError) {
-              console.error('Failed to save user message:', dbError);
-              controller.error(new Error('Database error: Failed to save user message'));
-              return;
-            }
-          }
+          // Skip saving user message here - it's handled by the frontend
+          console.log('📝 Skipping user message save - handled by frontend');
 
           while (true) {
             const { done, value } = await reader.read()
@@ -346,35 +332,8 @@ serve(async (req) => {
             return;
           }
 
-          // Save AI response with retry logic
-          if (conversationId) {
-            let retryCount = 0;
-            const maxRetries = 3;
-            
-            while (retryCount < maxRetries) {
-              try {
-                await supabaseAdmin.from('messages').insert({
-                  conversation_id: conversationId,
-                  type: 'ai',
-                  content: fullResponse,
-                  model: model
-                })
-                console.log('✅ AI response saved successfully');
-                break;
-              } catch (dbError) {
-                console.error(`Failed to save AI response (attempt ${retryCount + 1}):`, dbError);
-                retryCount++;
-                
-                if (retryCount === maxRetries) {
-                  // Don't throw error, just log it - the response was still delivered to the client
-                  console.error('Failed to save AI response after all retries');
-                } else {
-                  // Wait before retrying
-                  await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
-                }
-              }
-            }
-          }
+          // Skip saving AI response here - it's handled by the frontend
+          console.log('📝 Skipping AI response save - handled by frontend');
 
           // Send completion signal
           const completionPayload: any = { 
