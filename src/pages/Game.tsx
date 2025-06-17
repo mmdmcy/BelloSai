@@ -27,6 +27,8 @@ function GameComponent({ isDark, customization, onToggleTheme }: GameProps) {
   const [turn, setTurn] = useState<'player' | 'ai'>('player');
   const [lastGuess, setLastGuess] = useState<{text: string, correct: boolean, points?: number} | null>(null);
   const [gameEnded, setGameEnded] = useState(false);
+  const [wrongAnswers, setWrongAnswers] = useState(0); // Track wrong answers
+  const [maxWrongAnswers] = useState(3); // Game over after 3 wrong answers
 
   // Generate question on load
   useEffect(() => {
@@ -35,11 +37,11 @@ function GameComponent({ isDark, customization, onToggleTheme }: GameProps) {
 
   // Check if game is over
   useEffect(() => {
-    if (question && revealedAnswers.length === question.answers.length) {
+    if (question && (revealedAnswers.length === question.answers.length || wrongAnswers >= maxWrongAnswers)) {
       setGameEnded(true);
       setGameStatus('finished');
     }
-  }, [revealedAnswers, question]);
+  }, [revealedAnswers, question, wrongAnswers, maxWrongAnswers]);
 
   // Clear last guess after 3 seconds
   useEffect(() => {
@@ -60,6 +62,7 @@ function GameComponent({ isDark, customization, onToggleTheme }: GameProps) {
     setAiGuess('');
     setLastGuess(null);
     setGameEnded(false);
+    setWrongAnswers(0); // Reset wrong answers
     setTurn('player');
     
     try {
@@ -233,17 +236,26 @@ Make it fun and modern. No markdown formatting.`
       }, 1000);
     } else {
       // Wrong guess
+      const newWrongAnswers = wrongAnswers + 1;
+      setWrongAnswers(newWrongAnswers);
       setLastGuess({
         text: playerGuess.trim(),
         correct: false
       });
       setPlayerGuess('');
-      setTurn('ai');
       
-      // AI turn
-      setTimeout(() => {
-        handleAITurn();
-      }, 1000);
+      // Check if game over due to wrong answers
+      if (newWrongAnswers >= maxWrongAnswers) {
+        setGameEnded(true);
+        setGameStatus('finished');
+      } else {
+        setTurn('ai');
+        
+        // AI turn
+        setTimeout(() => {
+          handleAITurn();
+        }, 1000);
+      }
     }
   };
 
@@ -261,8 +273,8 @@ Make it fun and modern. No markdown formatting.`
         return;
       }
       
-      // NEW: AI should think of answers WITHOUT seeing the options!
-      const prompt = `You are playing Family Feud. The question is: "${question}"
+      // FIX: Use question.question instead of just question
+      const prompt = `You are playing Family Feud. The question is: "${question.question}"
 
 Already revealed answers: ${revealedAnswers.map(i => question.answers[i].text).join(', ') || 'None'}
 
@@ -300,7 +312,8 @@ Reply with ONLY your answer. No explanations.`;
         throw new Error('No response received from AI');
       }
       
-      const guess = response.trim();
+      // Clean up the response (remove quotes if present)
+      const guess = response.trim().replace(/^["']|["']$/g, '');
       setAiGuess(guess);
 
       // Check if AI guessed correctly using fuzzy matching
@@ -334,7 +347,16 @@ Reply with ONLY your answer. No explanations.`;
         }, 1000);
       } else {
         // AI wrong
-        setTurn('player');
+        const newWrongAnswers = wrongAnswers + 1;
+        setWrongAnswers(newWrongAnswers);
+        
+        // Check if game over due to wrong answers
+        if (newWrongAnswers >= maxWrongAnswers) {
+          setGameEnded(true);
+          setGameStatus('finished');
+        } else {
+          setTurn('player');
+        }
       }
     } catch (error) {
       console.error('AI turn failed:', error);
@@ -406,9 +428,12 @@ Reply with ONLY your answer. No explanations.`;
       <div className="bg-purple-600 text-white p-4">
         <div className="flex justify-between items-center max-w-4xl mx-auto">
           <h1 className="text-2xl font-bold">Family Feud</h1>
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-center">
             <div>You: {playerScore}</div>
             <div>AI: {aiScore}</div>
+            <div className="text-red-300">
+              ❌ {wrongAnswers}/{maxWrongAnswers}
+            </div>
             <button onClick={onToggleTheme} className="px-3 py-1 bg-white/20 rounded">
               {isDark ? '☀️' : '🌙'}
             </button>
@@ -449,6 +474,16 @@ Reply with ONLY your answer. No explanations.`;
         {gameEnded && (
           <div className={`text-center mb-6 p-6 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
             <h3 className="text-xl font-bold mb-4">Game Over!</h3>
+            {wrongAnswers >= maxWrongAnswers && (
+              <div className="mb-4 text-red-600 font-medium">
+                Too many wrong answers! ({wrongAnswers}/{maxWrongAnswers})
+              </div>
+            )}
+            {revealedAnswers.length === question.answers.length && (
+              <div className="mb-4 text-green-600 font-medium">
+                All answers found! 🎉
+              </div>
+            )}
             <div className="text-lg mb-4">
               <div className="mb-2">Final Score:</div>
               <div className="flex justify-center gap-8">
