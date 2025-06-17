@@ -594,10 +594,16 @@ function App() {
   const handleConversationSelect = async (conversationId: string) => {
     if (!user) return;
     
-    // If clicking the same conversation, just reload it fresh
-    if (currentConversationId === conversationId) {
-      console.log('🔄 Reloading same conversation with fresh data');
-      // Continue with normal loading process to get fresh data
+    // Prevent multiple simultaneous loads of the same conversation
+    if (isLoadingConversation) {
+      console.log('⚠️ Already loading a conversation, ignoring request');
+      return;
+    }
+    
+    // If clicking the same conversation and it's already loaded, do nothing
+    if (currentConversationId === conversationId && messages.length > 0) {
+      console.log('✅ Conversation already loaded, no action needed');
+      return;
     }
     
     // Reset generating state when switching conversations
@@ -611,7 +617,16 @@ function App() {
     setConversationTitle(conversation?.title || 'Conversatie wordt geladen...');
     
     try {
-      // Always fetch fresh data from database (don't use cache for now)
+      // Check cache first
+      const cachedMessages = conversationCache.get(conversationId);
+      if (cachedMessages) {
+        console.log('✅ Using cached messages for:', conversationId);
+        setMessages(cachedMessages);
+        setConversationTitle(conversation?.title || 'Untitled Conversation');
+        return;
+      }
+
+      // Fetch fresh data from database
       console.log('🔄 Loading fresh messages from database for:', conversationId);
       const conversationMessages = await chatFeaturesService.getConversationMessages(conversationId);
       
