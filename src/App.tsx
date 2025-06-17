@@ -1204,45 +1204,46 @@ function App() {
             </div>
           )}
 
-          {/* Mobile Main Content - Now positioned using grid */}
-          <div 
-            className="overflow-hidden pointer-events-auto"
-            style={{
-              gridColumn: `${mobileLayout.mobileMainContent.x + 1} / ${mobileLayout.mobileMainContent.x + mobileLayout.mobileMainContent.width + 1}`,
-              gridRow: `${mobileLayout.mobileMainContent.y + 1} / ${mobileLayout.mobileMainContent.y + mobileLayout.mobileMainContent.height + 1}`,
-              zIndex: mobileLayout.mobileMainContent.zIndex
-            }}
-          >
-            {messages.length === 0 ? (
-              <MainContent 
-                isDark={isDark} 
-                onSendMessage={sendMessage}
-                selectedModel={selectedModel}
-                onModelChange={setSelectedModel}
-                availableModels={availableModels}
-                customization={customization}
-                isLoggedIn={!!user}
-                onLoginClick={() => setShowLoginModal(true)}
-              />
-            ) : (
-              <ChatView 
-                isDark={isDark} 
-                messages={messages}
-                onSendMessage={sendMessage}
-                selectedModel={selectedModel}
-                onModelChange={setSelectedModel}
-                availableModels={availableModels}
-                customization={customization}
-                isLoggedIn={!!user}
-                onLoginClick={() => setShowLoginModal(true)}
-                error={chatError}
-                setError={setChatError}
-              />
-            )}
-          </div>
+          {isMobile && isDesignerMode && (
+            // Mobile Main Content - drag-and-drop grid element
+            <div 
+              className="overflow-hidden pointer-events-auto"
+              style={{
+                gridColumn: `${mobileLayout.mobileMainContent.x + 1} / ${mobileLayout.mobileMainContent.x + mobileLayout.mobileMainContent.width + 1}`,
+                gridRow: `${mobileLayout.mobileMainContent.y + 1} / ${mobileLayout.mobileMainContent.y + mobileLayout.mobileMainContent.height + 1}`,
+                zIndex: mobileLayout.mobileMainContent.zIndex
+              }}
+            >
+              {messages.length === 0 ? (
+                <MainContent 
+                  isDark={isDark} 
+                  onSendMessage={sendMessage}
+                  selectedModel={selectedModel}
+                  onModelChange={setSelectedModel}
+                  availableModels={availableModels}
+                  customization={customization}
+                  isLoggedIn={!!user}
+                  onLoginClick={() => setShowLoginModal(true)}
+                />
+              ) : (
+                <ChatView 
+                  isDark={isDark} 
+                  messages={messages}
+                  onSendMessage={sendMessage}
+                  selectedModel={selectedModel}
+                  onModelChange={setSelectedModel}
+                  availableModels={availableModels}
+                  customization={customization}
+                  isLoggedIn={!!user}
+                  onLoginClick={() => setShowLoginModal(true)}
+                  error={chatError}
+                  setError={setChatError}
+                />
+              )}
+            </div>
+          )}
 
-          {/* Mobile Chat Area - Separate draggable element */}
-          {mobileLayout.mobileChatArea && (
+          {isMobile && !isDesignerMode && mobileLayout.mobileChatArea && (
             <div 
               className="overflow-hidden pointer-events-auto"
               style={{
@@ -1284,8 +1285,7 @@ function App() {
             </div>
           )}
 
-          {/* Mobile Input Box - Separate draggable element */}
-          {mobileLayout.mobileInputBox && (
+          {isMobile && !isDesignerMode && mobileLayout.mobileInputBox && (
             <div 
               className="pointer-events-auto"
               style={{
