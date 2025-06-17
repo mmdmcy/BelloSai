@@ -249,6 +249,9 @@ function App() {
     }
     
     try {
+      // Clean up duplicates for all conversations on startup
+      await chatFeaturesService.removeDuplicateMessages();
+      
       const userConversations = await chatFeaturesService.getUserConversations(user.id);
       setConversations(userConversations);
     } catch (error) {
@@ -496,12 +499,10 @@ function App() {
       console.log('  - Conversation ID:', currentConvoId);
       
       let fullResponse = '';
-      let lastSavedLength = 0;
-      const SAVE_CHUNK_SIZE = 500; // Save to database every 500 characters
 
       try {
         console.log('🚀 Starting sendChatMessage call...');
-                  fullResponse = await sendChatMessage(
+        fullResponse = await sendChatMessage(
             chatMessages,
             selectedModel as DeepSeekModel,
             async (chunk: string) => {
@@ -509,33 +510,12 @@ function App() {
               
               console.log('📦 Received streaming chunk:', chunk.length, 'chars');
               
-              // Update the AI message with streaming content
-              setMessages(prev => {
-                const updatedMessages = prev.map(msg => 
-                  msg.id === aiMessageId 
-                    ? { ...msg, content: msg.content + chunk }
-                    : msg
-                );
-
-                // Save to database if we have enough new content
-                if (currentConvoId && fullResponse.length - lastSavedLength >= SAVE_CHUNK_SIZE) {
-                  const aiMessage = updatedMessages.find(msg => msg.id === aiMessageId);
-                  if (aiMessage) {
-                    console.log('💾 Saving AI message chunk to database...');
-                    // Ensure we pass a string ID
-                    chatFeaturesService.saveMessage(currentConvoId, 'assistant', aiMessage.content)
-                      .then(() => {
-                        console.log('✅ AI message chunk saved to database');
-                        lastSavedLength = fullResponse.length;
-                      })
-                      .catch(error => {
-                        console.error('❌ Failed to save AI message chunk:', error);
-                      });
-                  }
-                }
-
-                return updatedMessages;
-              });
+              // Update the AI message with streaming content (UI only, no database save yet)
+              setMessages(prev => prev.map(msg => 
+                msg.id === aiMessageId 
+                  ? { ...msg, content: msg.content + chunk }
+                  : msg
+              ));
 
               fullResponse += chunk;
             },
@@ -699,6 +679,9 @@ function App() {
         return;
       }
 
+      // Clean up any duplicate messages first
+      await chatFeaturesService.removeDuplicateMessages(conversationId);
+      
       // Fetch fresh data from database
       console.log('🔄 Loading fresh messages from database for:', conversationId);
       const conversationMessages = await chatFeaturesService.getConversationMessages(conversationId);
