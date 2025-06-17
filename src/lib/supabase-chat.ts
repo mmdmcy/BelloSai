@@ -120,13 +120,21 @@ export async function sendChatMessage(
     const provider = getModelProvider(modelCode);
     const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${provider === 'Gemini' ? 'gemini-chat' : 'deepseek-chat'}`;
     console.log('📡 Calling Edge Function:', url);
+    console.log('🔍 Request details:', {
+      provider,
+      modelCode,
+      messageCount: messages.length,
+      conversationId,
+      hasSession: !!session
+    });
     
     abortController = new AbortController();
     timeoutId = setTimeout(() => {
-      console.log('⏰ Request timeout after 120 seconds');
+      console.log('⏰ Request timeout after 60 seconds');
       abortController?.abort();
-    }, 120000);
+    }, 60000); // Kortere timeout: 60 seconden
     
+    console.log('🚀 Sending request to edge function...');
     const response = await fetch(url, {
       method: 'POST',
       headers: authHeaders,
@@ -143,7 +151,12 @@ export async function sendChatMessage(
       timeoutId = null;
     }
 
-    console.log('📨 Edge Function response status:', response.status);
+    console.log('📨 Edge Function response:', {
+      status: response.status,
+      statusText: response.statusText,
+      headers: Object.fromEntries(response.headers.entries()),
+      ok: response.ok
+    });
 
     if (!response.ok) {
       const errorData = await response.json();

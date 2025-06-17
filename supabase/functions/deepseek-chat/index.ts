@@ -33,7 +33,9 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🚀 Edge Function called');
+    console.log('🚀 DeepSeek Edge Function called at:', new Date().toISOString());
+    console.log('📝 Request method:', req.method);
+    console.log('📝 Request headers:', Object.fromEntries(req.headers.entries()));
     
     // Get authorization header or apikey for anonymous users
     const authHeader = req.headers.get('Authorization')
