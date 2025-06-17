@@ -795,6 +795,86 @@ class ChatFeaturesService {
     const title = firstMessage.trim().slice(0, 40);
     return title.length < firstMessage.trim().length ? title + '...' : title;
   }
+
+  /**
+   * Remove duplicate AI messages from conversations
+   * Keeps the longest (most complete) message for each conversation
+   */
+  async removeDuplicateMessages(conversationId?: string): Promise<void> {
+    try {
+      console.log('🧹 Removing duplicate AI messages...');
+      
+      let query = supabase
+        .from('messages')
+        .select('id, conversation_id, role, content, created_at');
+      
+      if (conversationId) {
+        query = query.eq('conversation_id', conversationId);
+      }
+      
+      const { data: messages, error } = await query.eq('role', 'assistant');
+      
+      if (error) {
+        console.error('❌ Error fetching messages for duplicate removal:', error);
+        return;
+      }
+      
+      if (!messages || messages.length === 0) {
+        console.log('✅ No AI messages found');
+        return;
+      }
+      
+      // Group messages by conversation
+      const messagesByConversation = messages.reduce((acc, msg) => {
+        if (!acc[msg.conversation_id]) {
+          acc[msg.conversation_id] = [];
+        }
+        acc[msg.conversation_id].push(msg);
+        return acc;
+      }, {} as Record<string, any[]>);
+      
+      let totalDuplicatesRemoved = 0;
+      
+      // Process each conversation
+      for (const [convId, convMessages] of Object.entries(messagesByConversation)) {
+        if (convMessages.length <= 1) continue; // No duplicates
+        
+        console.log(`🔍 Found ${convMessages.length} AI messages in conversation ${convId}`);
+        
+        // Sort by content length (descending) and creation date (descending)
+        // Keep the longest message (most complete response)
+        const sortedMessages = convMessages.sort((a, b) => {
+          const lengthDiff = b.content.length - a.content.length;
+          if (lengthDiff !== 0) return lengthDiff;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+        
+        // Keep the first (longest/newest) message, delete the rest
+        const messagesToDelete = sortedMessages.slice(1);
+        
+        if (messagesToDelete.length > 0) {
+          const idsToDelete = messagesToDelete.map(msg => msg.id);
+          
+          const { error: deleteError } = await supabase
+            .from('messages')
+            .delete()
+            .in('id', idsToDelete);
+          
+          if (deleteError) {
+            console.error(`❌ Error deleting duplicate messages for conversation ${convId}:`, deleteError);
+          } else {
+            console.log(`✅ Removed ${messagesToDelete.length} duplicate messages from conversation ${convId}`);
+            totalDuplicatesRemoved += messagesToDelete.length;
+          }
+        }
+      }
+      
+      console.log(`🎉 Duplicate removal complete! Removed ${totalDuplicatesRemoved} duplicate messages`);
+      
+    } catch (error) {
+      console.error('❌ Error in removeDuplicateMessages:', error);
+    }
+  }
 }
 
 export const chatFeaturesService = new ChatFeaturesService(); 
