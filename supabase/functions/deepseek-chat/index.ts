@@ -168,9 +168,9 @@ serve(async (req) => {
     // Add timeout to DeepSeek API call
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      console.log('⏰ DeepSeek API timeout after 80 seconds');
+      console.log('⏰ DeepSeek API timeout after 100 seconds');
       controller.abort();
-    }, 80000); // 80 second timeout
+    }, 100000); // 100 second timeout
     
     let deepSeekResponse;
     try {
