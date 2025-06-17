@@ -35,18 +35,12 @@ serve(async (req) => {
   try {
     console.log('🚀 Edge Function called');
     
-    // Get authorization header
+    // Get authorization header or apikey for anonymous users
     const authHeader = req.headers.get('Authorization')
+    const apiKey = req.headers.get('apikey')
     console.log('🔑 Auth header present:', !!authHeader);
+    console.log('🔑 API key present:', !!apiKey);
     
-    if (!authHeader) {
-      console.log('❌ Missing authorization header');
-      return new Response(
-        JSON.stringify({ error: 'Missing authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
     // Create Supabase client with service role key for admin operations
     console.log('🔧 Creating Supabase client');
     const supabaseAdmin = createClient(
@@ -54,46 +48,74 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
-    // Verify JWT token directly using admin client
-    console.log('👤 Verifying JWT token');
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token)
-    console.log('👤 User result:', { user: !!user, error: userError });
-    
-    if (userError || !user) {
-      console.log('❌ Auth failed:', userError);
+    let user = null;
+    let userData = null;
+    let isAnonymous = false;
+
+    if (authHeader) {
+      // Authenticated user
+      console.log('👤 Verifying JWT token');
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user: authUser }, error: userError } = await supabaseAdmin.auth.getUser(token)
+      console.log('👤 User result:', { user: !!authUser, error: userError });
+      
+      if (userError || !authUser) {
+        console.log('❌ Auth failed:', userError);
+        return new Response(
+          JSON.stringify({ error: 'Invalid or expired token', details: userError?.message || 'Auth session missing!' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      
+      user = authUser;
+      console.log('✅ User authenticated:', user.email);
+
+      // Check user's message limit using admin client
+      const { data: userDataResult, error: userDataError } = await supabaseAdmin
+        .from('users')
+        .select('message_count, message_limit, subscription_tier')
+        .eq('id', user.id)
+        .single()
+
+      if (userDataError) {
+        return new Response(
+          JSON.stringify({ error: 'Failed to fetch user data' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      userData = userDataResult;
+
+      // Check if user has exceeded message limit
+      if (userData.message_count >= userData.message_limit) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Message limit exceeded',
+            limit: userData.message_limit,
+            current: userData.message_count,
+            subscription_tier: userData.subscription_tier
+          }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+    } else if (apiKey) {
+      // Anonymous user - verify API key matches anon key
+      const expectedAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+      if (apiKey !== expectedAnonKey) {
+        console.log('❌ Invalid API key for anonymous user');
+        return new Response(
+          JSON.stringify({ error: 'Invalid API key' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+      
+      console.log('🔓 Anonymous user request accepted');
+      isAnonymous = true;
+    } else {
+      console.log('❌ Missing authorization header or API key');
       return new Response(
-        JSON.stringify({ error: 'Invalid or expired token', details: userError?.message || 'Auth session missing!' }),
+        JSON.stringify({ error: 'Missing authorization header or API key' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-    
-    console.log('✅ User authenticated:', user.email);
-
-    // Check user's message limit using admin client
-    const { data: userData, error: userDataError } = await supabaseAdmin
-      .from('users')
-      .select('message_count, message_limit, subscription_tier')
-      .eq('id', user.id)
-      .single()
-
-    if (userDataError) {
-      return new Response(
-        JSON.stringify({ error: 'Failed to fetch user data' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-
-    // Check if user has exceeded message limit
-    if (userData.message_count >= userData.message_limit) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'Message limit exceeded',
-          limit: userData.message_limit,
-          current: userData.message_count,
-          subscription_tier: userData.subscription_tier
-        }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -158,17 +180,19 @@ serve(async (req) => {
       )
     }
 
-    // Increment user's message count using admin client
-    const { error: incrementError } = await supabaseAdmin
-      .from('users')
-      .update({ 
-        message_count: userData.message_count + 1,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', user.id)
+    // Increment user's message count using admin client (only for authenticated users)
+    if (!isAnonymous && user && userData) {
+      const { error: incrementError } = await supabaseAdmin
+        .from('users')
+        .update({ 
+          message_count: userData.message_count + 1,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id)
 
-    if (incrementError) {
-      console.error('Failed to increment message count:', incrementError)
+      if (incrementError) {
+        console.error('Failed to increment message count:', incrementError)
+      }
     }
 
     // Handle non-streaming response
@@ -176,13 +200,19 @@ serve(async (req) => {
       const responseData = await deepSeekResponse.json()
       const content = responseData.choices?.[0]?.message?.content || ''
       
+      const responsePayload: any = { 
+        response: content,
+        model: model
+      };
+      
+      // Add message count info only for authenticated users
+      if (!isAnonymous && userData) {
+        responsePayload.messageCount = userData.message_count + 1;
+        responsePayload.messageLimit = userData.message_limit;
+      }
+      
       return new Response(
-        JSON.stringify({ 
-          response: content,
-          model: model,
-          messageCount: userData.message_count + 1,
-          messageLimit: userData.message_limit
-        }),
+        JSON.stringify(responsePayload),
         { 
           headers: { 
             ...corsHeaders, 
@@ -237,14 +267,27 @@ serve(async (req) => {
             }
           }
 
+          // Check if we received any content
+          if (!fullResponse || fullResponse.trim() === '') {
+            console.error('No content received from DeepSeek API');
+            controller.error(new Error('No content received from AI service'));
+            return;
+          }
+
           // Send completion signal
-          const completionData = `data: ${JSON.stringify({ 
+          const completionPayload: any = { 
             content: fullResponse, 
             type: 'complete',
-            model: model,
-            messageCount: userData.message_count + 1,
-            messageLimit: userData.message_limit
-          })}\n\n`
+            model: model
+          };
+          
+          // Add message count info only for authenticated users
+          if (!isAnonymous && userData) {
+            completionPayload.messageCount = userData.message_count + 1;
+            completionPayload.messageLimit = userData.message_limit;
+          }
+          
+          const completionData = `data: ${JSON.stringify(completionPayload)}\n\n`
           controller.enqueue(new TextEncoder().encode(completionData))
           
           // Save conversation to database if conversationId is provided

@@ -348,6 +348,11 @@ function App() {
         return; // Prevent multiple simultaneous requests
       }
 
+      if (!content || content.trim() === '') {
+        console.log('⚠️ Empty message content, skipping request');
+        return; // Don't send empty messages
+      }
+
       // Check anonymous user limits if not logged in
       if (!user) {
         if (!anonymousUsageService.canSendMessage()) {
@@ -378,6 +383,19 @@ function App() {
       setMessageCount(prev => prev + 1);
       setIsGenerating(true);
       console.log('🔄 Set isGenerating to true');
+      
+      // Create AI message placeholder for streaming
+      console.log('🤖 Creating AI message placeholder...');
+      const aiMessageId = (Date.now() + 1).toString();
+      const aiMessage: Message = {
+        id: aiMessageId,
+        type: 'ai',
+        content: '',
+        timestamp: new Date()
+      };
+
+      console.log('📝 Adding AI message placeholder:', aiMessageId);
+      setMessages(prev => [...prev, aiMessage]);
       
       // Add a small delay to ensure state is updated
       await new Promise(resolve => setTimeout(resolve, 10));
@@ -423,19 +441,6 @@ function App() {
           }
         }
 
-              // Create AI message placeholder for streaming
-        console.log('🤖 Creating AI message placeholder...');
-        const aiMessageId = (Date.now() + 1).toString();
-        const aiMessage: Message = {
-          id: aiMessageId,
-          type: 'ai',
-          content: '',
-          timestamp: new Date()
-        };
-
-        console.log('📝 Adding AI message placeholder:', aiMessageId);
-        setMessages(prev => [...prev, aiMessage]);
-
       // Convert messages to ChatMessage format
       const chatMessages: ChatMessage[] = [...messages, userMessage].map(msg => ({
         type: msg.type,
@@ -465,9 +470,6 @@ function App() {
           }
         );
         
-        // Stop loading immediately when streaming is complete
-        console.log('🛑 Stopping loading icon - streaming completed');
-        setIsGenerating(false);
         console.log('✅ sendChatMessage completed successfully');
       } catch (sendError) {
         console.error('❌ sendChatMessage failed:', sendError);
@@ -475,6 +477,13 @@ function App() {
       }
 
       console.log('✅ Full response received:', fullResponse);
+      console.log('📝 Full response length:', fullResponse?.length || 0);
+      
+      // Ensure we have content
+      if (!fullResponse || fullResponse.trim() === '') {
+        throw new Error('No response received from AI');
+      }
+      
       // Update with final response (in case streaming didn't capture everything)
       setMessages(prev => prev.map(msg => 
         msg.id === aiMessageId 
@@ -526,17 +535,15 @@ function App() {
     } catch (error: any) {
       console.error('❌ Error sending message:', error);
       
-      // Create AI message with error
-      const aiMessageId = (Date.now() + 1).toString();
-      const errorMessage: Message = {
-        id: aiMessageId,
-        type: 'ai',
-        content: `Sorry, I encountered an error: ${error.message || 'Unknown error'}. Please try again.`,
-        timestamp: new Date()
-      };
+      // Update the existing AI message placeholder with error content
+      const errorContent = `Sorry, I encountered an error: ${error.message || 'Unknown error'}. Please try again.`;
+      setMessages(prev => prev.map(msg => 
+        msg.id === aiMessageId 
+          ? { ...msg, content: errorContent }
+          : msg
+      ));
       
-      console.log('💥 Adding error message:', errorMessage);
-      setMessages(prev => [...prev, errorMessage]);
+      console.log('💥 Updated AI message with error:', errorContent);
     } finally {
       console.log('🏁 Finally block - ensuring isGenerating is false');
       console.log('🔍 isGenerating before reset:', isGenerating);

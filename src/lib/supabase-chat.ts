@@ -44,7 +44,7 @@ export async function sendChatMessage(
   try {
     console.log('🚀 Starting chat message request:', { messages, model, conversationId });
     
-    // Get current session
+    // Get current session (optional for anonymous users)
     let { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
     console.log('🔍 Session check:', { session: !!session, error: sessionError });
@@ -54,29 +54,39 @@ export async function sendChatMessage(
       throw new Error('Authentication error: ' + sessionError.message);
     }
     
-    if (!session) {
-      console.error('❌ No session found');
-      throw new Error('Please log in to continue');
-    }
+    let authHeaders: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
     
-    console.log('✅ Authentication successful, user:', session.user.email);
-    console.log('🔑 Access token length:', session.access_token.length);
-    console.log('⏰ Token expires at:', new Date(session.expires_at! * 1000));
+    if (session) {
+      console.log('✅ Authentication successful, user:', session.user.email);
+      console.log('🔑 Access token length:', session.access_token.length);
+      console.log('⏰ Token expires at:', new Date(session.expires_at! * 1000));
 
-    // Check if token is expired and refresh if needed
-    const now = Date.now() / 1000;
-    if (session.expires_at && session.expires_at < now) {
-      console.log('🔄 Token expired, refreshing...');
-      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-      
-      if (refreshError || !refreshData.session) {
-        console.error('❌ Failed to refresh token:', refreshError);
-        throw new Error('Session expired. Please log in again.');
+      // Check if token is expired and refresh if needed
+      const now = Date.now() / 1000;
+      if (session.expires_at && session.expires_at < now) {
+        console.log('🔄 Token expired, refreshing...');
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        
+        if (refreshError || !refreshData.session) {
+          console.error('❌ Failed to refresh token:', refreshError);
+          throw new Error('Session expired. Please log in again.');
+        }
+        
+        // Use the refreshed session
+        session = refreshData.session;
+        console.log('✅ Token refreshed successfully');
       }
       
-      // Use the refreshed session
-      session = refreshData.session;
-      console.log('✅ Token refreshed successfully');
+      // Add authorization header for authenticated users
+      if (session) {
+        authHeaders['Authorization'] = `Bearer ${session.access_token}`;
+      }
+    } else {
+      console.log('🔓 No session found - proceeding as anonymous user');
+      // Add anon key for anonymous users
+      authHeaders['apikey'] = import.meta.env.VITE_SUPABASE_ANON_KEY;
     }
 
     // Call the Edge Function
@@ -88,14 +98,14 @@ export async function sendChatMessage(
     console.log('📤 Request payload:', { messages, model, conversationId });
     
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    const timeoutId = setTimeout(() => {
+      console.log('⏰ Request timeout after 60 seconds');
+      controller.abort();
+    }, 60000); // 60 second timeout for better reliability
     
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-      },
+      headers: authHeaders,
       body: JSON.stringify({
         messages,
         model,
@@ -155,6 +165,7 @@ export async function sendChatMessage(
             console.log('📝 Parsed data:', data);
             
             if (data.type === 'chunk' && data.content) {
+              fullResponse += data.content; // Also accumulate in fullResponse
               onChunk?.(data.content);
             } else if (data.type === 'complete') {
               fullResponse = data.content;
@@ -172,6 +183,12 @@ export async function sendChatMessage(
       }
     } finally {
       reader.releaseLock();
+    }
+
+    console.log('📝 Final fullResponse length:', fullResponse?.length || 0);
+    
+    if (!fullResponse || fullResponse.trim() === '') {
+      throw new Error('No response content received from AI service');
     }
 
     return fullResponse;
