@@ -646,11 +646,29 @@ class ChatFeaturesService {
     
     console.log('📝 Message data to insert:', messageData);
     
-    const { data, error } = await supabase
+    console.log('🔄 Starting database insert...');
+    
+    // Add timeout to database operation
+    const insertPromise = supabase
       .from('messages')
       .insert(messageData)
       .select()
       .single();
+    
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Database insert timeout after 30 seconds')), 30000);
+    });
+    
+    let data, error;
+    try {
+      const result = await Promise.race([insertPromise, timeoutPromise]) as any;
+      data = result.data;
+      error = result.error;
+      console.log('📊 Database insert completed');
+    } catch (timeoutError) {
+      console.error('⏰ Database insert timeout:', timeoutError);
+      throw timeoutError;
+    }
 
     if (error) {
       console.error('❌ Error saving message:', error);
