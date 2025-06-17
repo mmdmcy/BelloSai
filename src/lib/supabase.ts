@@ -25,8 +25,13 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     debug: import.meta.env.DEV,
     // Lock to prevent concurrent auth operations
     lock: async (name: string, acquireTimeout?: number, fn?: () => Promise<any>) => {
+      console.log(`🔒 Auth lock acquired: ${name}`);
       if (fn) {
-        return await fn();
+        try {
+          return await fn();
+        } finally {
+          console.log(`🔓 Auth lock released: ${name}`);
+        }
       }
     }
   },
@@ -48,12 +53,14 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
 
 // Helper function to force session restoration
 export const forceSessionRestore = async () => {
+  console.log('🔄 Forcing session restoration...');
   try {
     const { data, error } = await supabase.auth.getSession();
     if (error) {
       console.error('❌ Error forcing session restore:', error);
       return null;
     }
+    console.log('✅ Session restore result:', data.session ? 'Session found' : 'No session');
     return data.session;
   } catch (error) {
     console.error('❌ Exception during session restore:', error);
@@ -64,6 +71,10 @@ export const forceSessionRestore = async () => {
 // Helper function to check auth status
 export const checkAuthStatus = () => {
   const token = localStorage.getItem('bellosai-auth-token');
+  console.log('🔍 Auth status check:', {
+    hasToken: !!token,
+    tokenPreview: token ? token.substring(0, 50) + '...' : 'None'
+  });
   return !!token;
 };
 
