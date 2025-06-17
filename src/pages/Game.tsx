@@ -15,7 +15,7 @@ interface FamilyFeudQuestion {
   }>;
 }
 
-export default function Game({ isDark, customization, onToggleTheme }: GameProps) {
+function GameComponent({ isDark, customization, onToggleTheme }: GameProps) {
   const [question, setQuestion] = useState<FamilyFeudQuestion | null>(null);
   const [revealedAnswers, setRevealedAnswers] = useState<number[]>([]);
   const [playerScore, setPlayerScore] = useState(0);
@@ -310,5 +310,23 @@ Respond with ONLY one of the available answers. No explanations.`;
         </div>
       </div>
     </div>
+  );
+}
+
+// Wrapper component that provides default props
+export default function Game() {
+  const [isDark, setIsDark] = useState(false);
+  const [customization] = useState({
+    primaryColor: '#7c3aed',
+    secondaryColor: '#a855f7',
+    fontFamily: 'Inter'
+  });
+
+  return (
+    <GameComponent
+      isDark={isDark}
+      customization={customization}
+      onToggleTheme={() => setIsDark(!isDark)}
+    />
   );
 } 

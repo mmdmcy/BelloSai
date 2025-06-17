@@ -32,7 +32,6 @@ import DesignerMode from './components/DesignerMode';
 import MobileDesignerMode from './components/MobileDesignerMode';
 import AccountMenu from './components/AccountMenu';
 import GameSection from './components/GameSection';
-import Game from './pages/Game';
 import APIKeyManager from './components/APIKeyManager';
 import { useAuth } from './contexts/AuthContext';
 import { supabase } from './lib/supabase';
@@ -142,9 +141,6 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
 function App() {
   // Use Supabase auth context
   const { user, loading: authLoading, signOut } = useAuth();
-  
-  // Check if we're on the game route
-  const isGameRoute = window.location.pathname === '/game';
   
   // Theme state - controls light/dark mode
   const [isDark, setIsDark] = useState(false);
@@ -1038,17 +1034,6 @@ function App() {
         />
       );
     }
-  }
-
-  // Render simple game page if on /game route
-  if (isGameRoute) {
-    return (
-      <Game
-        isDark={isDark}
-        customization={customization}
-        onToggleTheme={toggleTheme}
-      />
-    );
   }
 
   // Render game section if selected
