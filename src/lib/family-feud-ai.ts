@@ -33,10 +33,12 @@ export interface AIGuessResult {
  * Generate a Family Feud question using DeepSeek-V3
  */
 export async function generateFamilyFeudQuestion(): Promise<FamilyFeudQuestion> {
-  const prompt = `Generate a Family Feud style question with exactly 5 answers and their point values. 
-  
+  // Create a more varied and creative prompt
+  const prompts = [
+    `Generate a creative Family Feud style question with exactly 5 answers and their point values. Make it fun and engaging!
+
 The format should be:
-Question: [A fun, engaging question that people would be surveyed about]
+Question: [A creative, fun question that people would be surveyed about]
 Answers:
 1. [Answer 1] - [Points 1-50]
 2. [Answer 2] - [Points 1-50] 
@@ -47,22 +49,61 @@ Answers:
 Make sure:
 - Total points add up to 100
 - Answers are common, relatable responses
-- Question is fun and engaging
+- Question is creative and different from typical Family Feud questions
 - Points are realistic (higher for more common answers)
+- Make it about modern life, technology, social media, food, travel, hobbies, etc.
 
-Example:
-Question: Name something people do when they can't sleep
+Generate a unique question:`,
+    
+    `Create an original Family Feud question that hasn't been used before. Think outside the box!
+
+Format:
+Question: [Something creative and modern]
 Answers:
-1. Read a book - 32
-2. Watch TV - 28
-3. Count sheep - 18
-4. Listen to music - 12
-5. Get a snack - 10
+1. [Answer] - [Points]
+2. [Answer] - [Points]
+3. [Answer] - [Points]
+4. [Answer] - [Points]
+5. [Answer] - [Points]
 
-Generate a new, creative question:`;
+Make it about:
+- Social media trends
+- Modern technology
+- Current events
+- Food and dining
+- Travel and vacation
+- Work and careers
+- Relationships and dating
+- Entertainment and pop culture
+
+Be creative and original!`,
+
+    `Invent a completely new Family Feud question that would be fun to play. Make it contemporary and relatable.
+
+Question: [Your creative question here]
+Answers:
+1. [Answer] - [Points]
+2. [Answer] - [Points]
+3. [Answer] - [Points]
+4. [Answer] - [Points]
+5. [Answer] - [Points]
+
+Think about:
+- What people do in their free time
+- Modern problems and solutions
+- Popular apps and websites
+- Current trends and fads
+- Everyday situations
+- Funny or embarrassing moments
+
+Make it fresh and entertaining!`
+  ];
+
+  // Randomly select a prompt for variety
+  const randomPrompt = prompts[Math.floor(Math.random() * prompts.length)];
 
   const messages: ChatMessage[] = [
-    { type: 'user', content: prompt }
+    { type: 'user', content: randomPrompt }
   ];
 
   try {
@@ -92,12 +133,15 @@ Generate a new, creative question:`;
  */
 function parseAIResponse(response: string): FamilyFeudQuestion {
   try {
-    // Extract question
-    const questionMatch = response.match(/Question:\s*(.+?)(?:\n|$)/i);
+    // Extract question - be more flexible with parsing
+    const questionMatch = response.match(/Question:\s*(.+?)(?:\n|$)/i) || 
+                         response.match(/^(.+?)(?:\n|$)/i);
     const question = questionMatch ? questionMatch[1].trim() : "Name something people do when they can't sleep";
 
-    // Extract answers
-    const answerMatches = response.matchAll(/(\d+)\.\s*(.+?)\s*-\s*(\d+)/g);
+    // Extract answers - be more flexible with different formats
+    const answerMatches = response.matchAll(/(\d+)\.\s*(.+?)\s*-\s*(\d+)/g) || 
+                         response.matchAll(/(\d+)\)\s*(.+?)\s*-\s*(\d+)/g) ||
+                         response.matchAll(/(\d+)\s*(.+?)\s*-\s*(\d+)/g);
     const answers = [];
     
     for (const match of answerMatches) {
@@ -143,18 +187,28 @@ function generateKeywords(text: string): string[] {
     .split(/\s+/)
     .filter(word => word.length > 2);
   
-  // Add common synonyms and variations
+  // Expanded synonyms and variations for better matching
   const synonyms: Record<string, string[]> = {
-    'read': ['reading', 'book', 'novel', 'magazine'],
-    'watch': ['watching', 'tv', 'television', 'show', 'movie'],
-    'listen': ['listening', 'music', 'audio', 'song'],
-    'eat': ['eating', 'food', 'snack', 'meal'],
-    'sleep': ['sleeping', 'bed', 'rest', 'nap'],
-    'work': ['working', 'job', 'office', 'business'],
-    'play': ['playing', 'game', 'sport', 'fun'],
-    'cook': ['cooking', 'kitchen', 'food', 'meal'],
-    'clean': ['cleaning', 'house', 'home', 'tidy'],
-    'shop': ['shopping', 'store', 'buy', 'purchase']
+    'read': ['reading', 'book', 'novel', 'magazine', 'newspaper', 'article'],
+    'watch': ['watching', 'tv', 'television', 'show', 'movie', 'film', 'video', 'stream'],
+    'listen': ['listening', 'music', 'audio', 'song', 'podcast', 'radio'],
+    'eat': ['eating', 'food', 'snack', 'meal', 'dinner', 'lunch', 'breakfast'],
+    'sleep': ['sleeping', 'bed', 'rest', 'nap', 'doze', 'snooze'],
+    'work': ['working', 'job', 'office', 'business', 'career', 'profession'],
+    'play': ['playing', 'game', 'sport', 'fun', 'entertainment', 'hobby'],
+    'cook': ['cooking', 'kitchen', 'food', 'meal', 'prepare', 'bake', 'grill'],
+    'clean': ['cleaning', 'house', 'home', 'tidy', 'organize', 'dust', 'vacuum'],
+    'shop': ['shopping', 'store', 'buy', 'purchase', 'mall', 'market'],
+    'drive': ['driving', 'car', 'vehicle', 'transport', 'commute'],
+    'walk': ['walking', 'exercise', 'stroll', 'hike', 'jog'],
+    'call': ['calling', 'phone', 'telephone', 'contact', 'ring'],
+    'text': ['texting', 'message', 'sms', 'chat', 'communicate'],
+    'post': ['posting', 'social', 'media', 'share', 'upload'],
+    'check': ['checking', 'look', 'view', 'examine', 'inspect'],
+    'search': ['searching', 'find', 'lookup', 'google', 'browse'],
+    'order': ['ordering', 'buy', 'purchase', 'delivery', 'takeout'],
+    'meet': ['meeting', 'see', 'visit', 'hangout', 'socialize'],
+    'study': ['studying', 'learn', 'school', 'education', 'homework']
   };
 
   const allKeywords = [...words];
@@ -297,18 +351,28 @@ function checkAnswerMatch(
       return { text: answer.text, points: answer.points, index: i };
     }
     
-    // Synonym matching
+    // Expanded synonym matching
     const synonyms: Record<string, string[]> = {
-      'tv': ['television', 'show', 'movie'],
-      'book': ['reading', 'novel', 'magazine'],
-      'music': ['song', 'audio', 'sound'],
-      'food': ['eat', 'meal', 'snack'],
-      'sleep': ['bed', 'rest', 'nap'],
-      'work': ['job', 'office', 'business'],
-      'play': ['game', 'sport', 'fun'],
-      'cook': ['kitchen', 'food', 'meal'],
-      'clean': ['house', 'home', 'tidy'],
-      'shop': ['store', 'buy', 'purchase']
+      'tv': ['television', 'show', 'movie', 'film', 'video', 'stream'],
+      'book': ['reading', 'novel', 'magazine', 'newspaper', 'article'],
+      'music': ['song', 'audio', 'sound', 'podcast', 'radio'],
+      'food': ['eat', 'meal', 'snack', 'dinner', 'lunch', 'breakfast'],
+      'sleep': ['bed', 'rest', 'nap', 'doze', 'snooze'],
+      'work': ['job', 'office', 'business', 'career', 'profession'],
+      'play': ['game', 'sport', 'fun', 'entertainment', 'hobby'],
+      'cook': ['kitchen', 'food', 'meal', 'prepare', 'bake', 'grill'],
+      'clean': ['house', 'home', 'tidy', 'organize', 'dust', 'vacuum'],
+      'shop': ['store', 'buy', 'purchase', 'mall', 'market'],
+      'drive': ['car', 'vehicle', 'transport', 'commute'],
+      'walk': ['exercise', 'stroll', 'hike', 'jog'],
+      'call': ['phone', 'telephone', 'contact', 'ring'],
+      'text': ['message', 'sms', 'chat', 'communicate'],
+      'post': ['social', 'media', 'share', 'upload'],
+      'check': ['look', 'view', 'examine', 'inspect'],
+      'search': ['find', 'lookup', 'google', 'browse'],
+      'order': ['buy', 'purchase', 'delivery', 'takeout'],
+      'meet': ['see', 'visit', 'hangout', 'socialize'],
+      'study': ['learn', 'school', 'education', 'homework']
     };
     
     for (const [synonym, variations] of Object.entries(synonyms)) {
