@@ -270,6 +270,7 @@ serve(async (req) => {
         const reader = deepSeekResponse.body?.getReader()
         const decoder = new TextDecoder()
         let fullResponse = ''
+        let hasStartedStreaming = false
 
         if (!reader) {
           controller.error(new Error('No reader available'))
@@ -278,6 +279,24 @@ serve(async (req) => {
 
         try {
           console.log('🌊 Starting streaming loop...');
+          
+          // Save user message first before starting stream
+          if (conversationId) {
+            try {
+              await supabaseAdmin.from('messages').insert({
+                conversation_id: conversationId,
+                type: 'user',
+                content: messages[messages.length - 1].content,
+                model: model
+              })
+              console.log('✅ User message saved successfully');
+            } catch (dbError) {
+              console.error('Failed to save user message:', dbError);
+              controller.error(new Error('Database error: Failed to save user message'));
+              return;
+            }
+          }
+
           while (true) {
             const { done, value } = await reader.read()
             
@@ -287,7 +306,6 @@ serve(async (req) => {
             }
 
             const chunk = decoder.decode(value, { stream: true })
-            console.log('📦 Raw chunk received:', chunk.substring(0, 100) + '...');
             const lines = chunk.split('\n')
 
             for (const line of lines) {
@@ -302,6 +320,7 @@ serve(async (req) => {
                 const content = data.choices?.[0]?.delta?.content
                 if (content) {
                   fullResponse += content
+                  hasStartedStreaming = true
                   
                   // Send the chunk to client
                   const sseData = `data: ${JSON.stringify({ content, type: 'chunk' })}\n\n`
@@ -314,11 +333,47 @@ serve(async (req) => {
             }
           }
 
-          // Check if we received any content
-          if (!fullResponse || fullResponse.trim() === '') {
-            console.error('No content received from DeepSeek API');
-            controller.error(new Error('No content received from AI service'));
+          // Validate the response
+          if (!hasStartedStreaming) {
+            console.error('No streaming data received from DeepSeek API');
+            controller.error(new Error('No streaming data received from AI service'));
             return;
+          }
+
+          if (!fullResponse || fullResponse.trim() === '') {
+            console.error('Empty response received from DeepSeek API');
+            controller.error(new Error('Empty response received from AI service'));
+            return;
+          }
+
+          // Save AI response with retry logic
+          if (conversationId) {
+            let retryCount = 0;
+            const maxRetries = 3;
+            
+            while (retryCount < maxRetries) {
+              try {
+                await supabaseAdmin.from('messages').insert({
+                  conversation_id: conversationId,
+                  type: 'ai',
+                  content: fullResponse,
+                  model: model
+                })
+                console.log('✅ AI response saved successfully');
+                break;
+              } catch (dbError) {
+                console.error(`Failed to save AI response (attempt ${retryCount + 1}):`, dbError);
+                retryCount++;
+                
+                if (retryCount === maxRetries) {
+                  // Don't throw error, just log it - the response was still delivered to the client
+                  console.error('Failed to save AI response after all retries');
+                } else {
+                  // Wait before retrying
+                  await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+                }
+              }
+            }
           }
 
           // Send completion signal
@@ -328,7 +383,6 @@ serve(async (req) => {
             model: model
           };
           
-          // Add message count info only for authenticated users
           if (!isAnonymous && userData) {
             completionPayload.messageCount = userData.message_count + 1;
             completionPayload.messageLimit = userData.message_limit;
@@ -336,31 +390,8 @@ serve(async (req) => {
           
           const completionData = `data: ${JSON.stringify(completionPayload)}\n\n`
           controller.enqueue(new TextEncoder().encode(completionData))
-          
-          // Save conversation to database if conversationId is provided
-          if (conversationId && fullResponse) {
-            try {
-              // Save user message
-              await supabaseAdmin.from('messages').insert({
-                conversation_id: conversationId,
-                type: 'user',
-                content: messages[messages.length - 1].content,
-                model: model
-              })
-
-              // Save AI response
-              await supabaseAdmin.from('messages').insert({
-                conversation_id: conversationId,
-                type: 'ai',
-                content: fullResponse,
-                model: model
-              })
-            } catch (dbError) {
-              console.error('Failed to save conversation:', dbError)
-            }
-          }
-
           controller.close()
+
         } catch (error) {
           console.error('Streaming error:', error)
           controller.error(error)

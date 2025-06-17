@@ -339,6 +339,8 @@ function App() {
    * Supports both authenticated and anonymous users
    */
   const sendMessage = async (content: string) => {
+    let aiMessageId: string | null = null;
+
     try {
       console.log('🚀 sendMessage called with:', content);
       console.log('🔍 Current isGenerating state:', isGenerating);
@@ -374,74 +376,42 @@ function App() {
       const userMessage: Message = {
         id: Date.now().toString(),
         type: 'user',
-        content,
+        content: content.trim(),
         timestamp: new Date()
       };
 
       console.log('📝 Adding user message:', userMessage);
       setMessages(prev => [...prev, userMessage]);
       setMessageCount(prev => prev + 1);
-      setIsGenerating(true);
-      console.log('🔄 Set isGenerating to true');
       
       // Create AI message placeholder for streaming
       console.log('🤖 Creating AI message placeholder...');
-      const aiMessageId = (Date.now() + 1).toString();
+      aiMessageId = (Date.now() + 1).toString();
       const aiMessage: Message = {
         id: aiMessageId,
         type: 'ai',
         content: '',
         timestamp: new Date()
       };
-
-      console.log('📝 Adding AI message placeholder:', aiMessageId);
+      
       setMessages(prev => [...prev, aiMessage]);
-      
-      // Add a small delay to ensure state is updated
-      await new Promise(resolve => setTimeout(resolve, 10));
-      console.log('⏰ Delay completed, proceeding with message processing');
+      setIsGenerating(true);
+      console.log('🔄 Set isGenerating to true');
 
-      try {
-        console.log('🔄 Starting main message processing logic');
-        let conversationId = currentConversationId;
-        console.log('💬 Current conversation ID:', conversationId);
+      // Create or get conversation
+      let currentConversationId = conversationId;
       
-              // Create new conversation if this is the first message
-        if (!conversationId && user) {
-          console.log('🆕 Creating new conversation for user:', user.id);
-          try {
-            // Create conversation with temporary title first
-            const tempTitle = content.trim().slice(0, 40) + (content.length > 40 ? '...' : '');
-            console.log('📝 Creating conversation with title:', tempTitle);
-            const newConversation = await chatFeaturesService.createConversation(user.id, tempTitle, selectedModel);
-            conversationId = newConversation.id;
-            console.log('✅ New conversation created:', conversationId);
-            setCurrentConversationId(conversationId);
-            setConversationTitle(tempTitle);
-            
-            // Reload conversations to update sidebar
-            console.log('🔄 Reloading conversations...');
-            await loadConversations();
-            console.log('✅ Conversations reloaded');
-          } catch (error) {
-            console.error('❌ Failed to create conversation:', error);
-            // Continue without database storage
-          }
+      if (!currentConversationId && user) {
+        console.log('🆕 Creating new conversation for user:', user.id);
+        try {
+          currentConversationId = await chatFeaturesService.createConversation(content.trim(), selectedModel);
+          setConversationId(currentConversationId);
+          console.log('✅ New conversation created:', currentConversationId);
+        } catch (error) {
+          console.error('❌ Failed to create conversation:', error);
+          // Continue without conversation
         }
-
-              // Save user message to database if we have a conversation
-        if (conversationId && user) {
-          console.log('💾 Saving user message to database...');
-          try {
-            await chatFeaturesService.saveMessage(conversationId, 'user', content.trim());
-            console.log('✅ User message saved');
-          } catch (error) {
-            console.error('❌ Failed to save user message:', error);
-            // Continue without database storage
-          }
-        }
-        
-        console.log('🔄 User message processing completed, moving to AI response...');
+      }
 
       // Convert messages to ChatMessage format
       const chatMessages: ChatMessage[] = [...messages, userMessage].map(msg => ({
@@ -478,101 +448,64 @@ function App() {
           chatMessages,
           selectedModel as DeepSeekModel,
           (chunk: string) => {
-            console.log('📦 Received streaming chunk:', chunk);
+            if (!chunk) return;
+            
+            console.log('📦 Received streaming chunk:', chunk.length, 'chars');
             // Update the AI message with streaming content
             setMessages(prev => prev.map(msg => 
               msg.id === aiMessageId 
                 ? { ...msg, content: msg.content + chunk }
                 : msg
             ));
-          }
+          },
+          currentConversationId
         );
         
         console.log('✅ sendChatMessage completed successfully');
-        console.log('📝 Full response preview:', fullResponse?.substring(0, 100) + '...');
-      } catch (sendError) {
-        console.error('❌ sendChatMessage failed:', sendError);
-        console.error('❌ Error type:', sendError?.constructor?.name);
-        console.error('❌ Error message:', (sendError as Error)?.message);
-        throw sendError; // Re-throw to be caught by outer try-catch
+        console.log('📝 Full response length:', fullResponse?.length || 0);
+      } catch (error) {
+        console.error('❌ sendChatMessage failed:', error);
+        
+        // Update AI message with error
+        setMessages(prev => prev.map(msg => 
+          msg.id === aiMessageId 
+            ? { 
+                ...msg, 
+                content: 'Er is een fout opgetreden bij het genereren van het antwoord. Probeer het opnieuw of neem contact op met support als het probleem aanhoudt.' 
+              }
+            : msg
+        ));
+        
+        throw error;
       }
 
-      console.log('✅ Full response received:', fullResponse);
-      console.log('📝 Full response length:', fullResponse?.length || 0);
-      
       // Ensure we have content
       if (!fullResponse || fullResponse.trim() === '') {
-        throw new Error('No response received from AI');
+        throw new Error('Empty response received from AI service');
       }
       
-      // Update with final response (in case streaming didn't capture everything)
+      // Update with final response
       setMessages(prev => prev.map(msg => 
         msg.id === aiMessageId 
           ? { ...msg, content: fullResponse }
           : msg
       ));
 
-      // Save AI response to database if we have a conversation
-      if (conversationId && user) {
-        console.log('💾 Attempting to save AI response to database...');
-        console.log('📝 Conversation ID:', conversationId);
-        console.log('📝 User ID:', user.id);
-        console.log('📝 Response length:', fullResponse.length);
-        
-        try {
-          await chatFeaturesService.saveMessage(conversationId, 'assistant', fullResponse);
-          console.log('✅ AI response saved successfully');
-          
-          // Generate better title after first AI response
-          if (messages.length === 0) { // This was the first exchange
-            try {
-              const conversationMessages = [
-                { role: 'user', content: content },
-                { role: 'assistant', content: fullResponse }
-              ];
-              const betterTitle = await chatFeaturesService.generateConversationTitle(conversationMessages);
-              
-              // Update the conversation title in database
-              await chatFeaturesService.updateConversationTitle(conversationId, betterTitle);
-              setConversationTitle(betterTitle);
-              
-              // Reload conversations to update sidebar
-              await loadConversations();
-            } catch (error) {
-              console.error('Failed to generate better title:', error);
-            }
-          }
-        } catch (error) {
-          console.error('❌ Failed to save AI response:', error);
-          console.error('❌ Error details:', error);
-          // Continue without database storage
-        }
-      } else {
-        console.log('⚠️ Cannot save AI response - missing conversationId or user');
-        console.log('📝 conversationId:', conversationId);
-        console.log('📝 user:', user?.id);
+    } catch (error) {
+      console.error('❌ Message sending failed:', error);
+      
+      // Only show error message if we haven't already
+      if (aiMessageId) {
+        setMessages(prev => prev.map(msg => 
+          msg.id === aiMessageId 
+            ? { 
+                ...msg, 
+                content: 'Er is een fout opgetreden bij het verwerken van je bericht. Probeer het opnieuw of neem contact op met support als het probleem aanhoudt.' 
+              }
+            : msg
+        ));
       }
-
-    } catch (error: any) {
-      console.error('❌ Error sending message:', error);
-      
-      // Update the existing AI message placeholder with error content
-      const errorContent = `Sorry, I encountered an error: ${error.message || 'Unknown error'}. Please try again.`;
-      setMessages(prev => prev.map(msg => 
-        msg.id === aiMessageId 
-          ? { ...msg, content: errorContent }
-          : msg
-      ));
-      
-      console.log('💥 Updated AI message with error:', errorContent);
     } finally {
-      console.log('🏁 Finally block - ensuring isGenerating is false');
-      console.log('🔍 isGenerating before reset:', isGenerating);
-      setIsGenerating(false); // Ensure it's always false, even if there was an error
-      console.log('✅ isGenerating reset completed');
-    }
-    } catch (outerError) {
-      console.error('💥 Outer sendMessage error:', outerError);
       setIsGenerating(false);
     }
   };
