@@ -36,8 +36,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         const storedSession = localStorage.getItem('bellosai-auth-token')
         if (storedSession) {
-          console.log('🔍 Found stored auth token, restoring session...')
+          console.log('🔍 Found stored auth token, waiting for session restoration...')
+          console.log('🔍 Token preview:', storedSession.substring(0, 50) + '...')
+        } else {
+          console.log('🔍 No stored auth token found')
         }
+        
+        // Also check for any other Supabase auth keys
+        const allKeys = Object.keys(localStorage).filter(key => key.includes('supabase') || key.includes('auth'))
+        console.log('🔍 All auth-related localStorage keys:', allKeys)
       } catch (error) {
         console.warn('⚠️ Could not check stored session:', error)
       }
@@ -57,8 +64,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       async (event, session) => {
         if (!mounted) return
         
+        console.log('🔄 Auth state changed:', event, session ? `User logged in: ${session.user.email}` : 'No session')
+        
         // Clear the fallback timeout since we got a response
         if (fallbackTimeoutId) {
+          console.log('✅ Clearing fallback timeout - auth event received')
           clearTimeout(fallbackTimeoutId)
           fallbackTimeoutId = null
         }
