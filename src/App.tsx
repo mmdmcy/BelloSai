@@ -172,6 +172,9 @@ function App() {
   // AI generation state
   const [isGenerating, setIsGenerating] = useState(false);
 
+  // Chat error state
+  const [chatError, setChatError] = useState<string | null>(null);
+
   // Conversation management
   const [conversations, setConversations] = useState<any[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
@@ -639,7 +642,7 @@ function App() {
         }
 
       } catch (error) {
-        setChatError(error.message || 'Er is een onbekende fout opgetreden.');
+        setChatError((error as Error).message || 'Er is een onbekende fout opgetreden.');
         console.error('❌ sendChatMessage failed:', error);
         
         // Update AI message with error

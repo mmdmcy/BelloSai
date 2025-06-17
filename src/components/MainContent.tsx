@@ -23,6 +23,7 @@ import { Sparkles, Compass, Code, GraduationCap, ChevronDown, Search, Paperclip,
 import ActionButton from './ActionButton';
 import ModelSelector from './ModelSelector';
 import { CustomizationSettings } from '../App';
+import type { ModelInfo } from '../App';
 import AnonymousUsageIndicator from './AnonymousUsageIndicator';
 
 interface MainContentProps {
@@ -30,7 +31,7 @@ interface MainContentProps {
   onSendMessage: (message: string) => void;
   selectedModel: string;
   onModelChange: (model: string) => void;
-  availableModels: string[];
+  availableModels: ModelInfo[];
   hideInput?: boolean;
   inputOnly?: boolean;
   customization: CustomizationSettings;
