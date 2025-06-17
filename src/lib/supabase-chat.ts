@@ -101,9 +101,9 @@ export async function sendChatMessage(
     
     abortController = new AbortController();
     timeoutId = setTimeout(() => {
-      console.log('⏰ Request timeout after 90 seconds');
+      console.log('⏰ Request timeout after 120 seconds');
       abortController?.abort();
-    }, 90000);
+    }, 120000); // Increased from 90 to 120 seconds
     
     const response = await fetch(url, {
       method: 'POST',
@@ -154,9 +154,9 @@ export async function sendChatMessage(
         clearTimeout(streamTimeout);
       }
       streamTimeout = setTimeout(() => {
-        console.error('⏰ Stream timeout - no data received for 30 seconds');
+        console.error('⏰ Stream timeout - no data received for 60 seconds');
         reader.cancel();
-      }, 30000);
+      }, 60000); // Increased from 30 to 60 seconds
     };
 
     try {
@@ -219,6 +219,12 @@ export async function sendChatMessage(
       
       if (!fullResponse || fullResponse.trim() === '') {
         throw new Error('Empty response received from AI service');
+      }
+
+      // Check if response seems incomplete (ends abruptly)
+      const responseLength = fullResponse.length;
+      if (responseLength > 0 && responseLength < 50) {
+        console.warn('⚠️ Response seems unusually short, but continuing...');
       }
 
       return fullResponse;
