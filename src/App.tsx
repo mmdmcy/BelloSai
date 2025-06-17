@@ -340,6 +340,7 @@ function App() {
    */
   const sendMessage = async (content: string) => {
     let aiMessageId: string | null = null;
+    let currentConvoId = currentConversationId;
 
     try {
       console.log('🚀 sendMessage called with:', content);
@@ -399,14 +400,12 @@ function App() {
       console.log('🔄 Set isGenerating to true');
 
       // Create or get conversation
-      let currentConversationId = conversationId;
-      
-      if (!currentConversationId && user) {
+      if (!currentConvoId && user) {
         console.log('🆕 Creating new conversation for user:', user.id);
         try {
-          currentConversationId = await chatFeaturesService.createConversation(content.trim(), selectedModel);
-          setConversationId(currentConversationId);
-          console.log('✅ New conversation created:', currentConversationId);
+          currentConvoId = await chatFeaturesService.createConversation(user.id, content.trim(), selectedModel);
+          setCurrentConversationId(currentConvoId);
+          console.log('✅ New conversation created:', currentConvoId);
         } catch (error) {
           console.error('❌ Failed to create conversation:', error);
           // Continue without conversation
@@ -440,6 +439,7 @@ function App() {
       console.log('  - Messages count:', chatMessages.length);
       console.log('  - Model:', selectedModel);
       console.log('  - AI Message ID:', aiMessageId);
+      console.log('  - Conversation ID:', currentConvoId);
       
       let fullResponse = '';
       try {
@@ -458,7 +458,7 @@ function App() {
                 : msg
             ));
           },
-          currentConversationId
+          currentConvoId || undefined
         );
         
         console.log('✅ sendChatMessage completed successfully');
