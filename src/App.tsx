@@ -340,7 +340,7 @@ function App() {
    */
   const sendMessage = async (content: string) => {
     let aiMessageId: string | null = null;
-    let currentConvoId = currentConversationId;
+    let currentConvoId: string | null = currentConversationId;
 
     try {
       console.log('🚀 sendMessage called with:', content);
@@ -403,7 +403,8 @@ function App() {
       if (!currentConvoId && user) {
         console.log('🆕 Creating new conversation for user:', user.id);
         try {
-          currentConvoId = await chatFeaturesService.createConversation(user.id, content.trim(), selectedModel);
+          const newConversation = await chatFeaturesService.createConversation(user.id, content.trim(), selectedModel);
+          currentConvoId = newConversation.id; // Extract only the ID
           setCurrentConversationId(currentConvoId);
           console.log('✅ New conversation created:', currentConvoId);
         } catch (error) {
@@ -416,6 +417,7 @@ function App() {
       if (currentConvoId) {
         try {
           console.log('💾 Saving user message to database...');
+          // Ensure we pass a string ID
           await chatFeaturesService.saveMessage(currentConvoId, 'user', content.trim());
           console.log('✅ User message saved to database');
         } catch (error) {
@@ -459,45 +461,46 @@ function App() {
 
       try {
         console.log('🚀 Starting sendChatMessage call...');
-        fullResponse = await sendChatMessage(
-          chatMessages,
-          selectedModel as DeepSeekModel,
-          async (chunk: string) => {
-            if (!chunk) return;
-            
-            console.log('📦 Received streaming chunk:', chunk.length, 'chars');
-            
-            // Update the AI message with streaming content
-            setMessages(prev => {
-              const updatedMessages = prev.map(msg => 
-                msg.id === aiMessageId 
-                  ? { ...msg, content: msg.content + chunk }
-                  : msg
-              );
+                  fullResponse = await sendChatMessage(
+            chatMessages,
+            selectedModel as DeepSeekModel,
+            async (chunk: string) => {
+              if (!chunk) return;
+              
+              console.log('📦 Received streaming chunk:', chunk.length, 'chars');
+              
+              // Update the AI message with streaming content
+              setMessages(prev => {
+                const updatedMessages = prev.map(msg => 
+                  msg.id === aiMessageId 
+                    ? { ...msg, content: msg.content + chunk }
+                    : msg
+                );
 
-              // Save to database if we have enough new content
-              if (currentConvoId && fullResponse.length - lastSavedLength >= SAVE_CHUNK_SIZE) {
-                const aiMessage = updatedMessages.find(msg => msg.id === aiMessageId);
-                if (aiMessage) {
-                  console.log('💾 Saving AI message chunk to database...');
-                  chatFeaturesService.saveMessage(currentConvoId, 'assistant', aiMessage.content)
-                    .then(() => {
-                      console.log('✅ AI message chunk saved to database');
-                      lastSavedLength = fullResponse.length;
-                    })
-                    .catch(error => {
-                      console.error('❌ Failed to save AI message chunk:', error);
-                    });
+                // Save to database if we have enough new content
+                if (currentConvoId && fullResponse.length - lastSavedLength >= SAVE_CHUNK_SIZE) {
+                  const aiMessage = updatedMessages.find(msg => msg.id === aiMessageId);
+                  if (aiMessage) {
+                    console.log('💾 Saving AI message chunk to database...');
+                    // Ensure we pass a string ID
+                    chatFeaturesService.saveMessage(currentConvoId, 'assistant', aiMessage.content)
+                      .then(() => {
+                        console.log('✅ AI message chunk saved to database');
+                        lastSavedLength = fullResponse.length;
+                      })
+                      .catch(error => {
+                        console.error('❌ Failed to save AI message chunk:', error);
+                      });
+                  }
                 }
-              }
 
-              return updatedMessages;
-            });
+                return updatedMessages;
+              });
 
-            fullResponse += chunk;
-          },
-          currentConvoId || undefined
-        );
+              fullResponse += chunk;
+            },
+            currentConvoId || undefined
+          );
         
         console.log('✅ sendChatMessage completed successfully');
         console.log('📝 Full response length:', fullResponse?.length || 0);
