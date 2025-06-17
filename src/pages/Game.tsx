@@ -244,17 +244,45 @@ Make it fun and modern. No markdown formatting.`
         return;
       }
       
-      const prompt = `You are playing Family Feud. Question: "${question.question}"
-Already revealed: ${revealedAnswers.map(i => question.answers[i].text).join(', ') || 'None'}
-Available answers: ${availableAnswers.map(a => a.text).join(', ')}
+      // Use the improved prompt from family-feud-ai service
+      const prompt = `Family Feud game. Question: "${question.question}"
 
-Respond with ONLY one of the available answers. No explanations.`;
+Revealed: ${revealedAnswers.map(i => question.answers[i].text).join(', ') || 'None'}
+
+Pick ONE answer from:
+${availableAnswers.map(a => a.text).join(', ')}
+
+Reply with ONLY the answer text. No explanations.`;
 
       console.log('Sending AI prompt:', prompt);
       
-      // Use a shorter timeout for faster response
-      const response = await sendChatMessage([{ type: 'user', content: prompt }], 'DeepSeek-R1');
+      // Add retry logic for network errors
+      let response;
+      let retries = 0;
+      const maxRetries = 2;
+      
+      while (retries <= maxRetries) {
+        try {
+          response = await sendChatMessage([{ type: 'user', content: prompt }], 'DeepSeek-R1');
+          break; // Success, exit retry loop
+        } catch (error) {
+          retries++;
+          console.log(`AI request failed, attempt ${retries}/${maxRetries + 1}:`, error);
+          
+          if (retries > maxRetries) {
+            throw error; // Give up after max retries
+          }
+          
+          // Wait a bit before retrying
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+      
       console.log('AI Response:', response);
+      
+      if (!response) {
+        throw new Error('No response received from AI');
+      }
       
       const guess = response.trim();
       setAiGuess(guess);
@@ -271,17 +299,66 @@ Respond with ONLY one of the available answers. No explanations.`;
         setAiScore(prev => prev + question.answers[answerIndex].points);
         setTurn('ai'); // AI gets another turn
         
+        // Shorter delay for next AI turn
         setTimeout(() => {
           handleAITurn();
-        }, 1500); // Shorter delay
+        }, 1000);
       } else {
         // AI wrong
         setTurn('player');
       }
     } catch (error) {
       console.error('AI turn failed:', error);
-      setAiGuess('AI failed to respond');
-      setTurn('player');
+      
+      // Show user-friendly error message
+      let errorMessage = 'AI failed to respond';
+      if (error instanceof Error) {
+        if (error.message.includes('timeout')) {
+          errorMessage = 'AI took too long to respond';
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = 'Network error - AI unavailable';
+        } else {
+          errorMessage = 'AI error: ' + error.message;
+        }
+      }
+      
+      // Fallback: Use simple random AI if DeepSeek fails
+      try {
+        const availableAnswers = question.answers.filter((_, index) => !revealedAnswers.includes(index));
+        if (availableAnswers.length > 0) {
+          const randomIndex = Math.floor(Math.random() * availableAnswers.length);
+          const randomGuess = availableAnswers[randomIndex].text;
+          
+          console.log('Using fallback random AI guess:', randomGuess);
+          setAiGuess(`Random AI: ${randomGuess}`);
+          
+          // Check if random guess is correct
+          const answerIndex = question.answers.findIndex(a => 
+            a.text.toLowerCase() === randomGuess.toLowerCase() && !revealedAnswers.includes(question.answers.indexOf(a))
+          );
+
+          if (answerIndex !== -1) {
+            // Random AI correct
+            const newRevealed = [...revealedAnswers, answerIndex];
+            setRevealedAnswers(newRevealed);
+            setAiScore(prev => prev + question.answers[answerIndex].points);
+            setTurn('ai'); // AI gets another turn
+            
+            setTimeout(() => {
+              handleAITurn();
+            }, 1000);
+          } else {
+            setTurn('player');
+          }
+        } else {
+          setAiGuess(errorMessage);
+          setTurn('player');
+        }
+      } catch (fallbackError) {
+        console.error('Fallback AI also failed:', fallbackError);
+        setAiGuess(errorMessage);
+        setTurn('player');
+      }
     } finally {
       setAiThinking(false);
     }
