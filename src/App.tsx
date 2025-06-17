@@ -450,6 +450,7 @@ function App() {
     setChatError(null); // Reset error bij nieuw bericht
     let aiMessageId: string | null = null;
     let currentConvoId: string | null = currentConversationId;
+    let requestTimeoutId: NodeJS.Timeout | null = null;
 
     try {
       console.log('🚀 sendMessage called with:', content);
@@ -508,6 +509,25 @@ function App() {
       setMessages(prev => [...prev, aiMessage]);
       setIsGenerating(true);
       console.log('🔄 Set isGenerating to true');
+
+      // Set up request timeout (90 seconds)
+      requestTimeoutId = setTimeout(() => {
+        console.error('⏰ Request timeout after 90 seconds');
+        setChatError('Het verzoek duurde te lang. Probeer het opnieuw of probeer een kortere vraag.');
+        setIsGenerating(false);
+        
+        // Update AI message with timeout error
+        if (aiMessageId) {
+          setMessages(prev => prev.map(msg => 
+            msg.id === aiMessageId 
+              ? { 
+                  ...msg, 
+                  content: 'Het verzoek duurde te lang. Probeer het opnieuw of probeer een kortere vraag.' 
+                }
+              : msg
+          ));
+        }
+      }, 90000);
 
       // Create or get conversation
       if (!currentConvoId && user) {
@@ -597,6 +617,12 @@ function App() {
         console.log('✅ sendChatMessage completed successfully');
         console.log('📝 Full response length:', fullResponse?.length || 0);
 
+        // Clear timeout since request completed successfully
+        if (requestTimeoutId) {
+          clearTimeout(requestTimeoutId);
+          requestTimeoutId = null;
+        }
+
         // Save final message to database if we have a conversation
         if (currentConvoId && fullResponse) {
           try {
@@ -642,15 +668,39 @@ function App() {
         }
 
       } catch (error) {
-        setChatError((error as Error).message || 'Er is een onbekende fout opgetreden.');
+        // Clear timeout since request failed
+        if (requestTimeoutId) {
+          clearTimeout(requestTimeoutId);
+          requestTimeoutId = null;
+        }
+
         console.error('❌ sendChatMessage failed:', error);
+        
+        // Handle specific error types
+        let errorMessage = 'Er is een onbekende fout opgetreden.';
+        
+        if (error instanceof Error) {
+          if (error.message.includes('timeout') || error.message.includes('took too long')) {
+            errorMessage = 'Het verzoek duurde te lang. Probeer het opnieuw of probeer een kortere vraag.';
+          } else if (error.message.includes('rate limit') || error.message.includes('429')) {
+            errorMessage = 'Je hebt het maximum aantal verzoeken bereikt. Wacht even en probeer het opnieuw.';
+          } else if (error.message.includes('authentication') || error.message.includes('401')) {
+            errorMessage = 'Authenticatie fout. Probeer opnieuw in te loggen.';
+          } else if (error.message.includes('network') || error.message.includes('fetch')) {
+            errorMessage = 'Netwerk fout. Controleer je internetverbinding en probeer het opnieuw.';
+          } else {
+            errorMessage = error.message;
+          }
+        }
+        
+        setChatError(errorMessage);
         
         // Update AI message with error
         setMessages(prev => prev.map(msg => 
           msg.id === aiMessageId 
             ? { 
                 ...msg, 
-                content: 'Er is een fout opgetreden bij het genereren van het antwoord. Probeer het opnieuw of neem contact op met support als het probleem aanhoudt.' 
+                content: errorMessage
               }
             : msg
         ));
@@ -673,6 +723,12 @@ function App() {
     } catch (error) {
       console.error('❌ Message sending failed:', error);
       
+      // Clear timeout if still active
+      if (requestTimeoutId) {
+        clearTimeout(requestTimeoutId);
+        requestTimeoutId = null;
+      }
+      
       // Only show error message if we haven't already
       if (aiMessageId) {
         setMessages(prev => prev.map(msg => 
@@ -686,6 +742,11 @@ function App() {
       }
     } finally {
       setIsGenerating(false);
+      
+      // Ensure timeout is cleared
+      if (requestTimeoutId) {
+        clearTimeout(requestTimeoutId);
+      }
     }
   };
 
@@ -819,6 +880,45 @@ function App() {
       console.error('Failed to delete conversation:', error);
       alert('Er is een fout opgetreden bij het verwijderen van de conversatie.');
     }
+  };
+
+  /**
+   * Regenerate the last AI response
+   * Removes the last AI message and tries to generate a new response
+   */
+  const regenerateResponse = async () => {
+    if (isGenerating || messages.length === 0) return;
+    
+    // Find the last AI message
+    let lastAiMessageIndex = -1;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].type === 'ai') {
+        lastAiMessageIndex = i;
+        break;
+      }
+    }
+    
+    if (lastAiMessageIndex === -1) return;
+    
+    // Find the last user message before the AI message
+    let lastUserMessageIndex = -1;
+    for (let i = lastAiMessageIndex - 1; i >= 0; i--) {
+      if (messages[i].type === 'user') {
+        lastUserMessageIndex = i;
+        break;
+      }
+    }
+    
+    if (lastUserMessageIndex === -1) return;
+    
+    const lastUserMessage = messages[lastUserMessageIndex];
+    
+    // Remove the last AI message
+    setMessages(prev => prev.slice(0, lastAiMessageIndex));
+    
+    // Try to send the last user message again
+    console.log('🔄 Regenerating response for:', lastUserMessage.content);
+    await sendMessage(lastUserMessage.content);
   };
 
   /**
@@ -1259,6 +1359,7 @@ function App() {
                 onLoginClick={() => setShowLoginModal(true)}
                 error={chatError}
                 setError={setChatError}
+                onRegenerateResponse={regenerateResponse}
               />
             )}
           </div>
@@ -1287,6 +1388,7 @@ function App() {
                   onLoginClick={() => setShowLoginModal(true)}
                   error={chatError}
                   setError={setChatError}
+                  onRegenerateResponse={regenerateResponse}
                 />
               ) : (
                 <MainContent 
@@ -1299,8 +1401,7 @@ function App() {
                   customization={customization}
                   isLoggedIn={!!user}
                   onLoginClick={() => setShowLoginModal(true)}
-                  error={chatError}
-                  setError={setChatError}
+                  onRegenerateResponse={regenerateResponse}
                 />
               )}
             </div>
@@ -1643,6 +1744,7 @@ function App() {
                       onLoginClick={() => setShowLoginModal(true)}
                       error={chatError}
                       setError={setChatError}
+                      onRegenerateResponse={regenerateResponse}
                     />
                   ) : (
                     <ChatView 
@@ -1661,6 +1763,7 @@ function App() {
                       onLoginClick={() => setShowLoginModal(true)}
                       error={chatError}
                       setError={setChatError}
+                      onRegenerateResponse={regenerateResponse}
                     />
                   )}
                 </div>
@@ -1683,6 +1786,7 @@ function App() {
                       onLoginClick={() => setShowLoginModal(true)}
                       error={chatError}
                       setError={setChatError}
+                      onRegenerateResponse={regenerateResponse}
                     />
                   ) : (
                     <ChatView 
@@ -1701,6 +1805,7 @@ function App() {
                       onLoginClick={() => setShowLoginModal(true)}
                       error={chatError}
                       setError={setChatError}
+                      onRegenerateResponse={regenerateResponse}
                     />
                   )}
                 </div>

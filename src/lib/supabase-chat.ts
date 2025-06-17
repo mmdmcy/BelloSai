@@ -148,15 +148,27 @@ export async function sendChatMessage(
     if (!response.ok) {
       const errorData = await response.json();
       console.error('❌ Edge Function error:', errorData);
-      // Specifieke foutmelding bij 429 (rate limit)
+      
+      // Handle specific error types with retry logic
       if (response.status === 429) {
+        // Rate limit - don't retry, just show message
         let msg = 'Je hebt het maximum aantal verzoeken bereikt. Wacht even en probeer het opnieuw.';
         if (errorData && errorData.error && errorData.error.toLowerCase().includes('rate')) {
           msg = errorData.error;
         }
         throw new Error(msg);
       }
-      // Specifieke foutmelding bij 401 (auth)
+      
+      if (response.status === 408) {
+        // Timeout error - retry once if we haven't already
+        if (retryCount === 0) {
+          console.log('🔄 Got timeout error, retrying once...');
+          return sendChatMessage(messages, modelCode, onChunk, conversationId, retryCount + 1);
+        } else {
+          throw new Error('Request timeout - AI service took too long to respond. Probeer het opnieuw.');
+        }
+      }
+      
       if (response.status === 401 && retryCount === 0) {
         console.log('🔄 Got 401 error, attempting to refresh session and retry...');
         try {
@@ -169,6 +181,13 @@ export async function sendChatMessage(
           console.error('❌ Failed to refresh session after 401:', refreshError);
         }
       }
+      
+      // Network errors - retry once
+      if ((response.status >= 500 && response.status < 600) && retryCount === 0) {
+        console.log('🔄 Got server error, retrying once...');
+        return sendChatMessage(messages, modelCode, onChunk, conversationId, retryCount + 1);
+      }
+      
       // Andere errors
       throw new Error(errorData.error || `Er is een fout opgetreden bij het verwerken van je bericht. Probeer het opnieuw of neem contact op met support. (HTTP ${response.status})`);
     }
@@ -185,15 +204,19 @@ export async function sendChatMessage(
       let fullResponse = '';
       let hasStartedStreaming = false;
       let streamTimeout: NodeJS.Timeout | null = null;
+      let lastChunkTime = Date.now();
+      
       const resetStreamTimeout = () => {
         if (streamTimeout) {
           clearTimeout(streamTimeout);
         }
         streamTimeout = setTimeout(() => {
-          console.error('⏰ Stream timeout - no data received for 60 seconds');
+          const timeSinceLastChunk = Date.now() - lastChunkTime;
+          console.error(`⏰ Stream timeout - no data received for 60 seconds (last chunk: ${timeSinceLastChunk}ms ago)`);
           reader.cancel();
         }, 60000);
       };
+      
       try {
         resetStreamTimeout();
         while (true) {
@@ -202,11 +225,14 @@ export async function sendChatMessage(
             console.log('✅ Streaming completed');
             break;
           }
+          
+          lastChunkTime = Date.now();
           resetStreamTimeout();
+          
           const chunk = decoder.decode(value, { stream: true });
           const lines = chunk.split('\n');
+          
           for (const line of lines) {
-            if (line.trim() === '') continue;
             if (!line.startsWith('data: ')) continue;
             try {
               const jsonStr = line.slice(6);
@@ -230,20 +256,25 @@ export async function sendChatMessage(
             }
           }
         }
+        
         if (streamTimeout) {
           clearTimeout(streamTimeout);
         }
+        
         if (!hasStartedStreaming) {
           throw new Error('No streaming data received from AI service');
         }
+        
         console.log('📝 Final fullResponse length:', fullResponse?.length || 0);
         if (!fullResponse || fullResponse.trim() === '') {
           throw new Error('Empty response received from AI service');
         }
+        
         const responseLength = fullResponse.length;
         if (responseLength > 0 && responseLength < 50) {
           console.warn('⚠️ Response seems unusually short, but continuing...');
         }
+        
         return fullResponse;
       } finally {
         if (streamTimeout) {
@@ -260,6 +291,17 @@ export async function sendChatMessage(
 
   } catch (error) {
     console.error('Chat service error:', error);
+    
+    // Handle specific error types
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout - AI service took too long to respond. Probeer het opnieuw.');
+      }
+      if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+        throw new Error('Netwerk fout. Controleer je internetverbinding en probeer het opnieuw.');
+      }
+    }
+    
     throw error;
   } finally {
     if (timeoutId) {
