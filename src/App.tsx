@@ -50,6 +50,7 @@ export interface Message {
   type: 'user' | 'ai';
   content: string;
   timestamp: Date;
+  model?: string; // modelcode zoals 'models/gemini-2.0-flash'
 }
 
 /**
@@ -496,7 +497,8 @@ function App() {
         id: aiMessageId,
         type: 'ai',
         content: '',
-        timestamp: new Date()
+        timestamp: new Date(),
+        model: selectedModel // modelcode opslaan
       };
       
       setMessages(prev => [...prev, aiMessage]);
@@ -595,7 +597,7 @@ function App() {
         if (currentConvoId && fullResponse) {
           try {
             console.log('💾 Saving final AI message to database...');
-            await chatFeaturesService.saveMessage(currentConvoId, 'assistant', fullResponse);
+            await chatFeaturesService.saveMessage(currentConvoId, 'assistant', fullResponse, selectedModel);
             console.log('✅ Final AI message saved to database');
             
             // Generate and update conversation title if this is a new conversation
@@ -659,7 +661,7 @@ function App() {
       // Update with final response
       setMessages(prev => prev.map(msg => 
         msg.id === aiMessageId 
-          ? { ...msg, content: fullResponse }
+          ? { ...msg, content: fullResponse, model: selectedModel }
           : msg
       ));
 

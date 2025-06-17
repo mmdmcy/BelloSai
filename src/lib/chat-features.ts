@@ -630,7 +630,7 @@ class ChatFeaturesService {
   /**
    * Save a message to a conversation
    */
-  async saveMessage(conversationId: string | null, role: 'user' | 'assistant', content: string) {
+  async saveMessage(conversationId: string | null, role: 'user' | 'assistant', content: string, model?: string) {
     console.log('💾 ChatFeaturesService: Saving message...');
     
     if (!conversationId) {
@@ -642,12 +642,15 @@ class ChatFeaturesService {
     console.log('📝 Content length:', content.length);
     console.log('📝 Content preview:', content.substring(0, 100) + '...');
     
-    const messageData = {
+    const messageData: any = {
       conversation_id: conversationId,
       role: role, // Use role column directly
       type: role === 'assistant' ? 'ai' : role, // Keep type for backward compatibility
       content: content
     };
+    if (model && role === 'assistant') {
+      messageData.model = model;
+    }
     
     console.log('📝 Message data to insert:', messageData);
     

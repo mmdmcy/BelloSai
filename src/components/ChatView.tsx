@@ -23,7 +23,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github-dark.css';
 import { Message } from '../App';
-import { CustomizationSettings } from '../App';
+import { CustomizationSettings, AVAILABLE_MODELS } from '../App';
 import ModelSelector from './ModelSelector';
 import AttachmentUpload from './AttachmentUpload';
 import ChatSharing from './ChatSharing';
@@ -517,15 +517,17 @@ export default function ChatView({
               >
                 <RefreshCw className={`w-4 h-4 ${shouldShowLoading ? 'animate-spin' : ''}`} />
               </button>
-              <span 
-                className={`text-sm ${isDark ? 'text-purple-400' : ''}`}
-                style={{ 
-                  fontFamily: customization.fontFamily,
-                  color: isDark ? undefined : customization.primaryColor 
-                }}
-              >
-                {selectedModel}
-              </span>
+              {message.model && (
+                <span 
+                  className={`text-sm ${isDark ? 'text-purple-400' : ''}`}
+                  style={{ 
+                    fontFamily: customization.fontFamily,
+                    color: isDark ? undefined : customization.primaryColor 
+                  }}
+                >
+                  {AVAILABLE_MODELS.find(m => m.code === message.model)?.name || message.model}
+                </span>
+              )}
             </div>
           </div>
         </div>
