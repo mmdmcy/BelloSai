@@ -1397,7 +1397,6 @@ function App() {
                   selectedModel={selectedModel}
                   onModelChange={setSelectedModel}
                   availableModels={availableModels}
-                  inputOnly={false}
                   customization={customization}
                   isLoggedIn={!!user}
                   onLoginClick={() => setShowLoginModal(true)}
@@ -1736,14 +1735,9 @@ function App() {
                       selectedModel={selectedModel}
                       onModelChange={setSelectedModel}
                       availableModels={availableModels}
-                      hideInput={true}
                       customization={customization}
-                      isGenerating={isGenerating}
                       isLoggedIn={!!user}
                       onLoginClick={() => setShowLoginModal(true)}
-                      error={chatError}
-                      setError={setChatError}
-                      onRegenerateResponse={regenerateResponse}
                     />
                   ) : (
                     <ChatView 
@@ -1778,14 +1772,9 @@ function App() {
                       selectedModel={selectedModel}
                       onModelChange={setSelectedModel}
                       availableModels={availableModels}
-                      inputOnly={true}
                       customization={customization}
-                      isGenerating={isGenerating}
                       isLoggedIn={!!user}
                       onLoginClick={() => setShowLoginModal(true)}
-                      error={chatError}
-                      setError={setChatError}
-                      onRegenerateResponse={regenerateResponse}
                     />
                   ) : (
                     <ChatView 

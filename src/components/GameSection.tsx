@@ -210,22 +210,31 @@ export default function GameSection({
   const handleGameshowGuess = async () => {
     if (!gameshowState.playerGuess.trim() || !gameshowState.question || gameshowState.turn !== 'player') return;
     const guess = gameshowState.playerGuess.trim();
+    
     // Check of het antwoord al geraden is
     const alreadyGuessed = gameshowState.revealedAnswers.some(idx => gameshowState.question!.answers[idx].text.toLowerCase() === guess.toLowerCase());
     if (alreadyGuessed) {
       setGameshowState(prev => ({
         ...prev,
         lastGuessResult: 'incorrect',
-        playerGuess: ''
+        playerGuess: '',
+        turn: 'ai', // Beurt naar AI bij al geraden antwoord
+        lastPlayerGuess: guess
       }));
+      // Start AI turn after a short delay
+      setTimeout(() => {
+        handleAIGuess();
+      }, 1500);
       return;
     }
+    
     // Check of het antwoord klopt
     const result = checkPlayerGuess(
       guess,
       gameshowState.question.answers,
       gameshowState.revealedAnswers.map(index => gameshowState.question!.answers[index])
     );
+    
     if (result.isCorrect && result.matchedAnswer) {
       setGameshowState(prev => ({
         ...prev,
@@ -234,8 +243,13 @@ export default function GameSection({
         lastGuessResult: 'correct',
         playerGuess: '',
         lastPlayerGuess: guess,
-        // Beurt blijft bij speler
+        turn: 'ai' // Beurt naar AI na correct antwoord
       }));
+      
+      // Start AI turn after a short delay
+      setTimeout(() => {
+        handleAIGuess();
+      }, 1500);
     } else {
       // Fout: beurt naar AI
       setGameshowState(prev => ({
@@ -246,12 +260,14 @@ export default function GameSection({
         turn: 'ai',
         lastPlayerGuess: guess
       }));
+      
       // Check of game over (3 strikes)
       if (gameshowState.strikes >= 2) {
         setTimeout(() => {
           setGameshowState(prev => ({ ...prev, gamePhase: 'finished' }));
         }, 1000);
       } else {
+        // Start AI turn after a short delay
         setTimeout(() => {
           handleAIGuess();
         }, 1500);
@@ -264,7 +280,9 @@ export default function GameSection({
    */
   const handleAIGuess = async () => {
     if (!gameshowState.question || gameshowState.turn !== 'ai') return;
+    
     setGameshowState(prev => ({ ...prev, aiThinking: true, aiGuess: '', aiGuessResult: null }));
+    
     try {
       // AI mag niet raden wat al geraden is, inclusief laatste spelerantwoord
       const revealedAnswers = gameshowState.revealedAnswers.map(index => gameshowState.question!.answers[index]);
@@ -274,6 +292,7 @@ export default function GameSection({
       ];
       const allAnswers = gameshowState.question.answers;
       const unrevealedAnswers = allAnswers.filter(a => !forbidden.includes(a.text.toLowerCase()));
+      
       // Custom AI call met filter
       let result: AIGuessResult | null = null;
       if (unrevealedAnswers.length > 0) {
@@ -284,17 +303,26 @@ export default function GameSection({
           unrevealedAnswers
         );
       }
+      
       // Fallback als alles al geraden is
       if (!result) {
-        setGameshowState(prev => ({ ...prev, aiThinking: false, turn: 'player' }));
+        setGameshowState(prev => ({ 
+          ...prev, 
+          aiThinking: false, 
+          turn: 'player',
+          aiGuess: 'No more answers to guess',
+          aiGuessResult: { guess: 'No more answers', confidence: 0, isCorrect: false }
+        }));
         return;
       }
+      
       setGameshowState(prev => ({ 
         ...prev, 
         aiGuess: result!.guess,
         aiGuessResult: result!,
         aiThinking: false 
       }));
+      
       setTimeout(() => {
         if (result!.isCorrect && result!.matchedAnswer) {
           setGameshowState(prev => ({
@@ -303,12 +331,18 @@ export default function GameSection({
             aiScore: prev.aiScore + result!.matchedAnswer!.points,
             turn: 'ai', // AI mag doorgaan bij goed antwoord
           }));
+          
+          // AI gets another turn if correct
+          setTimeout(() => {
+            handleAIGuess();
+          }, 2000);
         } else {
           setGameshowState(prev => ({
             ...prev,
             turn: 'player', // Beurt terug naar speler bij fout
           }));
         }
+        
         // Check of alles geraden is
         setTimeout(() => {
           const currentRevealedCount = gameshowState.revealedAnswers.length + (result!.isCorrect ? 1 : 0);
@@ -318,7 +352,14 @@ export default function GameSection({
         }, 2000);
       }, 2000);
     } catch (error) {
-      setGameshowState(prev => ({ ...prev, aiThinking: false, turn: 'player' }));
+      console.error('AI guess failed:', error);
+      setGameshowState(prev => ({ 
+        ...prev, 
+        aiThinking: false, 
+        turn: 'player',
+        aiGuess: 'Error occurred',
+        aiGuessResult: { guess: 'Error', confidence: 0, isCorrect: false }
+      }));
     }
   };
 
@@ -486,6 +527,27 @@ export default function GameSection({
                 </div>
               </div>
 
+              {/* Turn Indicator */}
+              <div className={`p-4 rounded-xl mb-6 text-center ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
+                <div className="flex items-center justify-center gap-3">
+                  {gameshowState.turn === 'player' ? (
+                    <>
+                      <div className="w-4 h-4 bg-blue-500 rounded-full animate-pulse"></div>
+                      <span className={`text-lg font-semibold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                        Jouw beurt!
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse"></div>
+                      <span className={`text-lg font-semibold ${isDark ? 'text-red-400' : 'text-red-600'}`}>
+                        AI's beurt!
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+
               {/* AI Thinking Indicator */}
               {gameshowState.aiThinking && (
                 <div className={`p-4 rounded-xl mb-6 text-center ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
@@ -522,7 +584,7 @@ export default function GameSection({
               )}
 
               {/* Input Section - Alleen bij spelerbeurt */}
-              {gameshowState.turn === 'player' && !gameshowState.aiThinking && !gameshowState.aiGuess && (
+              {gameshowState.turn === 'player' && !gameshowState.aiThinking && (
                 <div className={`p-6 rounded-xl ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
                   <div className="max-w-2xl mx-auto">
                     <h3 className={`text-lg font-semibold mb-4 text-center ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -569,17 +631,17 @@ export default function GameSection({
                 </div>
               )}
 
-              {/* AI Turn Indicator - Show when it's AI's turn */}
-              {gameshowState.aiThinking && (
+              {/* AI Turn Indicator - Show when it's AI's turn and not thinking */}
+              {gameshowState.turn === 'ai' && !gameshowState.aiThinking && !gameshowState.aiGuess && (
                 <div className={`p-6 rounded-xl ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
                   <div className="max-w-2xl mx-auto text-center">
                     <h3 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                      AI's Turn! DeepSeek-R1 is thinking...
+                      AI's Turn! DeepSeek-R1 is preparing to guess...
                     </h3>
                     <div className="flex items-center justify-center gap-3">
                       <Loader2 className="w-6 h-6 animate-spin text-purple-500" />
                       <span className={`text-lg ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                        Analyzing the question and revealed answers...
+                        Getting ready to make a guess...
                       </span>
                     </div>
                   </div>
