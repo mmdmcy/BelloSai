@@ -407,6 +407,15 @@ function App() {
           currentConvoId = newConversation.id; // Extract only the ID
           setCurrentConversationId(currentConvoId);
           console.log('✅ New conversation created:', currentConvoId);
+          
+          // Reload conversations to update sidebar
+          try {
+            await loadConversations();
+            console.log('✅ Conversations list updated');
+          } catch (loadError) {
+            console.error('⚠️ Failed to reload conversations:', loadError);
+            // Don't throw, this is not critical
+          }
         } catch (error) {
           console.error('❌ Failed to create conversation:', error);
           // Continue without conversation
@@ -511,6 +520,27 @@ function App() {
             console.log('💾 Saving final AI message to database...');
             await chatFeaturesService.saveMessage(currentConvoId, 'assistant', fullResponse);
             console.log('✅ Final AI message saved to database');
+            
+            // Generate and update conversation title if this is a new conversation
+            if (messages.length <= 2) { // Only for new conversations (user + AI message)
+              try {
+                console.log('📝 Generating conversation title...');
+                const conversationMessages = [
+                  { role: 'user', content: content.trim() },
+                  { role: 'assistant', content: fullResponse }
+                ];
+                const newTitle = await chatFeaturesService.generateConversationTitle(conversationMessages);
+                await chatFeaturesService.updateConversationTitle(currentConvoId, newTitle);
+                setConversationTitle(newTitle);
+                console.log('✅ Conversation title updated:', newTitle);
+                
+                // Reload conversations to show updated title in sidebar
+                await loadConversations();
+              } catch (titleError) {
+                console.error('⚠️ Failed to generate/update conversation title:', titleError);
+                // Don't throw, this is not critical
+              }
+            }
           } catch (error) {
             console.error('❌ Failed to save final AI message:', error);
           }
