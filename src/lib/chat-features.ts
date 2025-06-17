@@ -630,8 +630,13 @@ class ChatFeaturesService {
   /**
    * Save a message to a conversation
    */
-  async saveMessage(conversationId: string, role: 'user' | 'assistant', content: string) {
+  async saveMessage(conversationId: string | null, role: 'user' | 'assistant', content: string) {
     console.log('💾 ChatFeaturesService: Saving message...');
+    
+    if (!conversationId) {
+      throw new Error('Invalid conversation ID provided');
+    }
+    
     console.log('📝 Conversation ID:', conversationId);
     console.log('📝 Role:', role);
     console.log('📝 Content length:', content.length);
