@@ -220,7 +220,7 @@ function App() {
   });
 
   // Available models for AI
-  const availableModels = ['DeepSeek-V3', 'DeepSeek-R1'];
+  const availableModels: ModelInfo[] = AVAILABLE_MODELS;
 
   // Mobile responsive detection
   useEffect(() => {
@@ -444,6 +444,7 @@ function App() {
    * Supports both authenticated and anonymous users
    */
   const sendMessage = async (content: string) => {
+    setChatError(null); // Reset error bij nieuw bericht
     let aiMessageId: string | null = null;
     let currentConvoId: string | null = currentConversationId;
 
@@ -638,6 +639,7 @@ function App() {
         }
 
       } catch (error) {
+        setChatError(error.message || 'Er is een onbekende fout opgetreden.');
         console.error('❌ sendChatMessage failed:', error);
         
         // Update AI message with error
@@ -1236,7 +1238,7 @@ function App() {
                 onSendMessage={sendMessage}
                 selectedModel={selectedModel}
                 onModelChange={setSelectedModel}
-                availableModels={AVAILABLE_MODELS}
+                availableModels={availableModels}
                 customization={customization}
                 isLoggedIn={!!user}
                 onLoginClick={() => setShowLoginModal(true)}
@@ -1248,10 +1250,12 @@ function App() {
                 onSendMessage={sendMessage}
                 selectedModel={selectedModel}
                 onModelChange={setSelectedModel}
-                availableModels={AVAILABLE_MODELS}
+                availableModels={availableModels}
                 customization={customization}
                 isLoggedIn={!!user}
                 onLoginClick={() => setShowLoginModal(true)}
+                error={chatError}
+                setError={setChatError}
               />
             )}
           </div>
@@ -1273,11 +1277,13 @@ function App() {
                   onSendMessage={sendMessage}
                   selectedModel={selectedModel}
                   onModelChange={setSelectedModel}
-                  availableModels={AVAILABLE_MODELS}
+                  availableModels={availableModels}
                   hideInput={true}
                   customization={customization}
                   isLoggedIn={!!user}
                   onLoginClick={() => setShowLoginModal(true)}
+                  error={chatError}
+                  setError={setChatError}
                 />
               ) : (
                 <MainContent 
@@ -1285,11 +1291,13 @@ function App() {
                   onSendMessage={sendMessage}
                   selectedModel={selectedModel}
                   onModelChange={setSelectedModel}
-                  availableModels={AVAILABLE_MODELS}
+                  availableModels={availableModels}
                   inputOnly={false}
                   customization={customization}
                   isLoggedIn={!!user}
                   onLoginClick={() => setShowLoginModal(true)}
+                  error={chatError}
+                  setError={setChatError}
                 />
               )}
             </div>
@@ -1364,7 +1372,7 @@ function App() {
                             style={{ fontFamily: customization.fontFamily }}
                             onTouchStart={(e) => e.stopPropagation()}
                           >
-                            {AVAILABLE_MODELS.map(model => (
+                            {availableModels.map(model => (
                               <option key={model.code} value={model.code}>{model.name}</option>
                             ))}
                           </select>
@@ -1624,12 +1632,14 @@ function App() {
                       onSendMessage={sendMessage}
                       selectedModel={selectedModel}
                       onModelChange={setSelectedModel}
-                      availableModels={AVAILABLE_MODELS}
+                      availableModels={availableModels}
                       hideInput={true}
                       customization={customization}
                       isGenerating={isGenerating}
                       isLoggedIn={!!user}
                       onLoginClick={() => setShowLoginModal(true)}
+                      error={chatError}
+                      setError={setChatError}
                     />
                   ) : (
                     <ChatView 
@@ -1638,7 +1648,7 @@ function App() {
                       onSendMessage={sendMessage}
                       selectedModel={selectedModel}
                       onModelChange={setSelectedModel}
-                      availableModels={AVAILABLE_MODELS}
+                      availableModels={availableModels}
                       hideInput={true}
                       customization={customization}
                       isGenerating={isGenerating}
@@ -1646,6 +1656,8 @@ function App() {
                       conversationTitle={conversationTitle}
                       isLoggedIn={!!user}
                       onLoginClick={() => setShowLoginModal(true)}
+                      error={chatError}
+                      setError={setChatError}
                     />
                   )}
                 </div>
@@ -1660,12 +1672,14 @@ function App() {
                       onSendMessage={sendMessage}
                       selectedModel={selectedModel}
                       onModelChange={setSelectedModel}
-                      availableModels={AVAILABLE_MODELS}
+                      availableModels={availableModels}
                       inputOnly={true}
                       customization={customization}
                       isGenerating={isGenerating}
                       isLoggedIn={!!user}
                       onLoginClick={() => setShowLoginModal(true)}
+                      error={chatError}
+                      setError={setChatError}
                     />
                   ) : (
                     <ChatView 
@@ -1674,7 +1688,7 @@ function App() {
                       onSendMessage={sendMessage}
                       selectedModel={selectedModel}
                       onModelChange={setSelectedModel}
-                      availableModels={AVAILABLE_MODELS}
+                      availableModels={availableModels}
                       inputOnly={true}
                       customization={customization}
                       isGenerating={isGenerating}
@@ -1682,6 +1696,8 @@ function App() {
                       conversationTitle={conversationTitle}
                       isLoggedIn={!!user}
                       onLoginClick={() => setShowLoginModal(true)}
+                      error={chatError}
+                      setError={setChatError}
                     />
                   )}
                 </div>

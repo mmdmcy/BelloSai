@@ -217,8 +217,8 @@ serve(async (req) => {
         error: errorText
       });
       return new Response(
-        JSON.stringify({ error: `DeepSeek API error: ${deepSeekResponse.status} - ${deepSeekResponse.statusText}` }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: `DeepSeek API error: ${deepSeekResponse.status} - ${deepSeekResponse.statusText}`, details: errorText }),
+        { status: deepSeekResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
@@ -271,6 +271,12 @@ serve(async (req) => {
         const decoder = new TextDecoder()
         let fullResponse = ''
         let hasStartedStreaming = false
+        let streamStartTimeout = setTimeout(() => {
+          if (!hasStartedStreaming) {
+            console.error('❌ DeepSeek streaming did not start within 10s');
+            controller.error(new Error('DeepSeek streaming did not start binnen 10 seconden. Probeer het opnieuw.'));
+          }
+        }, 10000);
 
         if (!reader) {
           controller.error(new Error('No reader available'))
@@ -321,6 +327,7 @@ serve(async (req) => {
 
           // Validate the response
           if (!hasStartedStreaming) {
+            clearTimeout(streamStartTimeout);
             console.error('No streaming data received from DeepSeek API');
             controller.error(new Error('No streaming data received from AI service'));
             return;
