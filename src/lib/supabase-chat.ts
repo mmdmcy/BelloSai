@@ -6,6 +6,7 @@
  */
 
 import { supabase } from './supabase';
+import { AVAILABLE_MODELS, ModelInfo } from '../App';
 
 export interface ChatMessage {
   type: 'user' | 'ai';
@@ -29,24 +30,31 @@ export interface MessageLimitError {
 
 export type DeepSeekModel = 'DeepSeek-V3' | 'DeepSeek-R1';
 
+export type ModelProvider = 'DeepSeek' | 'Gemini';
+
+function getModelProvider(modelCode: string): ModelProvider {
+  const model = AVAILABLE_MODELS.find(m => m.code === modelCode);
+  return model?.provider === 'Gemini' ? 'Gemini' : 'DeepSeek';
+}
+
 /**
  * Send messages to DeepSeek via Supabase Edge Function with streaming
  */
 export async function sendChatMessage(
   messages: ChatMessage[],
-  model: DeepSeekModel,
+  modelCode: string,
   onChunk?: (chunk: string) => void,
   conversationId?: string,
   retryCount: number = 0
 ): Promise<string> {
   console.log('🎯 sendChatMessage function called');
-  console.log('📥 Parameters:', { messages, model, conversationId, onChunk: !!onChunk, retryCount });
+  console.log('📥 Parameters:', { messages, model: modelCode, conversationId, onChunk: !!onChunk, retryCount });
   
   let abortController: AbortController | null = null;
   let timeoutId: NodeJS.Timeout | null = null;
 
   try {
-    console.log('🚀 Starting chat message request:', { messages, model, conversationId });
+    console.log('🚀 Starting chat message request:', { messages, model: modelCode, conversationId });
     
     // Get current session (optional for anonymous users)
     let { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -63,7 +71,7 @@ export async function sendChatMessage(
           const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
           if (!refreshError && refreshData.session) {
             console.log('✅ Session refreshed, retrying request...');
-            return sendChatMessage(messages, model, onChunk, conversationId, retryCount + 1);
+            return sendChatMessage(messages, modelCode, onChunk, conversationId, retryCount + 1);
           }
         } catch (refreshError) {
           console.error('❌ Failed to refresh session:', refreshError);
@@ -108,25 +116,23 @@ export async function sendChatMessage(
       authHeaders['apikey'] = import.meta.env.VITE_SUPABASE_ANON_KEY;
     }
 
-    // Call the Edge Function
-    console.log('🌍 VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL);
-    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`;
+    // Kies juiste edge function
+    const provider = getModelProvider(modelCode);
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${provider === 'Gemini' ? 'gemini-chat' : 'deepseek-chat'}`;
     console.log('📡 Calling Edge Function:', url);
-    
-    console.log('📤 Request payload:', { messages, model, conversationId });
     
     abortController = new AbortController();
     timeoutId = setTimeout(() => {
       console.log('⏰ Request timeout after 120 seconds');
       abortController?.abort();
-    }, 120000); // Increased from 90 to 120 seconds
+    }, 120000);
     
     const response = await fetch(url, {
       method: 'POST',
       headers: authHeaders,
       body: JSON.stringify({
         messages,
-        model,
+        model: modelCode,
         conversationId
       }),
       signal: abortController.signal
@@ -150,7 +156,7 @@ export async function sendChatMessage(
           const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
           if (!refreshError && refreshData.session) {
             console.log('✅ Session refreshed after 401, retrying request...');
-            return sendChatMessage(messages, model, onChunk, conversationId, retryCount + 1);
+            return sendChatMessage(messages, modelCode, onChunk, conversationId, retryCount + 1);
           }
         } catch (refreshError) {
           console.error('❌ Failed to refresh session after 401:', refreshError);
@@ -166,104 +172,89 @@ export async function sendChatMessage(
       throw new Error(errorData.error || `HTTP ${response.status}`);
     }
 
-    // Handle streaming response
-    if (!response.body) {
-      console.error('❌ No response body from Edge Function');
-      throw new Error('No response body');
-    }
-
-    console.log('🌊 Starting to read streaming response...');
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let fullResponse = '';
-    let hasStartedStreaming = false;
-    let streamTimeout: NodeJS.Timeout | null = null;
-
-    const resetStreamTimeout = () => {
-      if (streamTimeout) {
-        clearTimeout(streamTimeout);
+    // DeepSeek: streaming, Gemini: geen streaming
+    if (provider === 'DeepSeek') {
+      if (!response.body) {
+        console.error('❌ No response body from Edge Function');
+        throw new Error('No response body');
       }
-      streamTimeout = setTimeout(() => {
-        console.error('⏰ Stream timeout - no data received for 60 seconds');
-        reader.cancel();
-      }, 60000); // Increased from 30 to 60 seconds
-    };
-
-    try {
-      resetStreamTimeout();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        
-        if (done) {
-          console.log('✅ Streaming completed');
-          break;
+      console.log('🌊 Starting to read streaming response...');
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullResponse = '';
+      let hasStartedStreaming = false;
+      let streamTimeout: NodeJS.Timeout | null = null;
+      const resetStreamTimeout = () => {
+        if (streamTimeout) {
+          clearTimeout(streamTimeout);
         }
-
-        // Reset timeout on each chunk
+        streamTimeout = setTimeout(() => {
+          console.error('⏰ Stream timeout - no data received for 60 seconds');
+          reader.cancel();
+        }, 60000);
+      };
+      try {
         resetStreamTimeout();
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.trim() === '') continue;
-          if (!line.startsWith('data: ')) continue;
-
-          try {
-            const jsonStr = line.slice(6); // Remove "data: " prefix
-            const data: ChatResponse = JSON.parse(jsonStr);
-            console.log('📝 Parsed data:', data);
-            
-            if (data.type === 'chunk' && data.content) {
-              hasStartedStreaming = true;
-              fullResponse += data.content;
-              onChunk?.(data.content);
-            } else if (data.type === 'complete') {
-              // Use the complete response from server if available
-              if (data.content && data.content.trim() !== '') {
-                fullResponse = data.content;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            console.log('✅ Streaming completed');
+            break;
+          }
+          resetStreamTimeout();
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n');
+          for (const line of lines) {
+            if (line.trim() === '') continue;
+            if (!line.startsWith('data: ')) continue;
+            try {
+              const jsonStr = line.slice(6);
+              const data: ChatResponse = JSON.parse(jsonStr);
+              console.log('📝 Parsed data:', data);
+              if (data.type === 'chunk' && data.content) {
+                hasStartedStreaming = true;
+                fullResponse += data.content;
+                onChunk?.(data.content);
+              } else if (data.type === 'complete') {
+                if (data.content && data.content.trim() !== '') {
+                  fullResponse = data.content;
+                }
+                if (data.messageCount !== undefined && data.messageLimit !== undefined) {
+                  console.log(`📊 Message count: ${data.messageCount}/${data.messageLimit}`);
+                }
               }
-              
-              // Update local message count if available
-              if (data.messageCount !== undefined && data.messageLimit !== undefined) {
-                console.log(`📊 Message count: ${data.messageCount}/${data.messageLimit}`);
-              }
+            } catch (parseError) {
+              console.warn('⚠️ Failed to parse streaming chunk:', parseError, 'Line:', line);
+              continue;
             }
-          } catch (parseError) {
-            console.warn('⚠️ Failed to parse streaming chunk:', parseError, 'Line:', line);
-            continue;
           }
         }
+        if (streamTimeout) {
+          clearTimeout(streamTimeout);
+        }
+        if (!hasStartedStreaming) {
+          throw new Error('No streaming data received from AI service');
+        }
+        console.log('📝 Final fullResponse length:', fullResponse?.length || 0);
+        if (!fullResponse || fullResponse.trim() === '') {
+          throw new Error('Empty response received from AI service');
+        }
+        const responseLength = fullResponse.length;
+        if (responseLength > 0 && responseLength < 50) {
+          console.warn('⚠️ Response seems unusually short, but continuing...');
+        }
+        return fullResponse;
+      } finally {
+        if (streamTimeout) {
+          clearTimeout(streamTimeout);
+        }
+        reader.releaseLock();
       }
-
-      if (streamTimeout) {
-        clearTimeout(streamTimeout);
-      }
-
-      if (!hasStartedStreaming) {
-        throw new Error('No streaming data received from AI service');
-      }
-
-      console.log('📝 Final fullResponse length:', fullResponse?.length || 0);
-      
-      if (!fullResponse || fullResponse.trim() === '') {
-        throw new Error('Empty response received from AI service');
-      }
-
-      // Check if response seems incomplete (ends abruptly)
-      const responseLength = fullResponse.length;
-      if (responseLength > 0 && responseLength < 50) {
-        console.warn('⚠️ Response seems unusually short, but continuing...');
-      }
-
-      return fullResponse;
-
-    } finally {
-      if (streamTimeout) {
-        clearTimeout(streamTimeout);
-      }
-      reader.releaseLock();
+    } else {
+      // Gemini: geen streaming, gewone JSON response
+      const data = await response.json();
+      if (data.error) throw new Error(data.error);
+      return data.response || '';
     }
 
   } catch (error) {
