@@ -253,16 +253,14 @@ export async function getAIGuess(
   console.log('  - Revealed:', revealedTexts);
   console.log('  - Available options:', unrevealedAnswers.map(a => a.text));
   
-  const prompt = `You are playing Family Feud. The question is: "${question}"
+  const prompt = `Family Feud game. Question: "${question}"
 
-Already revealed answers: ${revealedTexts.length > 0 ? revealedTexts.join(', ') : 'None'}
+Revealed: ${revealedTexts.length > 0 ? revealedTexts.join(', ') : 'None'}
 
-You must guess one of the remaining answers. Choose from these options:
-${unrevealedAnswers.map((a, i) => `${i + 1}. ${a.text}`).join('\n')}
+Pick ONE answer from:
+${unrevealedAnswers.map(a => a.text).join(', ')}
 
-Respond with ONLY the exact text of one of these answers. No explanations, no extra words. Just the answer text.
-
-Example: If the options are "Read a book", "Watch TV", "Listen to music", respond with exactly one of those phrases.`;
+Reply with ONLY the answer text. No explanations.`;
 
   console.log('📝 Sending prompt to DeepSeek-R1:');
   console.log(prompt);
@@ -272,14 +270,14 @@ Example: If the options are "Read a book", "Watch TV", "Listen to music", respon
   ];
 
   try {
-    console.log('⏱️ Starting AI request with 12 second timeout...');
+    console.log('⏱️ Starting AI request with 8 second timeout...');
     
-    // Shorter timeout but still reasonable
+    // Shorter timeout for faster response
     const timeoutPromise = new Promise<never>((_, reject) => {
       setTimeout(() => {
-        console.log('⏰ AI request timed out after 12 seconds');
-        reject(new Error('AI request timeout after 12 seconds'));
-      }, 12000); // 12 second timeout
+        console.log('⏰ AI request timed out after 8 seconds');
+        reject(new Error('AI request timeout after 8 seconds'));
+      }, 8000); // 8 second timeout
     });
 
     const responsePromise = sendChatMessage(messages, 'DeepSeek-R1');
