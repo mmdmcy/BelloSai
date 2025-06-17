@@ -194,7 +194,14 @@ Respond with just a short, simple answer (1-3 words maximum). Don't explain or a
   ];
 
   try {
-    const response = await sendChatMessage(messages, 'DeepSeek-R1');
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('AI request timeout')), 15000); // 15 second timeout
+    });
+
+    const responsePromise = sendChatMessage(messages, 'DeepSeek-R1');
+    
+    const response = await Promise.race([responsePromise, timeoutPromise]);
     const guess = response.trim().toLowerCase();
     
     // Check if the guess matches any unrevealed answer
@@ -208,18 +215,28 @@ Respond with just a short, simple answer (1-3 words maximum). Don't explain or a
     };
   } catch (error) {
     console.error('Failed to get AI guess:', error);
-    // Return a random guess
-    const randomGuess = unrevealedAnswers[Math.floor(Math.random() * unrevealedAnswers.length)];
-    const randomIndex = allAnswers.findIndex(a => a.text === randomGuess.text);
+    
+    // Return a random guess as fallback
+    if (unrevealedAnswers.length > 0) {
+      const randomGuess = unrevealedAnswers[Math.floor(Math.random() * unrevealedAnswers.length)];
+      const randomIndex = allAnswers.findIndex(a => a.text === randomGuess.text);
+      return {
+        guess: randomGuess.text,
+        confidence: 0.5,
+        isCorrect: true,
+        matchedAnswer: {
+          text: randomGuess.text,
+          points: randomGuess.points,
+          index: randomIndex
+        }
+      };
+    }
+    
+    // If no unrevealed answers, return a generic response
     return {
-      guess: randomGuess.text,
-      confidence: 0.5,
-      isCorrect: true,
-      matchedAnswer: {
-        text: randomGuess.text,
-        points: randomGuess.points,
-        index: randomIndex
-      }
+      guess: "I don't know",
+      confidence: 0.1,
+      isCorrect: false
     };
   }
 }

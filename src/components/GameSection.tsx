@@ -288,7 +288,8 @@ export default function GameSection({
 
         // Check if all answers revealed or move to next question
         setTimeout(() => {
-          if (gameshowState.revealedAnswers.length >= 4) {
+          const currentRevealedCount = gameshowState.revealedAnswers.length + (result.isCorrect ? 1 : 0);
+          if (currentRevealedCount >= 4) {
             setGameshowState(prev => ({ ...prev, gamePhase: 'finished' }));
           }
         }, 2000);
@@ -297,6 +298,41 @@ export default function GameSection({
     } catch (error) {
       console.error('AI guess failed:', error);
       setGameshowState(prev => ({ ...prev, aiThinking: false }));
+      
+      // Fallback: AI makes a random guess
+      const unrevealedAnswers = gameshowState.question.answers.filter((_, index) => 
+        !gameshowState.revealedAnswers.includes(index)
+      );
+      
+      if (unrevealedAnswers.length > 0) {
+        const randomIndex = Math.floor(Math.random() * unrevealedAnswers.length);
+        const randomAnswer = unrevealedAnswers[randomIndex];
+        const answerIndex = gameshowState.question.answers.findIndex(a => a.text === randomAnswer.text);
+        
+        setGameshowState(prev => ({
+          ...prev,
+          aiGuess: randomAnswer.text,
+          aiGuessResult: {
+            guess: randomAnswer.text,
+            confidence: 0.5,
+            isCorrect: true,
+            matchedAnswer: {
+              text: randomAnswer.text,
+              points: randomAnswer.points,
+              index: answerIndex
+            }
+          }
+        }));
+        
+        // Process fallback result
+        setTimeout(() => {
+          setGameshowState(prev => ({
+            ...prev,
+            revealedAnswers: [...prev.revealedAnswers, answerIndex],
+            aiScore: prev.aiScore + randomAnswer.points
+          }));
+        }, 2000);
+      }
     }
   };
 
@@ -499,53 +535,72 @@ export default function GameSection({
                 </div>
               )}
 
-              {/* Input Section */}
-              <div className={`p-6 rounded-xl ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
-                <div className="max-w-2xl mx-auto">
-                  <h3 className={`text-lg font-semibold mb-4 text-center ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    Your Turn! Make a guess:
-                  </h3>
-                  
-                  {gameshowState.lastGuessResult && (
-                    <div className={`mb-4 p-3 rounded-lg text-center ${
-                      gameshowState.lastGuessResult === 'correct'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {gameshowState.lastGuessResult === 'correct' ? '✅ Great guess!' : '❌ Not on the board!'}
+              {/* Input Section - Only show during player's turn */}
+              {!gameshowState.aiThinking && !gameshowState.aiGuess && (
+                <div className={`p-6 rounded-xl ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
+                  <div className="max-w-2xl mx-auto">
+                    <h3 className={`text-lg font-semibold mb-4 text-center ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      Your Turn! Make a guess:
+                    </h3>
+                    
+                    {gameshowState.lastGuessResult && (
+                      <div className={`mb-4 p-3 rounded-lg text-center ${
+                        gameshowState.lastGuessResult === 'correct'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {gameshowState.lastGuessResult === 'correct' ? '✅ Great guess!' : '❌ Not on the board!'}
+                      </div>
+                    )}
+                    
+                    <div className="flex gap-3">
+                      <input
+                        type="text"
+                        value={gameshowState.playerGuess}
+                        onChange={(e) => setGameshowState(prev => ({ ...prev, playerGuess: e.target.value }))}
+                        onKeyDown={(e) => e.key === 'Enter' && handleGameshowGuess()}
+                        placeholder="Enter your answer..."
+                        className={`flex-1 p-3 rounded-lg border ${
+                          isDark 
+                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                            : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                        } focus:outline-none focus:ring-2`}
+                        style={{ '--tw-ring-color': customization.primaryColor } as React.CSSProperties}
+                        disabled={gameshowState.aiThinking}
+                      />
+                      <button
+                        onClick={handleGameshowGuess}
+                        disabled={!gameshowState.playerGuess.trim() || gameshowState.aiThinking}
+                        className="px-6 py-3 rounded-lg font-semibold text-white transition-colors hover:opacity-90 disabled:opacity-50"
+                        style={{ 
+                          background: customization.gradientEnabled 
+                            ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                            : customization.primaryColor
+                        }}
+                      >
+                        Guess
+                      </button>
                     </div>
-                  )}
-                  
-                  <div className="flex gap-3">
-                    <input
-                      type="text"
-                      value={gameshowState.playerGuess}
-                      onChange={(e) => setGameshowState(prev => ({ ...prev, playerGuess: e.target.value }))}
-                      onKeyDown={(e) => e.key === 'Enter' && handleGameshowGuess()}
-                      placeholder="Enter your answer..."
-                      className={`flex-1 p-3 rounded-lg border ${
-                        isDark 
-                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
-                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                      } focus:outline-none focus:ring-2`}
-                      style={{ '--tw-ring-color': customization.primaryColor } as React.CSSProperties}
-                      disabled={gameshowState.aiThinking}
-                    />
-                    <button
-                      onClick={handleGameshowGuess}
-                      disabled={!gameshowState.playerGuess.trim() || gameshowState.aiThinking}
-                      className="px-6 py-3 rounded-lg font-semibold text-white transition-colors hover:opacity-90 disabled:opacity-50"
-                      style={{ 
-                        background: customization.gradientEnabled 
-                          ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                          : customization.primaryColor
-                      }}
-                    >
-                      Guess
-                    </button>
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* AI Turn Indicator - Show when it's AI's turn */}
+              {gameshowState.aiThinking && (
+                <div className={`p-6 rounded-xl ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
+                  <div className="max-w-2xl mx-auto text-center">
+                    <h3 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      AI's Turn! DeepSeek-R1 is thinking...
+                    </h3>
+                    <div className="flex items-center justify-center gap-3">
+                      <Loader2 className="w-6 h-6 animate-spin text-purple-500" />
+                      <span className={`text-lg ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                        Analyzing the question and revealed answers...
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             // Game Over Screen

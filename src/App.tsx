@@ -1401,7 +1401,6 @@ function App() {
                   customization={customization}
                   isLoggedIn={!!user}
                   onLoginClick={() => setShowLoginModal(true)}
-                  onRegenerateResponse={regenerateResponse}
                 />
               )}
             </div>
