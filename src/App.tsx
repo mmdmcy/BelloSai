@@ -440,6 +440,8 @@ function App() {
             // Continue without database storage
           }
         }
+        
+        console.log('🔄 User message processing completed, moving to AI response...');
 
       // Convert messages to ChatMessage format
       const chatMessages: ChatMessage[] = [...messages, userMessage].map(msg => ({
@@ -448,14 +450,30 @@ function App() {
       }));
 
       console.log('🔄 About to call sendChatMessage...');
-      console.log('📋 Chat messages:', chatMessages);
+      console.log('📋 Chat messages count:', chatMessages.length);
+      console.log('📋 Last message:', chatMessages[chatMessages.length - 1]);
       console.log('🤖 Selected model:', selectedModel);
+      
+      // Validation checks
+      if (!chatMessages || chatMessages.length === 0) {
+        throw new Error('No chat messages available for sending');
+      }
+      
+      if (!selectedModel) {
+        throw new Error('No model selected');
+      }
+      
+      console.log('✅ Pre-flight checks passed, calling sendChatMessage...');
 
       // Send to DeepSeek with streaming
-      console.log('📡 Calling sendChatMessage with:', { chatMessages, selectedModel });
+      console.log('📡 Calling sendChatMessage with parameters:');
+      console.log('  - Messages count:', chatMessages.length);
+      console.log('  - Model:', selectedModel);
+      console.log('  - AI Message ID:', aiMessageId);
       
       let fullResponse = '';
       try {
+        console.log('🚀 Starting sendChatMessage call...');
         fullResponse = await sendChatMessage(
           chatMessages,
           selectedModel as DeepSeekModel,
@@ -471,8 +489,11 @@ function App() {
         );
         
         console.log('✅ sendChatMessage completed successfully');
+        console.log('📝 Full response preview:', fullResponse?.substring(0, 100) + '...');
       } catch (sendError) {
         console.error('❌ sendChatMessage failed:', sendError);
+        console.error('❌ Error type:', sendError?.constructor?.name);
+        console.error('❌ Error message:', (sendError as Error)?.message);
         throw sendError; // Re-throw to be caught by outer try-catch
       }
 
