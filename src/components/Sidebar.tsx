@@ -128,24 +128,6 @@ export default function Sidebar({
 
       {/* Chat History Section */}
       <div className="px-4 pb-4 flex-1 overflow-y-auto">
-        {/* New Chat Button */}
-        {onNewChat && (
-          <button
-            onClick={onNewChat}
-            className={`w-full mb-4 px-3 py-2 rounded-lg border transition-colors ${
-              isDark 
-                ? 'bg-gray-700 border-gray-600 text-white hover:bg-gray-600' 
-                : 'bg-white border-purple-200 text-purple-700 hover:bg-purple-50'
-            }`}
-            style={{ 
-              fontFamily: customization.fontFamily,
-              borderColor: isDark ? undefined : customization.primaryColor + '40'
-            }}
-          >
-            + Nieuwe Chat
-          </button>
-        )}
-        
         {conversations.length > 0 ? (
           <>
             {/* Today Section */}
