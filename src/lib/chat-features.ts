@@ -646,55 +646,57 @@ class ChatFeaturesService {
     
     console.log('📝 Message data to insert:', messageData);
     
-    console.log('🔄 Starting database insert...');
+    console.log('🔄 Starting database operations...');
     
-    // Add timeout to database operation
+    // Create promises for both operations
     const insertPromise = supabase
       .from('messages')
       .insert(messageData)
       .select()
       .single();
     
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Database insert timeout after 30 seconds')), 30000);
-    });
-    
-    let data, error;
-    try {
-      const result = await Promise.race([insertPromise, timeoutPromise]) as any;
-      data = result.data;
-      error = result.error;
-      console.log('📊 Database insert completed');
-    } catch (timeoutError) {
-      console.error('⏰ Database insert timeout:', timeoutError);
-      throw timeoutError;
-    }
-
-    if (error) {
-      console.error('❌ Error saving message:', error);
-      console.error('❌ Error code:', error.code);
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Error details:', error.details);
-      throw error;
-    }
-    
-    console.log('✅ Message saved successfully:', data.id);
-    
-    // Update conversation's updated_at timestamp
-    console.log('🔄 Updating conversation timestamp...');
-    const { error: updateError } = await supabase
+    const updatePromise = supabase
       .from('conversations')
       .update({ updated_at: new Date().toISOString() })
       .eq('id', conversationId);
-      
-    if (updateError) {
-      console.error('⚠️ Failed to update conversation timestamp:', updateError);
-      // Don't throw here, message was saved successfully
-    } else {
-      console.log('✅ Conversation timestamp updated');
-    }
+    
+    // Add timeout to both operations
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Database operations timeout after 30 seconds')), 30000);
+    });
+    
+    try {
+      // Run both operations in parallel with timeout
+      const [insertResult, updateResult] = await Promise.race([
+        Promise.all([insertPromise, updatePromise]),
+        timeoutPromise
+      ]) as [any, any];
 
-    return data;
+      const { data, error } = insertResult;
+      const { error: updateError } = updateResult;
+
+      if (error) {
+        console.error('❌ Error saving message:', error);
+        console.error('❌ Error code:', error.code);
+        console.error('❌ Error message:', error.message);
+        console.error('❌ Error details:', error.details);
+        throw error;
+      }
+
+      if (updateError) {
+        console.error('⚠️ Failed to update conversation timestamp:', updateError);
+        // Don't throw here, message was saved successfully
+      } else {
+        console.log('✅ Conversation timestamp updated');
+      }
+      
+      console.log('✅ Message saved successfully:', data.id);
+      return data;
+
+    } catch (error) {
+      console.error('❌ Database operations failed:', error);
+      throw error;
+    }
   }
 
   /**
