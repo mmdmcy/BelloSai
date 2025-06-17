@@ -129,7 +129,7 @@ export default function Sidebar({
       {/* Chat History Section */}
       <div className="px-4 pb-4 flex-1 overflow-y-auto">
         {/* New Chat Button */}
-        {/* {onNewChat && (
+        {onNewChat && (
           <button
             onClick={onNewChat}
             className={`w-full mb-4 px-3 py-2 rounded-lg border transition-colors ${
@@ -144,7 +144,7 @@ export default function Sidebar({
           >
             + Nieuwe Chat
           </button>
-        )} */}
+        )}
         
         {conversations.length > 0 ? (
           <>
