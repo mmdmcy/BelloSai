@@ -13,7 +13,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Info, FileText, Image, Mic, Video, Code, FunctionSquare, Database, ListChecks, Globe, SlidersHorizontal, Brain } from 'lucide-react';
+import { ChevronDown, Info, FileText, Image, Mic, Video, Code, FunctionSquare, Database, ListChecks, Globe, SlidersHorizontal, Brain, Sparkles } from 'lucide-react';
 import { CustomizationSettings } from '../App';
 import type { ModelInfo } from '../App';
 import { MODEL_CAPABILITIES } from '../App';
@@ -38,6 +38,16 @@ const ICON_MAP: Record<string, any> = {
   Globe,
   SlidersHorizontal,
   Brain,
+};
+
+const PROVIDER_ICON: Record<string, any> = {
+  Gemini: Sparkles,
+  DeepSeek: Brain,
+};
+
+const PROVIDER_COLOR: Record<string, string> = {
+  Gemini: '#a855f7', // paars
+  DeepSeek: '#2563eb', // blauw
 };
 
 export default function ModelSelector({ 
@@ -107,6 +117,8 @@ export default function ModelSelector({
           <div className="py-1">
             {availableModels.map((model) => {
               const isSelected = model.code === selectedModel;
+              const ProviderIcon = PROVIDER_ICON[model.provider] || Sparkles;
+              const providerColor = PROVIDER_COLOR[model.provider] || customization.primaryColor;
               return (
                 <div
                   key={model.code}
@@ -129,36 +141,51 @@ export default function ModelSelector({
                   onMouseEnter={() => setHoveredModel(model.code)}
                   onMouseLeave={() => setHoveredModel(null)}
                 >
-                  <span>{model.name}</span>
-                  <span
-                    className="ml-2 relative"
-                    onClick={e => { e.stopPropagation(); setInfoOpen(infoOpen === model.code ? null : model.code); }}
-                    onMouseEnter={() => setInfoOpen(model.code)}
-                    onMouseLeave={() => setInfoOpen(null)}
-                  >
-                    <Info className="inline w-4 h-4 opacity-70 hover:opacity-100" />
-                    {/* Pop-up capabilities */}
-                    {infoOpen === model.code && (
-                      <div className={`absolute left-6 top-1 z-50 min-w-56 max-w-xs p-3 rounded-lg shadow-xl border text-xs ${isDark ? 'bg-gray-800 border-gray-600 text-gray-100' : 'bg-white border-purple-200 text-gray-900'}`}
-                        style={{ fontFamily: customization.fontFamily }}
-                      >
-                        <div className="font-semibold mb-1">{model.name}</div>
-                        {model.description && <div className="mb-2 text-xs opacity-80">{model.description}</div>}
-                        <div className="flex flex-wrap gap-2">
-                          {model.capabilities.map(cap => {
-                            const capInfo = (MODEL_CAPABILITIES as any)[cap];
-                            if (!capInfo) return null;
-                            const Icon = ICON_MAP[capInfo.icon] || FileText;
-                            return (
-                              <span key={cap} className="flex items-center gap-1 px-2 py-1 rounded bg-purple-100 dark:bg-gray-700 text-xs">
-                                <Icon className="w-4 h-4" />
-                                {capInfo.label}
-                              </span>
-                            );
-                          })}
+                  {/* Provider icoon + naam */}
+                  <span className="flex items-center gap-2 min-w-0">
+                    <ProviderIcon className="w-4 h-4" style={{ color: providerColor }} />
+                    <span className="truncate font-medium">{model.name}</span>
+                  </span>
+                  {/* Capabilities iconen */}
+                  <span className="flex items-center gap-1 ml-2 flex-shrink-0">
+                    {model.capabilities.slice(0, 5).map(cap => {
+                      const capInfo = (MODEL_CAPABILITIES as any)[cap];
+                      if (!capInfo) return null;
+                      const Icon = ICON_MAP[capInfo.icon] || FileText;
+                      return (
+                        <Icon key={cap} className="w-4 h-4 opacity-80" title={capInfo.label} />
+                      );
+                    })}
+                    {/* Info icoon met popup */}
+                    <span
+                      className="ml-1 relative"
+                      onClick={e => { e.stopPropagation(); setInfoOpen(infoOpen === model.code ? null : model.code); }}
+                      onMouseEnter={() => setInfoOpen(model.code)}
+                      onMouseLeave={() => setInfoOpen(null)}
+                    >
+                      <Info className="inline w-4 h-4 opacity-70 hover:opacity-100" />
+                      {infoOpen === model.code && (
+                        <div className={`absolute left-6 top-1 z-50 min-w-56 max-w-xs p-3 rounded-lg shadow-xl border text-xs ${isDark ? 'bg-gray-800 border-gray-600 text-gray-100' : 'bg-white border-purple-200 text-gray-900'}`}
+                          style={{ fontFamily: customization.fontFamily }}
+                        >
+                          <div className="font-semibold mb-1">{model.name}</div>
+                          {model.description && <div className="mb-2 text-xs opacity-80">{model.description}</div>}
+                          <div className="flex flex-wrap gap-2">
+                            {model.capabilities.map(cap => {
+                              const capInfo = (MODEL_CAPABILITIES as any)[cap];
+                              if (!capInfo) return null;
+                              const Icon = ICON_MAP[capInfo.icon] || FileText;
+                              return (
+                                <span key={cap} className="flex items-center gap-1 px-2 py-1 rounded bg-purple-100 dark:bg-gray-700 text-xs">
+                                  <Icon className="w-4 h-4" />
+                                  {capInfo.label}
+                                </span>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </span>
                   </span>
                 </div>
               );
