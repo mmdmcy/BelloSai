@@ -90,7 +90,9 @@ export default function GameSection({
     question: null as FamilyFeudQuestion | null,
     aiThinking: false,
     aiGuess: '',
-    aiGuessResult: null as AIGuessResult | null
+    aiGuessResult: null as AIGuessResult | null,
+    turn: 'player' as 'player' | 'ai',
+    lastPlayerGuess: ''
   });
 
   // Quiz state
@@ -141,7 +143,9 @@ export default function GameSection({
       question: null,
       aiThinking: false,
       aiGuess: '',
-      aiGuessResult: null
+      aiGuessResult: null,
+      turn: 'player',
+      lastPlayerGuess: ''
     }));
 
     try {
@@ -204,47 +208,50 @@ export default function GameSection({
    * Handle gameshow guess submission
    */
   const handleGameshowGuess = async () => {
-    if (!gameshowState.playerGuess.trim() || !gameshowState.question) return;
-
+    if (!gameshowState.playerGuess.trim() || !gameshowState.question || gameshowState.turn !== 'player') return;
     const guess = gameshowState.playerGuess.trim();
-    
-    // Check if guess matches any answer using AI-powered matching
+    // Check of het antwoord al geraden is
+    const alreadyGuessed = gameshowState.revealedAnswers.some(idx => gameshowState.question!.answers[idx].text.toLowerCase() === guess.toLowerCase());
+    if (alreadyGuessed) {
+      setGameshowState(prev => ({
+        ...prev,
+        lastGuessResult: 'incorrect',
+        playerGuess: ''
+      }));
+      return;
+    }
+    // Check of het antwoord klopt
     const result = checkPlayerGuess(
       guess,
       gameshowState.question.answers,
       gameshowState.revealedAnswers.map(index => gameshowState.question!.answers[index])
     );
-
     if (result.isCorrect && result.matchedAnswer) {
-      // Correct guess!
       setGameshowState(prev => ({
         ...prev,
         revealedAnswers: [...prev.revealedAnswers, result.matchedAnswer!.index],
         playerScore: prev.playerScore + result.matchedAnswer!.points,
         lastGuessResult: 'correct',
-        playerGuess: ''
+        playerGuess: '',
+        lastPlayerGuess: guess,
+        // Beurt blijft bij speler
       }));
-
-      // AI makes a guess after player
-      setTimeout(() => {
-        handleAIGuess();
-      }, 1500);
     } else {
-      // Incorrect guess
+      // Fout: beurt naar AI
       setGameshowState(prev => ({
         ...prev,
         strikes: prev.strikes + 1,
         lastGuessResult: 'incorrect',
-        playerGuess: ''
+        playerGuess: '',
+        turn: 'ai',
+        lastPlayerGuess: guess
       }));
-
-      // Check if game over (3 strikes)
+      // Check of game over (3 strikes)
       if (gameshowState.strikes >= 2) {
         setTimeout(() => {
           setGameshowState(prev => ({ ...prev, gamePhase: 'finished' }));
         }, 1000);
       } else {
-        // AI gets a turn
         setTimeout(() => {
           handleAIGuess();
         }, 1500);
@@ -256,83 +263,62 @@ export default function GameSection({
    * Handle AI making a guess using DeepSeek-R1
    */
   const handleAIGuess = async () => {
-    if (!gameshowState.question) return;
-
+    if (!gameshowState.question || gameshowState.turn !== 'ai') return;
     setGameshowState(prev => ({ ...prev, aiThinking: true, aiGuess: '', aiGuessResult: null }));
-
     try {
+      // AI mag niet raden wat al geraden is, inclusief laatste spelerantwoord
       const revealedAnswers = gameshowState.revealedAnswers.map(index => gameshowState.question!.answers[index]);
-      const result = await getAIGuess(
-        gameshowState.question.question,
-        revealedAnswers,
-        gameshowState.question.answers
-      );
-
-      // Show AI thinking with typing effect
+      const forbidden = [
+        ...revealedAnswers.map(a => a.text.toLowerCase()),
+        gameshowState.lastPlayerGuess.toLowerCase()
+      ];
+      const allAnswers = gameshowState.question.answers;
+      const unrevealedAnswers = allAnswers.filter(a => !forbidden.includes(a.text.toLowerCase()));
+      // Custom AI call met filter
+      let result: AIGuessResult | null = null;
+      if (unrevealedAnswers.length > 0) {
+        // Geef alleen de niet-verboden antwoorden door
+        result = await getAIGuess(
+          gameshowState.question.question,
+          revealedAnswers,
+          unrevealedAnswers
+        );
+      }
+      // Fallback als alles al geraden is
+      if (!result) {
+        setGameshowState(prev => ({ ...prev, aiThinking: false, turn: 'player' }));
+        return;
+      }
       setGameshowState(prev => ({ 
         ...prev, 
-        aiGuess: result.guess,
-        aiGuessResult: result,
+        aiGuess: result!.guess,
+        aiGuessResult: result!,
         aiThinking: false 
       }));
-
-      // Process AI result after a delay
       setTimeout(() => {
-        if (result.isCorrect && result.matchedAnswer) {
+        if (result!.isCorrect && result!.matchedAnswer) {
           setGameshowState(prev => ({
             ...prev,
-            revealedAnswers: [...prev.revealedAnswers, result.matchedAnswer!.index],
-            aiScore: prev.aiScore + result.matchedAnswer!.points
+            revealedAnswers: [...prev.revealedAnswers, allAnswers.findIndex(a => a.text === result!.matchedAnswer!.text)],
+            aiScore: prev.aiScore + result!.matchedAnswer!.points,
+            turn: 'ai', // AI mag doorgaan bij goed antwoord
+          }));
+        } else {
+          setGameshowState(prev => ({
+            ...prev,
+            turn: 'player', // Beurt terug naar speler bij fout
           }));
         }
-
-        // Check if all answers revealed or move to next question
+        // Check of alles geraden is
         setTimeout(() => {
-          const currentRevealedCount = gameshowState.revealedAnswers.length + (result.isCorrect ? 1 : 0);
+          const currentRevealedCount = gameshowState.revealedAnswers.length + (result!.isCorrect ? 1 : 0);
           if (currentRevealedCount >= 4) {
             setGameshowState(prev => ({ ...prev, gamePhase: 'finished' }));
           }
         }, 2000);
       }, 2000);
-
     } catch (error) {
-      console.error('AI guess failed:', error);
-      setGameshowState(prev => ({ ...prev, aiThinking: false }));
-      
-      // Fallback: AI makes a random guess
-      const unrevealedAnswers = gameshowState.question.answers.filter((_, index) => 
-        !gameshowState.revealedAnswers.includes(index)
-      );
-      
-      if (unrevealedAnswers.length > 0) {
-        const randomIndex = Math.floor(Math.random() * unrevealedAnswers.length);
-        const randomAnswer = unrevealedAnswers[randomIndex];
-        const answerIndex = gameshowState.question.answers.findIndex(a => a.text === randomAnswer.text);
-        
-        setGameshowState(prev => ({
-          ...prev,
-          aiGuess: randomAnswer.text,
-          aiGuessResult: {
-            guess: randomAnswer.text,
-            confidence: 0.5,
-            isCorrect: true,
-            matchedAnswer: {
-              text: randomAnswer.text,
-              points: randomAnswer.points,
-              index: answerIndex
-            }
-          }
-        }));
-        
-        // Process fallback result
-        setTimeout(() => {
-          setGameshowState(prev => ({
-            ...prev,
-            revealedAnswers: [...prev.revealedAnswers, answerIndex],
-            aiScore: prev.aiScore + randomAnswer.points
-          }));
-        }, 2000);
-      }
+      setGameshowState(prev => ({ ...prev, aiThinking: false, turn: 'player' }));
     }
   };
 
@@ -535,31 +521,29 @@ export default function GameSection({
                 </div>
               )}
 
-              {/* Input Section - Only show during player's turn */}
-              {!gameshowState.aiThinking && !gameshowState.aiGuess && (
+              {/* Input Section - Alleen bij spelerbeurt */}
+              {gameshowState.turn === 'player' && !gameshowState.aiThinking && !gameshowState.aiGuess && (
                 <div className={`p-6 rounded-xl ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
                   <div className="max-w-2xl mx-auto">
                     <h3 className={`text-lg font-semibold mb-4 text-center ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                      Your Turn! Make a guess:
+                      Jouw beurt! Raad een antwoord:
                     </h3>
-                    
                     {gameshowState.lastGuessResult && (
                       <div className={`mb-4 p-3 rounded-lg text-center ${
                         gameshowState.lastGuessResult === 'correct'
                           ? 'bg-green-100 text-green-800'
                           : 'bg-red-100 text-red-800'
                       }`}>
-                        {gameshowState.lastGuessResult === 'correct' ? '✅ Great guess!' : '❌ Not on the board!'}
+                        {gameshowState.lastGuessResult === 'correct' ? '✅ Goed geraden!' : '❌ Niet op het bord!'}
                       </div>
                     )}
-                    
                     <div className="flex gap-3">
                       <input
                         type="text"
                         value={gameshowState.playerGuess}
                         onChange={(e) => setGameshowState(prev => ({ ...prev, playerGuess: e.target.value }))}
                         onKeyDown={(e) => e.key === 'Enter' && handleGameshowGuess()}
-                        placeholder="Enter your answer..."
+                        placeholder="Typ je antwoord..."
                         className={`flex-1 p-3 rounded-lg border ${
                           isDark 
                             ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
@@ -578,7 +562,7 @@ export default function GameSection({
                             : customization.primaryColor
                         }}
                       >
-                        Guess
+                        Raad
                       </button>
                     </div>
                   </div>
