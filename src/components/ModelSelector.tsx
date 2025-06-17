@@ -50,6 +50,19 @@ const PROVIDER_COLOR: Record<string, string> = {
   DeepSeek: '#2563eb', // blauw
 };
 
+// Helper: bepaal of popup boven of onder moet openen
+function getPopupPosition(element: HTMLElement | null) {
+  if (!element) return 'bottom';
+  const rect = element.getBoundingClientRect();
+  const spaceBelow = window.innerHeight - rect.bottom;
+  const spaceAbove = rect.top;
+  // 220px is ongeveer de hoogte van de popup
+  if (spaceBelow < 220 && spaceAbove > spaceBelow) {
+    return 'top';
+  }
+  return 'bottom';
+}
+
 export default function ModelSelector({ 
   selectedModel, 
   onModelChange, 
@@ -150,30 +163,21 @@ export default function ModelSelector({
                   <span
                     className="ml-2 relative"
                     onClick={e => { e.stopPropagation(); setInfoOpen(infoOpen === model.code ? null : model.code); }}
-                    onMouseEnter={() => setInfoOpen(model.code)}
+                    onMouseEnter={e => {
+                      setInfoOpen(model.code);
+                      // Force rerender for popup position
+                      setTimeout(() => setInfoOpen(model.code), 10);
+                    }}
                     onMouseLeave={() => setInfoOpen(null)}
                   >
                     <Info className="inline w-4 h-4 opacity-70 hover:opacity-100" />
                     {infoOpen === model.code && (
-                      <div className={`absolute left-6 top-1 z-50 min-w-56 max-w-xs p-3 rounded-lg shadow-xl border text-xs ${isDark ? 'bg-gray-800 border-gray-600 text-gray-100' : 'bg-white border-purple-200 text-gray-900'}`}
-                        style={{ fontFamily: customization.fontFamily }}
-                      >
-                        <div className="font-semibold mb-1">{model.name}</div>
-                        {model.description && <div className="mb-2 text-xs opacity-80">{model.description}</div>}
-                        <div className="flex flex-wrap gap-2">
-                          {model.capabilities.map(cap => {
-                            const capInfo = (MODEL_CAPABILITIES as any)[cap];
-                            if (!capInfo) return null;
-                            const Icon = ICON_MAP[capInfo.icon] || FileText;
-                            return (
-                              <span key={cap} className="flex items-center gap-1 px-2 py-1 rounded bg-purple-100 dark:bg-gray-700 text-xs">
-                                <Icon className="w-4 h-4" />
-                                {capInfo.label}
-                              </span>
-                            );
-                          })}
-                        </div>
-                      </div>
+                      <PopupInfo
+                        anchorRef={dropdownRef}
+                        isDark={isDark}
+                        customization={customization}
+                        model={model}
+                      />
                     )}
                   </span>
                 </div>
@@ -182,6 +186,52 @@ export default function ModelSelector({
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// PopupInfo component voor betere positionering en styling
+function PopupInfo({ anchorRef, isDark, customization, model }: any) {
+  const popupRef = React.useRef<HTMLDivElement>(null);
+  const [position, setPosition] = React.useState<'top' | 'bottom'>('bottom');
+  React.useEffect(() => {
+    setPosition(getPopupPosition(anchorRef?.current));
+  }, [anchorRef]);
+  return (
+    <div
+      ref={popupRef}
+      className={`absolute left-6 z-50 min-w-56 max-w-xs p-3 rounded-lg shadow-xl border text-xs ${
+        isDark
+          ? 'bg-gray-200 border-gray-400 text-gray-900'
+          : 'bg-white border-purple-200 text-gray-900'
+      }`}
+      style={{
+        fontFamily: customization.fontFamily,
+        top: position === 'top' ? 'auto' : '1.5rem',
+        bottom: position === 'top' ? '2.5rem' : 'auto',
+        maxHeight: '220px',
+        overflowY: 'auto',
+      }}
+    >
+      <div className="font-semibold mb-1">{model.name}</div>
+      {model.description && <div className="mb-2 text-xs opacity-80">{model.description}</div>}
+      <div className="flex flex-wrap gap-2">
+        {model.capabilities.map((cap: string) => {
+          const capInfo = (MODEL_CAPABILITIES as any)[cap];
+          if (!capInfo) return null;
+          const Icon = ICON_MAP[capInfo.icon] || FileText;
+          return (
+            <span
+              key={cap}
+              className={`flex items-center gap-1 px-2 py-1 rounded text-xs bg-purple-100 ${isDark ? 'text-purple-900' : 'text-purple-900'}`}
+              style={{ background: isDark ? '#ede9fe' : '#ede9fe' }}
+            >
+              <Icon className="w-4 h-4" />
+              {capInfo.label}
+            </span>
+          );
+        })}
+      </div>
     </div>
   );
 }
