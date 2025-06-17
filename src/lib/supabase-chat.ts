@@ -99,9 +99,9 @@ export async function sendChatMessage(
     
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      console.log('⏰ Request timeout after 60 seconds');
+      console.log('⏰ Request timeout after 90 seconds');
       controller.abort();
-    }, 60000); // 60 second timeout for better reliability
+    }, 90000); // 90 second timeout for DeepSeek API
     
     const response = await fetch(url, {
       method: 'POST',
