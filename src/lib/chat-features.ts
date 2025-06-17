@@ -653,32 +653,13 @@ class ChatFeaturesService {
     
     console.log('🔄 Starting database operations...');
     
-    // Create promises for both operations
-    const insertPromise = supabase
-      .from('messages')
-      .insert(messageData)
-      .select()
-      .single();
-    
-    const updatePromise = supabase
-      .from('conversations')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', conversationId);
-    
-    // Add timeout to both operations
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Database operations timeout after 30 seconds')), 30000);
-    });
-    
     try {
-      // Run both operations in parallel with timeout
-      const [insertResult, updateResult] = await Promise.race([
-        Promise.all([insertPromise, updatePromise]),
-        timeoutPromise
-      ]) as [any, any];
-
-      const { data, error } = insertResult;
-      const { error: updateError } = updateResult;
+      // Insert message first
+      const { data, error } = await supabase
+        .from('messages')
+        .insert(messageData)
+        .select()
+        .single();
 
       if (error) {
         console.error('❌ Error saving message:', error);
@@ -688,13 +669,19 @@ class ChatFeaturesService {
         throw error;
       }
 
-      if (updateError) {
-        console.error('⚠️ Failed to update conversation timestamp:', updateError);
-        // Don't throw here, message was saved successfully
-      } else {
-        console.log('✅ Conversation timestamp updated');
-      }
-      
+      // Update conversation timestamp (don't wait for this)
+      supabase
+        .from('conversations')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', conversationId)
+        .then(({ error: updateError }) => {
+          if (updateError) {
+            console.error('⚠️ Failed to update conversation timestamp:', updateError);
+          } else {
+            console.log('✅ Conversation timestamp updated');
+          }
+        });
+
       console.log('✅ Message saved successfully:', data.id);
       return data;
 
