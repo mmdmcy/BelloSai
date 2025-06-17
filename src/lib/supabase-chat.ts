@@ -148,8 +148,15 @@ export async function sendChatMessage(
     if (!response.ok) {
       const errorData = await response.json();
       console.error('❌ Edge Function error:', errorData);
-      
-      // Handle authentication errors with retry
+      // Specifieke foutmelding bij 429 (rate limit)
+      if (response.status === 429) {
+        let msg = 'Je hebt het maximum aantal verzoeken bereikt. Wacht even en probeer het opnieuw.';
+        if (errorData && errorData.error && errorData.error.toLowerCase().includes('rate')) {
+          msg = errorData.error;
+        }
+        throw new Error(msg);
+      }
+      // Specifieke foutmelding bij 401 (auth)
       if (response.status === 401 && retryCount === 0) {
         console.log('🔄 Got 401 error, attempting to refresh session and retry...');
         try {
@@ -162,14 +169,8 @@ export async function sendChatMessage(
           console.error('❌ Failed to refresh session after 401:', refreshError);
         }
       }
-      
-      // Handle message limit error
-      if (response.status === 429) {
-        const limitError = errorData as MessageLimitError;
-        throw new Error(`Message limit exceeded: ${limitError.current}/${limitError.limit} messages used. Upgrade your ${limitError.subscription_tier} plan for more messages.`);
-      }
-      
-      throw new Error(errorData.error || `HTTP ${response.status}`);
+      // Andere errors
+      throw new Error(errorData.error || `Er is een fout opgetreden bij het verwerken van je bericht. Probeer het opnieuw of neem contact op met support. (HTTP ${response.status})`);
     }
 
     // DeepSeek: streaming, Gemini: geen streaming

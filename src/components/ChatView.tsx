@@ -23,7 +23,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github-dark.css';
 import { Message } from '../App';
-import { CustomizationSettings, AVAILABLE_MODELS } from '../App';
+import { CustomizationSettings, AVAILABLE_MODELS, ModelInfo } from '../App';
 import ModelSelector from './ModelSelector';
 import AttachmentUpload from './AttachmentUpload';
 import ChatSharing from './ChatSharing';
@@ -35,7 +35,7 @@ interface ChatViewProps {
   onSendMessage: (message: string) => void;
   selectedModel: string;
   onModelChange: (model: string) => void;
-  availableModels: string[];
+  availableModels: ModelInfo[];
   hideInput?: boolean;
   inputOnly?: boolean;
   customization: CustomizationSettings;
@@ -45,6 +45,8 @@ interface ChatViewProps {
   conversationTitle?: string;
   isLoggedIn?: boolean;
   onLoginClick?: () => void;
+  error?: string | null;
+  setError?: (err: string | null) => void;
 }
 
 export default function ChatView({ 
@@ -62,7 +64,9 @@ export default function ChatView({
   conversationId,
   conversationTitle = 'Untitled Conversation',
   isLoggedIn = false,
-  onLoginClick
+  onLoginClick,
+  error,
+  setError
 }: ChatViewProps) {
   // Input state management
   const [inputValue, setInputValue] = useState('');
@@ -212,6 +216,7 @@ export default function ChatView({
    */
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (setError) setError(null);
     if (inputValue.trim()) {
       onSendMessage(inputValue.trim());
       setInputValue('');
@@ -628,10 +633,12 @@ export default function ChatView({
 
   // Full chat view layout with responsive scaling
   return (
-    <div 
-      ref={containerRef}
-      className={`flex-1 h-full flex flex-col ${isDark ? 'bg-gray-900' : 'bg-purple-50'}`}
-    >
+    <div className="flex flex-col h-full" ref={containerRef}>
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-4 max-w-xl mx-auto">
+          <span className="font-semibold">Fout:</span> {error}
+        </div>
+      )}
       {/* Chat Messages Area - Responsive padding */}
       <div 
         ref={scrollContainerRef}
