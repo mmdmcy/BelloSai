@@ -158,24 +158,66 @@ serve(async (req) => {
     const modelId = DEEPSEEK_MODELS[model] || 'deepseek-chat';
 
     // Call DeepSeek API
-    const deepSeekResponse = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: modelId,
-        messages: deepSeekMessages,
-        stream: enableStreaming,
-        temperature: 0.7,
-        max_tokens: enableStreaming ? 4000 : 500 // Shorter responses for title generation
-      })
+    console.log('🚀 Calling DeepSeek API with:', {
+      model: modelId,
+      messageCount: deepSeekMessages.length,
+      stream: enableStreaming,
+      hasApiKey: !!DEEPSEEK_API_KEY
     });
+    
+    // Add timeout to DeepSeek API call
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.log('⏰ DeepSeek API timeout after 80 seconds');
+      controller.abort();
+    }, 80000); // 80 second timeout
+    
+    let deepSeekResponse;
+    try {
+      deepSeekResponse = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: modelId,
+          messages: deepSeekMessages,
+          stream: enableStreaming,
+          temperature: 0.7,
+          max_tokens: enableStreaming ? 4000 : 500 // Shorter responses for title generation
+        }),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      console.error('❌ DeepSeek API fetch error:', fetchError);
+      
+      if (fetchError.name === 'AbortError') {
+        return new Response(
+          JSON.stringify({ error: 'Request timeout - DeepSeek API took too long to respond' }),
+          { status: 408, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      return new Response(
+        JSON.stringify({ error: 'Failed to connect to DeepSeek API' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    console.log('📨 DeepSeek API response status:', deepSeekResponse.status);
 
     if (!deepSeekResponse.ok) {
+      const errorText = await deepSeekResponse.text();
+      console.error('❌ DeepSeek API error:', {
+        status: deepSeekResponse.status,
+        statusText: deepSeekResponse.statusText,
+        error: errorText
+      });
       return new Response(
-        JSON.stringify({ error: `DeepSeek API error: ${deepSeekResponse.status}` }),
+        JSON.stringify({ error: `DeepSeek API error: ${deepSeekResponse.status} - ${deepSeekResponse.statusText}` }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -235,12 +277,17 @@ serve(async (req) => {
         }
 
         try {
+          console.log('🌊 Starting streaming loop...');
           while (true) {
             const { done, value } = await reader.read()
             
-            if (done) break
+            if (done) {
+              console.log('✅ Streaming completed - no more data');
+              break;
+            }
 
             const chunk = decoder.decode(value, { stream: true })
+            console.log('📦 Raw chunk received:', chunk.substring(0, 100) + '...');
             const lines = chunk.split('\n')
 
             for (const line of lines) {
