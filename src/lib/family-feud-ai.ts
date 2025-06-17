@@ -37,6 +37,8 @@ export async function generateFamilyFeudQuestion(): Promise<FamilyFeudQuestion> 
   const prompts = [
     `Generate a creative Family Feud style question with exactly 5 answers and their point values. Make it fun and engaging!
 
+IMPORTANT: Do NOT use any markdown formatting like **, *, #, or any special characters. Just use plain text.
+
 The format should be:
 Question: [A creative, fun question that people would be surveyed about]
 Answers:
@@ -52,10 +54,13 @@ Make sure:
 - Question is creative and different from typical Family Feud questions
 - Points are realistic (higher for more common answers)
 - Make it about modern life, technology, social media, food, travel, hobbies, etc.
+- Use ONLY plain text, no formatting
 
 Generate a unique question:`,
     
     `Create an original Family Feud question that hasn't been used before. Think outside the box!
+
+IMPORTANT: Use plain text only. No markdown, no asterisks, no special formatting.
 
 Format:
 Question: [Something creative and modern]
@@ -76,9 +81,11 @@ Make it about:
 - Relationships and dating
 - Entertainment and pop culture
 
-Be creative and original!`,
+Be creative and original! Use plain text only.`,
 
     `Invent a completely new Family Feud question that would be fun to play. Make it contemporary and relatable.
+
+IMPORTANT: Plain text only. No formatting, no asterisks, no markdown.
 
 Question: [Your creative question here]
 Answers:
@@ -96,7 +103,7 @@ Think about:
 - Everyday situations
 - Funny or embarrassing moments
 
-Make it fresh and entertaining!`
+Make it fresh and entertaining! Plain text only.`
   ];
 
   // Randomly select a prompt for variety
@@ -133,15 +140,24 @@ Make it fresh and entertaining!`
  */
 function parseAIResponse(response: string): FamilyFeudQuestion {
   try {
+    // Clean up markdown formatting
+    const cleanResponse = response
+      .replace(/\*\*/g, '') // Remove bold
+      .replace(/\*/g, '')   // Remove italics
+      .replace(/#{1,6}\s/g, '') // Remove headers
+      .replace(/`/g, '')    // Remove code blocks
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links, keep text
+      .trim();
+    
     // Extract question - be more flexible with parsing
-    const questionMatch = response.match(/Question:\s*(.+?)(?:\n|$)/i) || 
-                         response.match(/^(.+?)(?:\n|$)/i);
+    const questionMatch = cleanResponse.match(/Question:\s*(.+?)(?:\n|$)/i) || 
+                         cleanResponse.match(/^(.+?)(?:\n|$)/i);
     const question = questionMatch ? questionMatch[1].trim() : "Name something people do when they can't sleep";
 
     // Extract answers - be more flexible with different formats
-    const answerMatches = response.matchAll(/(\d+)\.\s*(.+?)\s*-\s*(\d+)/g) || 
-                         response.matchAll(/(\d+)\)\s*(.+?)\s*-\s*(\d+)/g) ||
-                         response.matchAll(/(\d+)\s*(.+?)\s*-\s*(\d+)/g);
+    const answerMatches = cleanResponse.matchAll(/(\d+)\.\s*(.+?)\s*-\s*(\d+)/g) || 
+                         cleanResponse.matchAll(/(\d+)\)\s*(.+?)\s*-\s*(\d+)/g) ||
+                         cleanResponse.matchAll(/(\d+)\s*(.+?)\s*-\s*(\d+)/g);
     const answers = [];
     
     for (const match of answerMatches) {
@@ -232,66 +248,91 @@ export async function getAIGuess(
   const revealedTexts = revealedAnswers.map(a => a.text);
   const unrevealedAnswers = allAnswers.filter(a => !revealedTexts.includes(a.text));
   
-  const prompt = `You are playing Family Feud. Here's the question:
+  console.log('🔍 getAIGuess called with:');
+  console.log('  - Question:', question);
+  console.log('  - Revealed:', revealedTexts);
+  console.log('  - Available options:', unrevealedAnswers.map(a => a.text));
+  
+  const prompt = `You are playing Family Feud. The question is: "${question}"
 
-"${question}"
+Already revealed answers: ${revealedTexts.length > 0 ? revealedTexts.join(', ') : 'None'}
 
-The following answers have already been revealed:
-${revealedTexts.length > 0 ? revealedTexts.map((text, i) => `${i + 1}. ${text}`).join('\n') : 'None yet'}
+You must guess one of the remaining answers. Choose from these options:
+${unrevealedAnswers.map((a, i) => `${i + 1}. ${a.text}`).join('\n')}
 
-You need to guess one of the remaining answers. Think about what common responses people would give to this question.
+Respond with ONLY the exact text of one of these answers. No explanations, no extra words. Just the answer text.
 
-Respond with just a short, simple answer (1-3 words maximum). Don't explain or add anything else - just the answer.`;
+Example: If the options are "Read a book", "Watch TV", "Listen to music", respond with exactly one of those phrases.`;
+
+  console.log('📝 Sending prompt to DeepSeek-R1:');
+  console.log(prompt);
 
   const messages: ChatMessage[] = [
     { type: 'user', content: prompt }
   ];
 
   try {
-    // Add timeout to prevent hanging
+    console.log('⏱️ Starting AI request with 12 second timeout...');
+    
+    // Shorter timeout but still reasonable
     const timeoutPromise = new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new Error('AI request timeout')), 15000); // 15 second timeout
+      setTimeout(() => {
+        console.log('⏰ AI request timed out after 12 seconds');
+        reject(new Error('AI request timeout after 12 seconds'));
+      }, 12000); // 12 second timeout
     });
 
     const responsePromise = sendChatMessage(messages, 'DeepSeek-R1');
     
+    console.log('🔄 Waiting for AI response...');
     const response = await Promise.race([responsePromise, timeoutPromise]);
-    const guess = response.trim().toLowerCase();
     
-    // Check if the guess matches any unrevealed answer
-    const matchResult = checkAnswerMatch(guess, unrevealedAnswers);
+    console.log('📨 Raw AI response:', response);
+    const guess = response.trim();
+    console.log('🧹 Cleaned guess:', guess);
     
-    return {
-      guess: response.trim(),
-      confidence: matchResult ? 0.8 : 0.3,
-      isCorrect: !!matchResult,
-      matchedAnswer: matchResult || undefined
-    };
-  } catch (error) {
-    console.error('Failed to get AI guess:', error);
+    // Check if the guess matches any unrevealed answer exactly
+    const matchResult = unrevealedAnswers.findIndex(a => 
+      a.text.toLowerCase() === guess.toLowerCase()
+    );
     
-    // Return a random guess as fallback
-    if (unrevealedAnswers.length > 0) {
-      const randomGuess = unrevealedAnswers[Math.floor(Math.random() * unrevealedAnswers.length)];
-      const randomIndex = allAnswers.findIndex(a => a.text === randomGuess.text);
+    console.log('🔍 Matching result:', matchResult);
+    console.log('🎯 Looking for exact match with:', unrevealedAnswers.map(a => a.text));
+    
+    if (matchResult !== -1) {
+      const matchedAnswer = unrevealedAnswers[matchResult];
+      const allAnswersIndex = allAnswers.findIndex(a => a.text === matchedAnswer.text);
+      
+      console.log('✅ Exact match found:', matchedAnswer.text);
+      
       return {
-        guess: randomGuess.text,
-        confidence: 0.5,
+        guess: guess,
+        confidence: 1.0,
         isCorrect: true,
         matchedAnswer: {
-          text: randomGuess.text,
-          points: randomGuess.points,
-          index: randomIndex
+          text: matchedAnswer.text,
+          points: matchedAnswer.points,
+          index: allAnswersIndex
         }
       };
+    } else {
+      console.log('❌ No exact match found. AI guessed:', guess);
+      console.log('Expected options were:', unrevealedAnswers.map(a => a.text));
+      
+      return {
+        guess: guess,
+        confidence: 0.0,
+        isCorrect: false
+      };
     }
+  } catch (error) {
+    console.error('💥 getAIGuess failed with error:', error);
+    console.error('Error type:', typeof error);
+    console.error('Error constructor:', error?.constructor?.name);
+    console.error('Error message:', error instanceof Error ? error.message : 'No message');
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack');
     
-    // If no unrevealed answers, return a generic response
-    return {
-      guess: "I don't know",
-      confidence: 0.1,
-      isCorrect: false
-    };
+    throw error; // Let the component handle the error
   }
 }
 

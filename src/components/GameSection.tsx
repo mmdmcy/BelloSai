@@ -293,19 +293,16 @@ export default function GameSection({
       const allAnswers = gameshowState.question.answers;
       const unrevealedAnswers = allAnswers.filter(a => !forbidden.includes(a.text.toLowerCase()));
       
-      // Custom AI call met filter
-      let result: AIGuessResult | null = null;
-      if (unrevealedAnswers.length > 0) {
-        // Geef alleen de niet-verboden antwoorden door
-        result = await getAIGuess(
-          gameshowState.question.question,
-          revealedAnswers,
-          unrevealedAnswers
-        );
-      }
+      console.log('🤖 AI Turn Debug Info:');
+      console.log('  - Question:', gameshowState.question.question);
+      console.log('  - Revealed answers:', revealedAnswers.map(a => a.text));
+      console.log('  - Forbidden answers:', forbidden);
+      console.log('  - Available answers:', unrevealedAnswers.map(a => a.text));
+      console.log('  - Last player guess:', gameshowState.lastPlayerGuess);
       
-      // Fallback als alles al geraden is
-      if (!result) {
+      // Check if there are any answers left to guess
+      if (unrevealedAnswers.length === 0) {
+        console.log('❌ No answers left to guess');
         setGameshowState(prev => ({ 
           ...prev, 
           aiThinking: false, 
@@ -316,27 +313,41 @@ export default function GameSection({
         return;
       }
       
+      console.log('🚀 Calling AI with options:', unrevealedAnswers.map(a => a.text));
+      
+      // Get AI guess
+      const result = await getAIGuess(
+        gameshowState.question.question,
+        revealedAnswers,
+        unrevealedAnswers
+      );
+      
+      console.log('✅ AI Response:', result);
+      
       setGameshowState(prev => ({ 
         ...prev, 
-        aiGuess: result!.guess,
-        aiGuessResult: result!,
+        aiGuess: result.guess,
+        aiGuessResult: result,
         aiThinking: false 
       }));
       
+      // Process the result
       setTimeout(() => {
-        if (result!.isCorrect && result!.matchedAnswer) {
+        if (result.isCorrect && result.matchedAnswer) {
+          console.log('🎯 AI guessed correctly:', result.matchedAnswer.text);
           setGameshowState(prev => ({
             ...prev,
-            revealedAnswers: [...prev.revealedAnswers, allAnswers.findIndex(a => a.text === result!.matchedAnswer!.text)],
-            aiScore: prev.aiScore + result!.matchedAnswer!.points,
+            revealedAnswers: [...prev.revealedAnswers, result.matchedAnswer!.index],
+            aiScore: prev.aiScore + result.matchedAnswer!.points,
             turn: 'ai', // AI mag doorgaan bij goed antwoord
           }));
           
           // AI gets another turn if correct
           setTimeout(() => {
             handleAIGuess();
-          }, 2000);
+          }, 1500);
         } else {
+          console.log('❌ AI guessed incorrectly:', result.guess);
           setGameshowState(prev => ({
             ...prev,
             turn: 'player', // Beurt terug naar speler bij fout
@@ -345,20 +356,34 @@ export default function GameSection({
         
         // Check of alles geraden is
         setTimeout(() => {
-          const currentRevealedCount = gameshowState.revealedAnswers.length + (result!.isCorrect ? 1 : 0);
+          const currentRevealedCount = gameshowState.revealedAnswers.length + (result.isCorrect ? 1 : 0);
           if (currentRevealedCount >= 4) {
             setGameshowState(prev => ({ ...prev, gamePhase: 'finished' }));
           }
-        }, 2000);
-      }, 2000);
+        }, 1500);
+      }, 1500);
     } catch (error) {
-      console.error('AI guess failed:', error);
+      console.error('❌ AI guess failed with error:', error);
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        question: gameshowState.question?.question,
+        revealedAnswers: gameshowState.revealedAnswers,
+        lastPlayerGuess: gameshowState.lastPlayerGuess
+      });
+      
+      // Show detailed error message
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       setGameshowState(prev => ({ 
         ...prev, 
         aiThinking: false, 
         turn: 'player',
-        aiGuess: 'Error occurred',
-        aiGuessResult: { guess: 'Error', confidence: 0, isCorrect: false }
+        aiGuess: `AI Error: ${errorMessage}`,
+        aiGuessResult: { 
+          guess: `Error: ${errorMessage}`, 
+          confidence: 0, 
+          isCorrect: false 
+        }
       }));
     }
   };
