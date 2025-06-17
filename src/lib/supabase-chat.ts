@@ -36,10 +36,11 @@ export async function sendChatMessage(
   messages: ChatMessage[],
   model: DeepSeekModel,
   onChunk?: (chunk: string) => void,
-  conversationId?: string
+  conversationId?: string,
+  retryCount: number = 0
 ): Promise<string> {
   console.log('🎯 sendChatMessage function called');
-  console.log('📥 Parameters:', { messages, model, conversationId, onChunk: !!onChunk });
+  console.log('📥 Parameters:', { messages, model, conversationId, onChunk: !!onChunk, retryCount });
   
   let abortController: AbortController | null = null;
   let timeoutId: NodeJS.Timeout | null = null;
@@ -54,6 +55,21 @@ export async function sendChatMessage(
     
     if (sessionError) {
       console.error('❌ Session error:', sessionError);
+      
+      // If session error and we haven't retried yet, try to refresh session
+      if (retryCount === 0) {
+        console.log('🔄 Attempting to refresh session and retry...');
+        try {
+          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+          if (!refreshError && refreshData.session) {
+            console.log('✅ Session refreshed, retrying request...');
+            return sendChatMessage(messages, model, onChunk, conversationId, retryCount + 1);
+          }
+        } catch (refreshError) {
+          console.error('❌ Failed to refresh session:', refreshError);
+        }
+      }
+      
       throw new Error('Authentication error: ' + sessionError.message);
     }
     
@@ -126,6 +142,20 @@ export async function sendChatMessage(
     if (!response.ok) {
       const errorData = await response.json();
       console.error('❌ Edge Function error:', errorData);
+      
+      // Handle authentication errors with retry
+      if (response.status === 401 && retryCount === 0) {
+        console.log('🔄 Got 401 error, attempting to refresh session and retry...');
+        try {
+          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+          if (!refreshError && refreshData.session) {
+            console.log('✅ Session refreshed after 401, retrying request...');
+            return sendChatMessage(messages, model, onChunk, conversationId, retryCount + 1);
+          }
+        } catch (refreshError) {
+          console.error('❌ Failed to refresh session after 401:', refreshError);
+        }
+      }
       
       // Handle message limit error
       if (response.status === 429) {
