@@ -26,6 +26,7 @@
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatView from './components/ChatView';
+import { CleanChatView } from './components/CleanChatView';
 import MainContent from './components/MainContent';
 import ThemeToggle from './components/ThemeToggle';
 import DesignerMode from './components/DesignerMode';
@@ -154,6 +155,9 @@ function App() {
 
   // Available models for AI
   const availableModels = ['DeepSeek-V3', 'DeepSeek-R1'];
+  
+  // Flag to use new clean chat view (temporary for testing)
+  const useCleanChatView = true;
 
   // Mobile responsive detection
   useEffect(() => {
@@ -403,7 +407,8 @@ function App() {
       if (!currentConvoId && user) {
         console.log('🆕 Creating new conversation for user:', user.id);
         try {
-          currentConvoId = await chatFeaturesService.createConversation(user.id, content.trim(), selectedModel);
+          const newConversation = await chatFeaturesService.createConversation(user.id, content.trim(), selectedModel);
+          currentConvoId = newConversation.id;
           setCurrentConversationId(currentConvoId);
           console.log('✅ New conversation created:', currentConvoId);
         } catch (error) {
@@ -415,9 +420,7 @@ function App() {
       // Save user message to database if we have a conversation
       if (currentConvoId) {
         try {
-          console.log('💾 Saving user message to database...');
           await chatFeaturesService.saveMessage(currentConvoId, 'user', content.trim());
-          console.log('✅ User message saved to database');
         } catch (error) {
           console.error('❌ Failed to save user message:', error);
           // Continue without saving
@@ -430,11 +433,6 @@ function App() {
         content: msg.content
       }));
 
-      console.log('🔄 About to call sendChatMessage...');
-      console.log('📋 Chat messages count:', chatMessages.length);
-      console.log('📋 Last message:', chatMessages[chatMessages.length - 1]);
-      console.log('🤖 Selected model:', selectedModel);
-      
       // Validation checks
       if (!chatMessages || chatMessages.length === 0) {
         throw new Error('No chat messages available for sending');
@@ -444,28 +442,18 @@ function App() {
         throw new Error('No model selected');
       }
       
-      console.log('✅ Pre-flight checks passed, calling sendChatMessage...');
-
-      // Send to DeepSeek with streaming
-      console.log('📡 Calling sendChatMessage with parameters:');
-      console.log('  - Messages count:', chatMessages.length);
-      console.log('  - Model:', selectedModel);
-      console.log('  - AI Message ID:', aiMessageId);
-      console.log('  - Conversation ID:', currentConvoId);
+      console.log('📡 Sending message to', selectedModel, 'with', chatMessages.length, 'messages');
       
       let fullResponse = '';
       let lastSavedLength = 0;
       const SAVE_CHUNK_SIZE = 500; // Save to database every 500 characters
 
       try {
-        console.log('🚀 Starting sendChatMessage call...');
         fullResponse = await sendChatMessage(
           chatMessages,
           selectedModel as DeepSeekModel,
           async (chunk: string) => {
             if (!chunk) return;
-            
-            console.log('📦 Received streaming chunk:', chunk.length, 'chars');
             
             // Update the AI message with streaming content
             setMessages(prev => {
@@ -479,10 +467,8 @@ function App() {
               if (currentConvoId && fullResponse.length - lastSavedLength >= SAVE_CHUNK_SIZE) {
                 const aiMessage = updatedMessages.find(msg => msg.id === aiMessageId);
                 if (aiMessage) {
-                  console.log('💾 Saving AI message chunk to database...');
                   chatFeaturesService.saveMessage(currentConvoId, 'assistant', aiMessage.content)
                     .then(() => {
-                      console.log('✅ AI message chunk saved to database');
                       lastSavedLength = fullResponse.length;
                     })
                     .catch(error => {
@@ -499,15 +485,12 @@ function App() {
           currentConvoId || undefined
         );
         
-        console.log('✅ sendChatMessage completed successfully');
-        console.log('📝 Full response length:', fullResponse?.length || 0);
+        console.log('✅ Message generated successfully');
 
         // Save final message to database if we have a conversation
         if (currentConvoId && fullResponse) {
           try {
-            console.log('💾 Saving final AI message to database...');
             await chatFeaturesService.saveMessage(currentConvoId, 'assistant', fullResponse);
-            console.log('✅ Final AI message saved to database');
           } catch (error) {
             console.error('❌ Failed to save final AI message:', error);
           }
@@ -593,7 +576,6 @@ function App() {
     
     // If clicking the same conversation, just reload it fresh
     if (currentConversationId === conversationId) {
-      console.log('🔄 Reloading same conversation with fresh data');
       // Continue with normal loading process to get fresh data
     }
     
@@ -609,7 +591,7 @@ function App() {
     
     try {
       // Always fetch fresh data from database (don't use cache for now)
-      console.log('🔄 Loading fresh messages from database for:', conversationId);
+  
       const conversationMessages = await chatFeaturesService.getConversationMessages(conversationId);
       
       if (conversationMessages && conversationMessages.length > 0) {
@@ -621,13 +603,12 @@ function App() {
           timestamp: new Date(msg.created_at)
         }));
         
-        console.log('✅ Loaded', messages.length, 'messages from database');
+
         setMessages(messages);
         
         // Update cache with fresh data
         setConversationCache(prev => new Map(prev.set(conversationId, messages)));
       } else {
-        console.log('⚠️ No messages found in database');
         setMessages([]);
         // Cache empty array too
         setConversationCache(prev => new Map(prev.set(conversationId, [])));
@@ -820,6 +801,18 @@ function App() {
   const getSortedElements = () => {
     return Object.entries(layout).sort(([, a], [, b]) => a.zIndex - b.zIndex);
   };
+
+  // Use clean chat view if flag is enabled
+  if (useCleanChatView) {
+    return (
+      <CleanChatView
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
+        selectedModel={selectedModel as DeepSeekModel}
+        onModelChange={(model) => setSelectedModel(model)}
+      />
+    );
+  }
 
   return (
     <div 

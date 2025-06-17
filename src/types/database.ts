@@ -75,7 +75,7 @@ export type Database = {
         Row: {
           id: string
           conversation_id: string
-          type: 'user' | 'ai'
+          role: 'user' | 'assistant'
           content: string
           model: string | null
           parent_message_id: string | null
@@ -86,7 +86,7 @@ export type Database = {
         Insert: {
           id?: string
           conversation_id: string
-          type: 'user' | 'ai'
+          role: 'user' | 'assistant'
           content: string
           model?: string | null
           parent_message_id?: string | null
@@ -97,7 +97,7 @@ export type Database = {
         Update: {
           id?: string
           conversation_id?: string
-          type?: 'user' | 'ai'
+          role?: 'user' | 'assistant'
           content?: string
           model?: string | null
           parent_message_id?: string | null
