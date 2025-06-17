@@ -168,13 +168,17 @@ Make it fun and modern. No markdown formatting.`
   };
 
   const parseQuestion = (response: string): FamilyFeudQuestion => {
-    const lines = response.split('\n');
+    const lines = response.split('\n').map(line => line.trim()).filter(line => line.length > 0);
     let question = '';
     const answers = [];
 
     for (const line of lines) {
+      // Better question parsing - look for the actual question line
       if (line.toLowerCase().includes('question:')) {
-        question = line.split(':')[1]?.trim() || "Name something people do when they can't sleep";
+        question = line.replace(/question:\s*/i, '').trim();
+      } else if (!question && line.includes('?')) {
+        // If no "Question:" prefix, take the first line with a question mark
+        question = line.trim();
       } else if (line.match(/\d+\./)) {
         const match = line.match(/(\d+)\.\s*(.+?)\s*-\s*(\d+)/);
         if (match) {
@@ -184,6 +188,19 @@ Make it fun and modern. No markdown formatting.`
           });
         }
       }
+    }
+
+    // Fallback if parsing failed
+    if (!question || question.length < 10) {
+      question = "Name something people do when they're bored at work";
+    }
+
+    // Ensure we have 5 answers
+    while (answers.length < 5) {
+      answers.push({
+        text: `Answer ${answers.length + 1}`,
+        points: Math.max(1, 20 - answers.length * 3)
+      });
     }
 
     return { question, answers: answers.slice(0, 5) };
@@ -244,37 +261,36 @@ Make it fun and modern. No markdown formatting.`
         return;
       }
       
-      // Use the improved prompt from family-feud-ai service
-      const prompt = `Family Feud game. Question: "${question.question}"
+      // NEW: AI should think of answers WITHOUT seeing the options!
+      const prompt = `You are playing Family Feud. The question is: "${question}"
 
-Revealed: ${revealedAnswers.map(i => question.answers[i].text).join(', ') || 'None'}
+Already revealed answers: ${revealedAnswers.map(i => question.answers[i].text).join(', ') || 'None'}
 
-Pick ONE answer from:
-${availableAnswers.map(a => a.text).join(', ')}
+Think of a good answer that might be on the board. Respond with a short, common answer that people would typically give for this question.
 
-Reply with ONLY the answer text. No explanations.`;
+Reply with ONLY your answer. No explanations.`;
 
       console.log('Sending AI prompt:', prompt);
       
-      // Add retry logic for network errors
+      // Try DeepSeek-V3 instead of R1 (faster)
       let response;
       let retries = 0;
-      const maxRetries = 2;
+      const maxRetries = 1; // Reduced retries
       
       while (retries <= maxRetries) {
         try {
-          response = await sendChatMessage([{ type: 'user', content: prompt }], 'DeepSeek-R1');
-          break; // Success, exit retry loop
+          // Use DeepSeek-V3 instead of R1 for faster response
+          response = await sendChatMessage([{ type: 'user', content: prompt }], 'DeepSeek-V3');
+          break;
         } catch (error) {
           retries++;
           console.log(`AI request failed, attempt ${retries}/${maxRetries + 1}:`, error);
           
           if (retries > maxRetries) {
-            throw error; // Give up after max retries
+            throw error;
           }
           
-          // Wait a bit before retrying
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
       }
       
@@ -287,10 +303,24 @@ Reply with ONLY the answer text. No explanations.`;
       const guess = response.trim();
       setAiGuess(guess);
 
-      // Check if AI guessed correctly
-      const answerIndex = question.answers.findIndex(a => 
-        a.text.toLowerCase() === guess.toLowerCase() && !revealedAnswers.includes(question.answers.indexOf(a))
-      );
+      // Check if AI guessed correctly using fuzzy matching
+      const answerIndex = question.answers.findIndex(a => {
+        const answerLower = a.text.toLowerCase();
+        const guessLower = guess.toLowerCase();
+        
+        // Exact match
+        if (answerLower === guessLower) return true;
+        
+        // Contains match
+        if (answerLower.includes(guessLower) || guessLower.includes(answerLower)) return true;
+        
+        // Word overlap
+        const answerWords = answerLower.split(/\s+/);
+        const guessWords = guessLower.split(/\s+/);
+        const overlap = answerWords.filter(word => guessWords.includes(word));
+        
+        return overlap.length > 0 && !revealedAnswers.includes(question.answers.indexOf(a));
+      });
 
       if (answerIndex !== -1) {
         // AI correct
@@ -299,7 +329,6 @@ Reply with ONLY the answer text. No explanations.`;
         setAiScore(prev => prev + question.answers[answerIndex].points);
         setTurn('ai'); // AI gets another turn
         
-        // Shorter delay for next AI turn
         setTimeout(() => {
           handleAITurn();
         }, 1000);
@@ -310,53 +339,29 @@ Reply with ONLY the answer text. No explanations.`;
     } catch (error) {
       console.error('AI turn failed:', error);
       
-      // Show user-friendly error message
-      let errorMessage = 'AI failed to respond';
-      if (error instanceof Error) {
-        if (error.message.includes('timeout')) {
-          errorMessage = 'AI took too long to respond';
-        } else if (error.message.includes('network') || error.message.includes('fetch')) {
-          errorMessage = 'Network error - AI unavailable';
-        } else {
-          errorMessage = 'AI error: ' + error.message;
-        }
-      }
+      // Immediate fallback: Use simple random AI
+      console.log('Using immediate random AI fallback');
+      const availableAnswers = question.answers.filter((_, index) => !revealedAnswers.includes(index));
       
-      // Fallback: Use simple random AI if DeepSeek fails
-      try {
-        const availableAnswers = question.answers.filter((_, index) => !revealedAnswers.includes(index));
-        if (availableAnswers.length > 0) {
-          const randomIndex = Math.floor(Math.random() * availableAnswers.length);
-          const randomGuess = availableAnswers[randomIndex].text;
-          
-          console.log('Using fallback random AI guess:', randomGuess);
-          setAiGuess(`Random AI: ${randomGuess}`);
-          
-          // Check if random guess is correct
-          const answerIndex = question.answers.findIndex(a => 
-            a.text.toLowerCase() === randomGuess.toLowerCase() && !revealedAnswers.includes(question.answers.indexOf(a))
-          );
-
-          if (answerIndex !== -1) {
-            // Random AI correct
-            const newRevealed = [...revealedAnswers, answerIndex];
-            setRevealedAnswers(newRevealed);
-            setAiScore(prev => prev + question.answers[answerIndex].points);
-            setTurn('ai'); // AI gets another turn
-            
-            setTimeout(() => {
-              handleAITurn();
-            }, 1000);
-          } else {
-            setTurn('player');
-          }
-        } else {
-          setAiGuess(errorMessage);
-          setTurn('player');
-        }
-      } catch (fallbackError) {
-        console.error('Fallback AI also failed:', fallbackError);
-        setAiGuess(errorMessage);
+      if (availableAnswers.length > 0) {
+        const randomIndex = Math.floor(Math.random() * availableAnswers.length);
+        const randomGuess = availableAnswers[randomIndex].text;
+        
+        console.log('Random AI guess:', randomGuess);
+        setAiGuess(`AI: ${randomGuess}`);
+        
+        // Random AI is always correct (it picks from available answers)
+        const answerIndex = question.answers.findIndex(a => a.text === randomGuess);
+        const newRevealed = [...revealedAnswers, answerIndex];
+        setRevealedAnswers(newRevealed);
+        setAiScore(prev => prev + question.answers[answerIndex].points);
+        setTurn('ai');
+        
+        setTimeout(() => {
+          handleAITurn();
+        }, 1000);
+      } else {
+        setAiGuess('AI has no moves left');
         setTurn('player');
       }
     } finally {
