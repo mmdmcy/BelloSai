@@ -408,17 +408,13 @@ function App() {
           setCurrentConversationId(currentConvoId);
           console.log('✅ New conversation created:', currentConvoId);
           
-          // Reload conversations to update sidebar
-          try {
-            await loadConversations();
-            console.log('✅ Conversations list updated');
-          } catch (loadError) {
-            console.error('⚠️ Failed to reload conversations:', loadError);
-            // Don't throw, this is not critical
-          }
+          // Add the new conversation to the conversations list immediately
+          setConversations(prev => [newConversation, ...prev]);
+          console.log('✅ New conversation added to list');
         } catch (error) {
           console.error('❌ Failed to create conversation:', error);
-          // Continue without conversation
+          // Continue without conversation - AI will still work, just won't be saved
+          console.log('⚠️ Continuing without conversation - messages will not be saved');
         }
       }
 
@@ -523,23 +519,35 @@ function App() {
             
             // Generate and update conversation title if this is a new conversation
             if (messages.length <= 2) { // Only for new conversations (user + AI message)
-              try {
-                console.log('📝 Generating conversation title...');
-                const conversationMessages = [
-                  { role: 'user', content: content.trim() },
-                  { role: 'assistant', content: fullResponse }
-                ];
-                const newTitle = await chatFeaturesService.generateConversationTitle(conversationMessages);
-                await chatFeaturesService.updateConversationTitle(currentConvoId, newTitle);
-                setConversationTitle(newTitle);
-                console.log('✅ Conversation title updated:', newTitle);
-                
-                // Reload conversations to show updated title in sidebar
-                await loadConversations();
-              } catch (titleError) {
-                console.error('⚠️ Failed to generate/update conversation title:', titleError);
-                // Don't throw, this is not critical
-              }
+              // Do this in the background to not block the UI
+              const updateTitle = async () => {
+                try {
+                  console.log('📝 Generating conversation title...');
+                  const conversationMessages = [
+                    { role: 'user', content: content.trim() },
+                    { role: 'assistant', content: fullResponse }
+                  ];
+                  const newTitle = await chatFeaturesService.generateConversationTitle(conversationMessages);
+                  
+                  // Update database in background
+                  if (currentConvoId) {
+                    chatFeaturesService.updateConversationTitle(currentConvoId, newTitle)
+                      .catch(error => console.error('⚠️ Failed to update title in database:', error));
+                  }
+                  
+                  // Update local state immediately
+                  setConversationTitle(newTitle);
+                  setConversations(prev => prev.map(conv => 
+                    conv.id === currentConvoId ? { ...conv, title: newTitle } : conv
+                  ));
+                  console.log('✅ Conversation title updated:', newTitle);
+                } catch (titleError) {
+                  console.error('⚠️ Failed to generate conversation title:', titleError);
+                }
+              };
+              
+              // Don't await this - let it run in background
+              updateTitle();
             }
           } catch (error) {
             console.error('❌ Failed to save final AI message:', error);
