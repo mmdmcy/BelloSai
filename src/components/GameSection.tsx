@@ -11,12 +11,19 @@
  * - Theme-aware styling
  * - Navigation back to main chat
  * - Attractive hover effects and animations
- * - Sample game implementations with AI vs Player mechanics
+ * - AI-powered Family Feud with DeepSeek-V3 and DeepSeek-R1
  */
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Trophy, Brain, Users, Zap, Sun, Moon, Play, Clock, Target, CheckCircle, XCircle, Star } from 'lucide-react';
+import { ArrowLeft, Trophy, Brain, Users, Zap, Sun, Moon, Play, Clock, Target, CheckCircle, XCircle, Star, Loader2 } from 'lucide-react';
 import { CustomizationSettings } from '../App';
+import { 
+  generateFamilyFeudQuestion, 
+  getAIGuess, 
+  checkPlayerGuess,
+  FamilyFeudQuestion,
+  AIGuessResult 
+} from '../lib/family-feud-ai';
 
 interface GameSectionProps {
   isDark: boolean;
@@ -24,30 +31,6 @@ interface GameSectionProps {
   onBackToChat: () => void;
   onToggleTheme: () => void;
 }
-
-// Sample gameshow questions (Family Feud style)
-const gameshowQuestions = [
-  {
-    question: "Name something people do when they can't sleep",
-    answers: [
-      { text: "Read a book", points: 32 },
-      { text: "Watch TV", points: 28 },
-      { text: "Count sheep", points: 18 },
-      { text: "Listen to music", points: 12 },
-      { text: "Get a snack", points: 10 }
-    ]
-  },
-  {
-    question: "Name a popular pizza topping",
-    answers: [
-      { text: "Pepperoni", points: 45 },
-      { text: "Cheese", points: 25 },
-      { text: "Mushrooms", points: 15 },
-      { text: "Sausage", points: 10 },
-      { text: "Peppers", points: 5 }
-    ]
-  }
-];
 
 // Sample quiz questions
 const quizQuestions = [
@@ -100,10 +83,14 @@ export default function GameSection({
     aiScore: 0,
     revealedAnswers: [] as number[],
     strikes: 0,
-    gamePhase: 'playing' as 'playing' | 'finished',
+    gamePhase: 'playing' as 'playing' | 'finished' | 'loading',
     playerGuess: '',
     lastGuessResult: null as 'correct' | 'incorrect' | null,
-    round: 1
+    round: 1,
+    question: null as FamilyFeudQuestion | null,
+    aiThinking: false,
+    aiGuess: '',
+    aiGuessResult: null as AIGuessResult | null
   });
 
   // Quiz state
@@ -134,22 +121,56 @@ export default function GameSection({
 
   /**
    * Handle gameshow selection
-   * Shows a sample gameshow interface
+   * Generates a new AI-powered Family Feud question
    */
-  const handleGameshowClick = () => {
+  const handleGameshowClick = async () => {
     setSelectedGame('gameshow');
-    // Reset gameshow state
-    setGameshowState({
+    
+    // Set loading state
+    setGameshowState(prev => ({
+      ...prev,
+      gamePhase: 'loading',
       currentQuestion: 0,
       playerScore: 0,
       aiScore: 0,
       revealedAnswers: [],
       strikes: 0,
-      gamePhase: 'playing',
       playerGuess: '',
       lastGuessResult: null,
-      round: 1
-    });
+      round: 1,
+      question: null,
+      aiThinking: false,
+      aiGuess: '',
+      aiGuessResult: null
+    }));
+
+    try {
+      // Generate new question using AI
+      const question = await generateFamilyFeudQuestion();
+      
+      setGameshowState(prev => ({
+        ...prev,
+        question,
+        gamePhase: 'playing'
+      }));
+    } catch (error) {
+      console.error('Failed to generate question:', error);
+      // Use fallback question
+      setGameshowState(prev => ({
+        ...prev,
+        question: {
+          question: "Name something people do when they can't sleep",
+          answers: [
+            { text: "Read a book", points: 32, keywords: ["read", "book", "reading"] },
+            { text: "Watch TV", points: 28, keywords: ["watch", "tv", "television"] },
+            { text: "Count sheep", points: 18, keywords: ["count", "sheep", "counting"] },
+            { text: "Listen to music", points: 12, keywords: ["listen", "music", "audio"] },
+            { text: "Get a snack", points: 10, keywords: ["snack", "eat", "food"] }
+          ]
+        },
+        gamePhase: 'playing'
+      }));
+    }
   };
 
   /**
@@ -182,30 +203,31 @@ export default function GameSection({
   /**
    * Handle gameshow guess submission
    */
-  const handleGameshowGuess = () => {
-    if (!gameshowState.playerGuess.trim()) return;
+  const handleGameshowGuess = async () => {
+    if (!gameshowState.playerGuess.trim() || !gameshowState.question) return;
 
-    const currentQ = gameshowQuestions[gameshowState.currentQuestion];
-    const guess = gameshowState.playerGuess.toLowerCase().trim();
+    const guess = gameshowState.playerGuess.trim();
     
-    // Check if guess matches any answer
-    const matchedAnswer = currentQ.answers.findIndex(answer => 
-      answer.text.toLowerCase().includes(guess) || guess.includes(answer.text.toLowerCase())
+    // Check if guess matches any answer using AI-powered matching
+    const result = checkPlayerGuess(
+      guess,
+      gameshowState.question.answers,
+      gameshowState.revealedAnswers.map(index => gameshowState.question!.answers[index])
     );
 
-    if (matchedAnswer !== -1 && !gameshowState.revealedAnswers.includes(matchedAnswer)) {
+    if (result.isCorrect && result.matchedAnswer) {
       // Correct guess!
       setGameshowState(prev => ({
         ...prev,
-        revealedAnswers: [...prev.revealedAnswers, matchedAnswer],
-        playerScore: prev.playerScore + currentQ.answers[matchedAnswer].points,
+        revealedAnswers: [...prev.revealedAnswers, result.matchedAnswer!.index],
+        playerScore: prev.playerScore + result.matchedAnswer!.points,
         lastGuessResult: 'correct',
         playerGuess: ''
       }));
 
       // AI makes a guess after player
       setTimeout(() => {
-        simulateAIGameshowGuess();
+        handleAIGuess();
       }, 1500);
     } else {
       // Incorrect guess
@@ -224,43 +246,58 @@ export default function GameSection({
       } else {
         // AI gets a turn
         setTimeout(() => {
-          simulateAIGameshowGuess();
+          handleAIGuess();
         }, 1500);
       }
     }
   };
 
   /**
-   * Simulate AI making a gameshow guess
+   * Handle AI making a guess using DeepSeek-R1
    */
-  const simulateAIGameshowGuess = () => {
-    const currentQ = gameshowQuestions[gameshowState.currentQuestion];
-    const unrevealedAnswers = currentQ.answers.filter((_, index) => 
-      !gameshowState.revealedAnswers.includes(index)
-    );
+  const handleAIGuess = async () => {
+    if (!gameshowState.question) return;
 
-    if (unrevealedAnswers.length > 0) {
-      // AI has 70% chance to get it right
-      const aiSuccess = Math.random() < 0.7;
-      
-      if (aiSuccess) {
-        const randomAnswer = Math.floor(Math.random() * unrevealedAnswers.length);
-        const answerIndex = currentQ.answers.findIndex(answer => answer === unrevealedAnswers[randomAnswer]);
-        
-        setGameshowState(prev => ({
-          ...prev,
-          revealedAnswers: [...prev.revealedAnswers, answerIndex],
-          aiScore: prev.aiScore + currentQ.answers[answerIndex].points
-        }));
-      }
+    setGameshowState(prev => ({ ...prev, aiThinking: true, aiGuess: '', aiGuessResult: null }));
+
+    try {
+      const revealedAnswers = gameshowState.revealedAnswers.map(index => gameshowState.question!.answers[index]);
+      const result = await getAIGuess(
+        gameshowState.question.question,
+        revealedAnswers,
+        gameshowState.question.answers
+      );
+
+      // Show AI thinking with typing effect
+      setGameshowState(prev => ({ 
+        ...prev, 
+        aiGuess: result.guess,
+        aiGuessResult: result,
+        aiThinking: false 
+      }));
+
+      // Process AI result after a delay
+      setTimeout(() => {
+        if (result.isCorrect && result.matchedAnswer) {
+          setGameshowState(prev => ({
+            ...prev,
+            revealedAnswers: [...prev.revealedAnswers, result.matchedAnswer!.index],
+            aiScore: prev.aiScore + result.matchedAnswer!.points
+          }));
+        }
+
+        // Check if all answers revealed or move to next question
+        setTimeout(() => {
+          if (gameshowState.revealedAnswers.length >= 4) {
+            setGameshowState(prev => ({ ...prev, gamePhase: 'finished' }));
+          }
+        }, 2000);
+      }, 2000);
+
+    } catch (error) {
+      console.error('AI guess failed:', error);
+      setGameshowState(prev => ({ ...prev, aiThinking: false }));
     }
-
-    // Check if all answers revealed or move to next question
-    setTimeout(() => {
-      if (gameshowState.revealedAnswers.length >= 4 || gameshowState.currentQuestion >= gameshowQuestions.length - 1) {
-        setGameshowState(prev => ({ ...prev, gamePhase: 'finished' }));
-      }
-    }, 2000);
   };
 
   /**
@@ -299,9 +336,9 @@ export default function GameSection({
     }, 3000);
   };
 
-  // Sample Gameshow Interface (Family Feud Style)
+  // AI-Powered Family Feud Interface
   if (selectedGame === 'gameshow') {
-    const currentQ = gameshowQuestions[gameshowState.currentQuestion];
+    const currentQ = gameshowState.question;
     
     return (
       <div 
@@ -340,7 +377,19 @@ export default function GameSection({
 
         {/* Game Content */}
         <div className="flex-1 p-8">
-          {gameshowState.gamePhase === 'playing' ? (
+          {gameshowState.gamePhase === 'loading' ? (
+            <div className="flex items-center justify-center h-full">
+              <div className={`p-8 rounded-2xl text-center ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-xl`}>
+                <Loader2 className="w-12 h-12 mx-auto mb-4 animate-spin text-purple-500" />
+                <h2 className={`text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Generating Question...
+                </h2>
+                <p className={`text-lg ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                  DeepSeek-V3 is creating a fun Family Feud question for you!
+                </p>
+              </div>
+            </div>
+          ) : gameshowState.gamePhase === 'playing' && currentQ ? (
             <div className="max-w-6xl mx-auto">
               {/* Score Board */}
               <div className="grid grid-cols-3 gap-6 mb-8">
@@ -365,7 +414,7 @@ export default function GameSection({
                 </div>
                 
                 <div className={`p-6 rounded-xl text-center ${isDark ? 'bg-red-900' : 'bg-red-100'}`}>
-                  <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-red-200' : 'text-red-800'}`}>AI</h3>
+                  <h3 className={`text-lg font-semibold mb-2 ${isDark ? 'text-red-200' : 'text-red-800'}`}>AI (DeepSeek-R1)</h3>
                   <div className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-red-900'}`}>{gameshowState.aiScore}</div>
                 </div>
               </div>
@@ -415,6 +464,41 @@ export default function GameSection({
                 </div>
               </div>
 
+              {/* AI Thinking Indicator */}
+              {gameshowState.aiThinking && (
+                <div className={`p-4 rounded-xl mb-6 text-center ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
+                  <div className="flex items-center justify-center gap-3">
+                    <Loader2 className="w-5 h-5 animate-spin text-purple-500" />
+                    <span className={`text-lg ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                      DeepSeek-R1 is thinking...
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* AI Guess Display */}
+              {gameshowState.aiGuess && gameshowState.aiGuessResult && (
+                <div className={`p-4 rounded-xl mb-6 text-center ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
+                  <div className="flex items-center justify-center gap-3">
+                    <span className={`text-lg font-medium ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                      AI guessed:
+                    </span>
+                    <span className={`text-xl font-bold ${
+                      gameshowState.aiGuessResult.isCorrect 
+                        ? isDark ? 'text-green-400' : 'text-green-600'
+                        : isDark ? 'text-red-400' : 'text-red-600'
+                    }`}>
+                      "{gameshowState.aiGuess}"
+                    </span>
+                    {gameshowState.aiGuessResult.isCorrect ? (
+                      <CheckCircle className="w-6 h-6 text-green-500" />
+                    ) : (
+                      <XCircle className="w-6 h-6 text-red-500" />
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Input Section */}
               <div className={`p-6 rounded-xl ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-lg`}>
                 <div className="max-w-2xl mx-auto">
@@ -445,10 +529,11 @@ export default function GameSection({
                           : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
                       } focus:outline-none focus:ring-2`}
                       style={{ '--tw-ring-color': customization.primaryColor } as React.CSSProperties}
+                      disabled={gameshowState.aiThinking}
                     />
                     <button
                       onClick={handleGameshowGuess}
-                      disabled={!gameshowState.playerGuess.trim()}
+                      disabled={!gameshowState.playerGuess.trim() || gameshowState.aiThinking}
                       className="px-6 py-3 rounded-lg font-semibold text-white transition-colors hover:opacity-90 disabled:opacity-50"
                       style={{ 
                         background: customization.gradientEnabled 
@@ -604,71 +689,53 @@ export default function GameSection({
                     {currentQ.question}
                   </h2>
                 </div>
-
+                
                 {/* Answer Options */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto">
+                <div className="grid grid-cols-1 gap-3">
                   {currentQ.options.map((option, index) => (
                     <button
                       key={index}
                       onClick={() => !quizState.showResult && handleQuizAnswer(index)}
                       disabled={quizState.showResult}
-                      className={`p-4 rounded-lg border-2 text-left transition-all ${
-                        quizState.showResult
-                          ? index === currentQ.correct
-                            ? 'bg-green-100 border-green-400 text-green-800'
-                            : index === quizState.selectedAnswer && index !== currentQ.correct
-                              ? 'bg-red-100 border-red-400 text-red-800'
-                              : isDark ? 'bg-gray-700 border-gray-600 text-gray-300' : 'bg-gray-100 border-gray-300 text-gray-600'
-                          : quizState.selectedAnswer === index
-                            ? isDark ? 'bg-purple-800 border-purple-600 text-white' : 'bg-purple-100 border-purple-400 text-purple-800'
-                            : isDark ? 'bg-gray-700 border-gray-600 text-white hover:bg-gray-600' : 'bg-white border-gray-300 text-gray-900 hover:border-purple-300'
-                      }`}
+                      className={`p-4 rounded-lg text-left transition-all ${
+                        quizState.selectedAnswer === index
+                          ? isDark ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-800'
+                          : isDark 
+                            ? 'bg-gray-700 text-white hover:bg-gray-600' 
+                            : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                      } ${quizState.showResult ? 'cursor-default' : 'cursor-pointer'}`}
                     >
                       <div className="flex items-center gap-3">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
-                          quizState.showResult && index === currentQ.correct
-                            ? 'bg-green-500 text-white'
-                            : quizState.showResult && index === quizState.selectedAnswer && index !== currentQ.correct
-                              ? 'bg-red-500 text-white'
-                              : quizState.selectedAnswer === index
-                                ? 'bg-purple-500 text-white'
-                                : isDark ? 'bg-gray-600 text-gray-300' : 'bg-gray-200 text-gray-700'
+                          quizState.selectedAnswer === index
+                            ? 'bg-white text-purple-600'
+                            : isDark ? 'bg-gray-600 text-gray-300' : 'bg-gray-300 text-gray-600'
                         }`}>
                           {String.fromCharCode(65 + index)}
                         </div>
                         <span className="text-lg">{option}</span>
-                        {quizState.showResult && index === currentQ.correct && (
-                          <CheckCircle className="w-6 h-6 text-green-500 ml-auto" />
-                        )}
-                        {quizState.showResult && index === quizState.selectedAnswer && index !== currentQ.correct && (
-                          <XCircle className="w-6 h-6 text-red-500 ml-auto" />
-                        )}
                       </div>
+                      
+                      {/* Show result indicators */}
+                      {quizState.showResult && (
+                        <div className="flex items-center gap-2 mt-2">
+                          {index === currentQ.correct ? (
+                            <CheckCircle className="w-5 h-5 text-green-500" />
+                          ) : quizState.selectedAnswer === index ? (
+                            <XCircle className="w-5 h-5 text-red-500" />
+                          ) : null}
+                        </div>
+                      )}
                     </button>
                   ))}
                 </div>
-
-                {/* Result Display */}
-                {quizState.showResult && (
-                  <div className="mt-6 text-center">
-                    <div className={`text-lg font-semibold mb-2 ${
-                      quizState.selectedAnswer === currentQ.correct ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {quizState.selectedAnswer === currentQ.correct ? '✅ Correct!' : 
-                       quizState.selectedAnswer === null ? '⏰ Time\'s up!' : '❌ Incorrect!'}
-                    </div>
-                    <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                      AI also answered {quizState.aiAnswers[quizState.aiAnswers.length - 1] ? 'correctly' : 'incorrectly'}
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
           ) : (
-            // Quiz Complete Screen
+            // Quiz Game Over Screen
             <div className="flex items-center justify-center h-full">
               <div className={`p-8 rounded-2xl text-center max-w-2xl ${isDark ? 'bg-gray-800' : 'bg-white'} shadow-xl`}>
-                <Brain className="w-16 h-16 mx-auto mb-6" style={{ color: customization.secondaryColor }} />
+                <Trophy className="w-16 h-16 mx-auto mb-6 text-yellow-500" />
                 <h2 className={`text-3xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   Quiz Complete!
                 </h2>
@@ -677,16 +744,10 @@ export default function GameSection({
                   <div>
                     <div className={`text-2xl font-bold ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>You</div>
                     <div className={`text-4xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{quizState.playerScore}</div>
-                    <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                      {quizState.playerAnswers.filter(Boolean).length}/{quizQuestions.length} correct
-                    </div>
                   </div>
                   <div>
                     <div className={`text-2xl font-bold ${isDark ? 'text-red-400' : 'text-red-600'}`}>AI</div>
                     <div className={`text-4xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{quizState.aiScore}</div>
-                    <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                      {quizState.aiAnswers.filter(Boolean).length}/{quizQuestions.length} correct
-                    </div>
                   </div>
                 </div>
                 
@@ -695,28 +756,14 @@ export default function GameSection({
                    quizState.playerScore < quizState.aiScore ? '🤖 AI Wins!' : '🤝 It\'s a Tie!'}
                 </div>
                 
-                {/* Performance Stars */}
-                <div className="flex justify-center gap-1 mb-6">
-                  {[1, 2, 3, 4, 5].map(star => (
-                    <Star 
-                      key={star}
-                      className={`w-8 h-8 ${
-                        star <= Math.ceil((quizState.playerScore / (quizQuestions.length * 10)) * 5)
-                          ? 'text-yellow-400 fill-current'
-                          : isDark ? 'text-gray-600' : 'text-gray-300'
-                      }`}
-                    />
-                  ))}
-                </div>
-                
                 <div className="flex gap-4 justify-center">
                   <button
                     onClick={handleQuizClick}
                     className="px-6 py-3 rounded-lg font-semibold text-white transition-colors hover:opacity-90"
                     style={{ 
                       background: customization.gradientEnabled 
-                        ? `linear-gradient(135deg, ${customization.secondaryColor}, ${customization.primaryColor})`
-                        : customization.secondaryColor
+                        ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                        : customization.primaryColor
                     }}
                   >
                     Play Again
@@ -751,284 +798,109 @@ export default function GameSection({
           : undefined
       }}
     >
-      {/* Header with Navigation */}
+      {/* Header */}
       <div 
         className="h-16 border-b flex items-center justify-between px-6 text-white"
         style={{ 
           background: customization.gradientEnabled 
             ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-            : customization.primaryColor,
-          borderBottomColor: isDark ? '#374151' : customization.primaryColor + '40'
+            : customization.primaryColor
         }}
       >
         <div className="flex items-center gap-4">
           <button
             onClick={onBackToChat}
             className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
-            style={{ fontFamily: customization.fontFamily }}
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Chat
           </button>
-          <h1 className="text-xl font-semibold" style={{ fontFamily: customization.fontFamily }}>
-            Gaming Hub
-          </h1>
+          <h1 className="text-xl font-semibold">Game Center</h1>
         </div>
         
-        <button
-          onClick={onToggleTheme}
-          className="p-2 rounded-lg transition-colors bg-white/10 hover:bg-white/20 text-white"
-        >
+        <button onClick={onToggleTheme} className="p-2 rounded-lg transition-colors bg-white/10 hover:bg-white/20 text-white">
           {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
         </button>
       </div>
 
-      {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center p-8">
-        <div className="max-w-6xl w-full">
-          {/* Welcome Section */}
+      {/* Game Selection */}
+      <div className="flex-1 p-8">
+        <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h2 
-              className={`text-4xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}
-              style={{ 
-                fontFamily: customization.fontFamily,
-                color: isDark 
-                  ? (customization.primaryColor !== '#7c3aed' ? customization.primaryColor : undefined)
-                  : customization.primaryColor
-              }}
-            >
-              Choose Your Game Mode
+            <h2 className={`text-4xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Choose Your Game
             </h2>
-            <p 
-              className={`text-lg ${isDark ? 'text-gray-300' : 'text-gray-600'}`}
-              style={{ fontFamily: customization.fontFamily }}
-            >
-              Challenge yourself with AI-powered games and quizzes
+            <p className={`text-xl ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+              Challenge yourself against AI in these exciting games!
             </p>
           </div>
 
-          {/* Game Mode Cards */}
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            
-            {/* Gameshow Panel */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Family Feud Card */}
             <div 
-              className={`group cursor-pointer rounded-2xl p-8 border-2 transition-all duration-300 hover:scale-105 hover:shadow-xl ${
-                isDark 
-                  ? 'bg-gray-800 border-gray-700 hover:border-gray-600' 
-                  : 'bg-white border-gray-200 hover:border-purple-300'
+              className={`p-8 rounded-2xl shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer ${
+                isDark ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:bg-gray-50'
               }`}
               onClick={handleGameshowClick}
-              style={{
-                borderColor: isDark ? undefined : customization.primaryColor + '20'
-              }}
-              onMouseEnter={(e) => {
-                if (!isDark) {
-                  e.currentTarget.style.borderColor = customization.primaryColor + '60';
-                  e.currentTarget.style.background = customization.gradientEnabled
-                    ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}05)`
-                    : customization.primaryColor + '10';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isDark) {
-                  e.currentTarget.style.borderColor = customization.primaryColor + '20';
-                  e.currentTarget.style.background = 'white';
-                }
-              }}
             >
-              {/* Gameshow Icon */}
-              <div 
-                className="w-16 h-16 rounded-full flex items-center justify-center mb-6 text-white"
-                style={{ 
-                  background: customization.gradientEnabled 
-                    ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                    : customization.primaryColor
-                }}
-              >
-                <Trophy className="w-8 h-8" />
-              </div>
-
-              {/* Gameshow Content */}
-              <h3 
-                className={`text-2xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}
-                style={{ 
-                  fontFamily: customization.fontFamily,
-                  color: isDark ? undefined : customization.primaryColor
-                }}
-              >
-                Family Feud Style
-              </h3>
-              
-              <p 
-                className={`text-base mb-6 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}
-                style={{ fontFamily: customization.fontFamily }}
-              >
-                Compete against AI in a Family Feud style game! Guess the most popular survey answers 
-                and try to beat the AI's score. Can you think like the crowd?
-              </p>
-
-              {/* Gameshow Features */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <Users className={`w-5 h-5 ${isDark ? 'text-gray-400' : ''}`} 
-                        style={{ color: isDark ? undefined : customization.primaryColor }} />
-                  <span 
-                    className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
-                    style={{ fontFamily: customization.fontFamily }}
-                  >
-                    You vs AI Competition
-                  </span>
+              <div className="text-center">
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 ${
+                  isDark ? 'bg-purple-600' : 'bg-purple-100'
+                }`}>
+                  <Users className={`w-8 h-8 ${isDark ? 'text-white' : 'text-purple-600'}`} />
                 </div>
-                <div className="flex items-center gap-3">
-                  <Zap className={`w-5 h-5 ${isDark ? 'text-gray-400' : ''}`} 
-                       style={{ color: isDark ? undefined : customization.primaryColor }} />
-                  <span 
-                    className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
-                    style={{ fontFamily: customization.fontFamily }}
-                  >
-                    Real Survey Questions
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Trophy className={`w-5 h-5 ${isDark ? 'text-gray-400' : ''}`} 
-                         style={{ color: isDark ? undefined : customization.primaryColor }} />
-                  <span 
-                    className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
-                    style={{ fontFamily: customization.fontFamily }}
-                  >
-                    Points & Scoring System
-                  </span>
+                <h3 className={`text-2xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  AI Family Feud
+                </h3>
+                <p className={`text-lg mb-6 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                  Play the classic survey game against DeepSeek-R1! 
+                  DeepSeek-V3 generates unique questions and answers.
+                </p>
+                <div className="flex items-center justify-center gap-4 text-sm">
+                  <div className={`flex items-center gap-2 ${isDark ? 'text-purple-300' : 'text-purple-600'}`}>
+                    <Brain className="w-4 h-4" />
+                    <span>AI Generated</span>
+                  </div>
+                  <div className={`flex items-center gap-2 ${isDark ? 'text-blue-300' : 'text-blue-600'}`}>
+                    <Zap className="w-4 h-4" />
+                    <span>Real-time</span>
+                  </div>
                 </div>
               </div>
-
-              {/* Play Button */}
-              <button 
-                className="w-full mt-6 py-3 px-6 rounded-lg font-semibold text-white transition-colors hover:opacity-90"
-                style={{ 
-                  background: customization.gradientEnabled 
-                    ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                    : customization.primaryColor,
-                  fontFamily: customization.fontFamily
-                }}
-              >
-                Start Gameshow
-              </button>
             </div>
 
-            {/* Quiz Panel */}
+            {/* Quiz Card */}
             <div 
-              className={`group cursor-pointer rounded-2xl p-8 border-2 transition-all duration-300 hover:scale-105 hover:shadow-xl ${
-                isDark 
-                  ? 'bg-gray-800 border-gray-700 hover:border-gray-600' 
-                  : 'bg-white border-gray-200 hover:border-purple-300'
+              className={`p-8 rounded-2xl shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer ${
+                isDark ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:bg-gray-50'
               }`}
               onClick={handleQuizClick}
-              style={{
-                borderColor: isDark ? undefined : customization.secondaryColor + '20'
-              }}
-              onMouseEnter={(e) => {
-                if (!isDark) {
-                  e.currentTarget.style.borderColor = customization.secondaryColor + '60';
-                  e.currentTarget.style.background = customization.gradientEnabled
-                    ? `linear-gradient(135deg, ${customization.secondaryColor}10, ${customization.primaryColor}05)`
-                    : customization.secondaryColor + '10';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isDark) {
-                  e.currentTarget.style.borderColor = customization.secondaryColor + '20';
-                  e.currentTarget.style.background = 'white';
-                }
-              }}
             >
-              {/* Quiz Icon */}
-              <div 
-                className="w-16 h-16 rounded-full flex items-center justify-center mb-6 text-white"
-                style={{ 
-                  background: customization.gradientEnabled 
-                    ? `linear-gradient(135deg, ${customization.secondaryColor}, ${customization.primaryColor})`
-                    : customization.secondaryColor
-                }}
-              >
-                <Brain className="w-8 h-8" />
-              </div>
-
-              {/* Quiz Content */}
-              <h3 
-                className={`text-2xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}
-                style={{ 
-                  fontFamily: customization.fontFamily,
-                  color: isDark ? undefined : customization.secondaryColor
-                }}
-              >
-                Knowledge Quiz
-              </h3>
-              
-              <p 
-                className={`text-base mb-6 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}
-                style={{ fontFamily: customization.fontFamily }}
-              >
-                Test your knowledge against AI in rapid-fire questions! Geography, science, history, and more. 
-                Race against time and see who's smarter!
-              </p>
-
-              {/* Quiz Features */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <Brain className={`w-5 h-5 ${isDark ? 'text-gray-400' : ''}`} 
-                        style={{ color: isDark ? undefined : customization.secondaryColor }} />
-                  <span 
-                    className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
-                    style={{ fontFamily: customization.fontFamily }}
-                  >
-                    Multiple Choice Questions
-                  </span>
+              <div className="text-center">
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6 ${
+                  isDark ? 'bg-green-600' : 'bg-green-100'
+                }`}>
+                  <Target className={`w-8 h-8 ${isDark ? 'text-white' : 'text-green-600'}`} />
                 </div>
-                <div className="flex items-center gap-3">
-                  <Clock className={`w-5 h-5 ${isDark ? 'text-gray-400' : ''}`} 
-                       style={{ color: isDark ? undefined : customization.secondaryColor }} />
-                  <span 
-                    className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
-                    style={{ fontFamily: customization.fontFamily }}
-                  >
-                    15 Second Time Limit
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Target className={`w-5 h-5 ${isDark ? 'text-gray-400' : ''}`} 
-                         style={{ color: isDark ? undefined : customization.secondaryColor }} />
-                  <span 
-                    className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
-                    style={{ fontFamily: customization.fontFamily }}
-                  >
-                    Score & Performance Tracking
-                  </span>
+                <h3 className={`text-2xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Quiz Challenge
+                </h3>
+                <p className={`text-lg mb-6 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                  Test your knowledge across various topics! 
+                  Race against time and compete with AI.
+                </p>
+                <div className="flex items-center justify-center gap-4 text-sm">
+                  <div className={`flex items-center gap-2 ${isDark ? 'text-green-300' : 'text-green-600'}`}>
+                    <Clock className="w-4 h-4" />
+                    <span>Timed</span>
+                  </div>
+                  <div className={`flex items-center gap-2 ${isDark ? 'text-blue-300' : 'text-blue-600'}`}>
+                    <Star className="w-4 h-4" />
+                    <span>Multiple Topics</span>
+                  </div>
                 </div>
               </div>
-
-              {/* Play Button */}
-              <button 
-                className="w-full mt-6 py-3 px-6 rounded-lg font-semibold text-white transition-colors hover:opacity-90"
-                style={{ 
-                  background: customization.gradientEnabled 
-                    ? `linear-gradient(135deg, ${customization.secondaryColor}, ${customization.primaryColor})`
-                    : customization.secondaryColor,
-                  fontFamily: customization.fontFamily
-                }}
-              >
-                Start Quiz
-              </button>
             </div>
-          </div>
-
-          {/* Additional Info */}
-          <div className="text-center mt-12">
-            <p 
-              className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
-              style={{ fontFamily: customization.fontFamily }}
-            >
-              More game modes coming soon! Stay tuned for exciting updates.
-            </p>
           </div>
         </div>
       </div>
