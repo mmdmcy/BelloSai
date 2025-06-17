@@ -631,11 +631,7 @@ class ChatFeaturesService {
    * Save a message to a conversation
    */
   async saveMessage(conversationId: string, role: 'user' | 'assistant', content: string) {
-    console.log('💾 ChatFeaturesService: Saving message...');
-    console.log('📝 Conversation ID:', conversationId);
-    console.log('📝 Role:', role);
-    console.log('📝 Content length:', content.length);
-    console.log('📝 Content preview:', content.substring(0, 100) + '...');
+    console.log('💾 Saving message:', role, 'to conversation:', conversationId);
     
     const messageData = {
       conversation_id: conversationId,
@@ -643,10 +639,6 @@ class ChatFeaturesService {
       type: role === 'assistant' ? 'ai' : role, // Keep type for backward compatibility
       content: content
     };
-    
-    console.log('📝 Message data to insert:', messageData);
-    
-    console.log('🔄 Starting database operations...');
     
     // Create promises for both operations
     const insertPromise = supabase
@@ -676,21 +668,16 @@ class ChatFeaturesService {
       const { error: updateError } = updateResult;
 
       if (error) {
-        console.error('❌ Error saving message:', error);
-        console.error('❌ Error code:', error.code);
-        console.error('❌ Error message:', error.message);
-        console.error('❌ Error details:', error.details);
+        console.error('❌ Error saving message:', error.code, error.message);
         throw error;
       }
 
       if (updateError) {
-        console.error('⚠️ Failed to update conversation timestamp:', updateError);
+        console.warn('⚠️ Failed to update conversation timestamp:', updateError.message);
         // Don't throw here, message was saved successfully
-      } else {
-        console.log('✅ Conversation timestamp updated');
       }
       
-      console.log('✅ Message saved successfully:', data.id);
+      console.log('✅ Message saved successfully');
       return data;
 
     } catch (error) {

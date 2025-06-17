@@ -142,7 +142,7 @@ export async function sendChatMessage(
       throw new Error('No response body');
     }
 
-    console.log('🌊 Starting to read streaming response...');
+
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let fullResponse = '';
@@ -183,7 +183,7 @@ export async function sendChatMessage(
           try {
             const jsonStr = line.slice(6); // Remove "data: " prefix
             const data: ChatResponse = JSON.parse(jsonStr);
-            console.log('📝 Parsed data:', data);
+
             
             if (data.type === 'chunk' && data.content) {
               hasStartedStreaming = true;
@@ -215,7 +215,7 @@ export async function sendChatMessage(
         throw new Error('No streaming data received from AI service');
       }
 
-      console.log('📝 Final fullResponse length:', fullResponse?.length || 0);
+
       
       if (!fullResponse || fullResponse.trim() === '') {
         throw new Error('Empty response received from AI service');
