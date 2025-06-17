@@ -41,6 +41,9 @@ export async function sendChatMessage(
   console.log('🎯 sendChatMessage function called');
   console.log('📥 Parameters:', { messages, model, conversationId, onChunk: !!onChunk });
   
+  let abortController: AbortController | null = null;
+  let timeoutId: NodeJS.Timeout | null = null;
+
   try {
     console.log('🚀 Starting chat message request:', { messages, model, conversationId });
     
@@ -91,17 +94,16 @@ export async function sendChatMessage(
 
     // Call the Edge Function
     console.log('🌍 VITE_SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL);
-    console.log('🔑 VITE_SUPABASE_ANON_KEY length:', import.meta.env.VITE_SUPABASE_ANON_KEY?.length);
     const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`;
     console.log('📡 Calling Edge Function:', url);
     
     console.log('📤 Request payload:', { messages, model, conversationId });
     
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
+    abortController = new AbortController();
+    timeoutId = setTimeout(() => {
       console.log('⏰ Request timeout after 90 seconds');
-      controller.abort();
-    }, 90000); // 90 second timeout for DeepSeek API
+      abortController?.abort();
+    }, 90000);
     
     const response = await fetch(url, {
       method: 'POST',
@@ -111,10 +113,13 @@ export async function sendChatMessage(
         model,
         conversationId
       }),
-      signal: controller.signal
+      signal: abortController.signal
     });
-    
-    clearTimeout(timeoutId);
+
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      timeoutId = null;
+    }
 
     console.log('📨 Edge Function response status:', response.status);
 
@@ -141,8 +146,22 @@ export async function sendChatMessage(
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let fullResponse = '';
+    let hasStartedStreaming = false;
+    let streamTimeout: NodeJS.Timeout | null = null;
+
+    const resetStreamTimeout = () => {
+      if (streamTimeout) {
+        clearTimeout(streamTimeout);
+      }
+      streamTimeout = setTimeout(() => {
+        console.error('⏰ Stream timeout - no data received for 30 seconds');
+        reader.cancel();
+      }, 30000);
+    };
 
     try {
+      resetStreamTimeout();
+
       while (true) {
         const { done, value } = await reader.read();
         
@@ -151,8 +170,10 @@ export async function sendChatMessage(
           break;
         }
 
+        // Reset timeout on each chunk
+        resetStreamTimeout();
+
         const chunk = decoder.decode(value, { stream: true });
-        console.log('📦 Received chunk:', chunk);
         const lines = chunk.split('\n');
 
         for (const line of lines) {
@@ -165,10 +186,14 @@ export async function sendChatMessage(
             console.log('📝 Parsed data:', data);
             
             if (data.type === 'chunk' && data.content) {
-              fullResponse += data.content; // Also accumulate in fullResponse
+              hasStartedStreaming = true;
+              fullResponse += data.content;
               onChunk?.(data.content);
             } else if (data.type === 'complete') {
-              fullResponse = data.content;
+              // Use the complete response from server if available
+              if (data.content && data.content.trim() !== '') {
+                fullResponse = data.content;
+              }
               
               // Update local message count if available
               if (data.messageCount !== undefined && data.messageLimit !== undefined) {
@@ -181,21 +206,40 @@ export async function sendChatMessage(
           }
         }
       }
+
+      if (streamTimeout) {
+        clearTimeout(streamTimeout);
+      }
+
+      if (!hasStartedStreaming) {
+        throw new Error('No streaming data received from AI service');
+      }
+
+      console.log('📝 Final fullResponse length:', fullResponse?.length || 0);
+      
+      if (!fullResponse || fullResponse.trim() === '') {
+        throw new Error('Empty response received from AI service');
+      }
+
+      return fullResponse;
+
     } finally {
+      if (streamTimeout) {
+        clearTimeout(streamTimeout);
+      }
       reader.releaseLock();
     }
-
-    console.log('📝 Final fullResponse length:', fullResponse?.length || 0);
-    
-    if (!fullResponse || fullResponse.trim() === '') {
-      throw new Error('No response content received from AI service');
-    }
-
-    return fullResponse;
 
   } catch (error) {
     console.error('Chat service error:', error);
     throw error;
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    if (abortController) {
+      abortController.abort();
+    }
   }
 }
 
