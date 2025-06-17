@@ -124,8 +124,9 @@ serve(async (req) => {
       ]
     };
 
-    // Gemini endpoint
-    const endpoint = `${GEMINI_BASE_URL}/${model}:generateContent?key=${GEMINI_API_KEY}`;
+    // Gemini endpoint: strip 'models/' prefix indien aanwezig
+    const modelId = model.replace(/^models\//, '');
+    const endpoint = `${GEMINI_BASE_URL}/${modelId}:generateContent?key=${GEMINI_API_KEY}`;
 
     // Timeout
     const controller = new AbortController();
