@@ -71,6 +71,72 @@ export interface CustomizationSettings {
   gradientColors: string[];
 }
 
+export interface ModelCapability {
+  key: string;
+  label: string;
+  icon: string; // Lucide icon naam
+}
+
+export interface ModelInfo {
+  name: string;
+  code: string;
+  provider: 'DeepSeek' | 'Gemini';
+  capabilities: string[]; // array van capability keys
+  description?: string;
+}
+
+export const MODEL_CAPABILITIES: Record<string, ModelCapability> = {
+  text: { key: 'text', label: 'Tekst', icon: 'FileText' },
+  image: { key: 'image', label: 'Afbeelding', icon: 'Image' },
+  audio: { key: 'audio', label: 'Audio', icon: 'Mic' },
+  video: { key: 'video', label: 'Video', icon: 'Video' },
+  code: { key: 'code', label: 'Code', icon: 'Code' },
+  function_calling: { key: 'function_calling', label: 'Functie-aanroep', icon: 'FunctionSquare' },
+  caching: { key: 'caching', label: 'Caching', icon: 'Database' },
+  structured_outputs: { key: 'structured_outputs', label: 'Structured Output', icon: 'ListChecks' },
+  search: { key: 'search', label: 'Zoeken', icon: 'Globe' },
+  tuning: { key: 'tuning', label: 'Tuning', icon: 'SlidersHorizontal' },
+  reasoning: { key: 'reasoning', label: 'Redeneren', icon: 'Brain' },
+};
+
+export const AVAILABLE_MODELS: ModelInfo[] = [
+  {
+    name: 'Gemini 2.5 Pro',
+    code: 'gemini-2.5-pro-preview-06-05',
+    provider: 'Gemini',
+    capabilities: ['text', 'audio', 'image', 'video', 'code', 'function_calling', 'caching', 'structured_outputs', 'reasoning'],
+    description: 'State-of-the-art reasoning, grote context, code, STEM, datasets.'
+  },
+  {
+    name: 'Gemini 2.5 Flash',
+    code: 'models/gemini-2.5-flash-preview-05-20',
+    provider: 'Gemini',
+    capabilities: ['text', 'audio', 'image', 'video', 'code', 'function_calling', 'caching', 'structured_outputs', 'search'],
+    description: 'Beste prijs-prestatie, snelle preview, brede multimodale input.'
+  },
+  {
+    name: 'Gemini 2.0 Flash',
+    code: 'models/gemini-2.0-flash',
+    provider: 'Gemini',
+    capabilities: ['text', 'audio', 'image', 'video', 'code', 'function_calling', 'caching', 'structured_outputs', 'search'],
+    description: 'Snelle, grote context, tool use, live API.'
+  },
+  {
+    name: 'DeepSeek V3',
+    code: 'DeepSeek-V3',
+    provider: 'DeepSeek',
+    capabilities: ['text', 'code', 'reasoning'],
+    description: 'DeepSeek chat model, sterke algemene AI.'
+  },
+  {
+    name: 'DeepSeek R1',
+    code: 'DeepSeek-R1',
+    provider: 'DeepSeek',
+    capabilities: ['text', 'code', 'reasoning'],
+    description: 'DeepSeek reasoner, geoptimaliseerd voor redeneren.'
+  },
+];
+
 function App() {
   // Use Supabase auth context
   const { user, loading: authLoading, signOut } = useAuth();
@@ -1168,7 +1234,7 @@ function App() {
                 onSendMessage={sendMessage}
                 selectedModel={selectedModel}
                 onModelChange={setSelectedModel}
-                availableModels={availableModels}
+                availableModels={AVAILABLE_MODELS}
                 customization={customization}
                 isLoggedIn={!!user}
                 onLoginClick={() => setShowLoginModal(true)}
@@ -1180,7 +1246,7 @@ function App() {
                 onSendMessage={sendMessage}
                 selectedModel={selectedModel}
                 onModelChange={setSelectedModel}
-                availableModels={availableModels}
+                availableModels={AVAILABLE_MODELS}
                 customization={customization}
                 isLoggedIn={!!user}
                 onLoginClick={() => setShowLoginModal(true)}
@@ -1205,7 +1271,7 @@ function App() {
                   onSendMessage={sendMessage}
                   selectedModel={selectedModel}
                   onModelChange={setSelectedModel}
-                  availableModels={availableModels}
+                  availableModels={AVAILABLE_MODELS}
                   hideInput={true}
                   customization={customization}
                   isLoggedIn={!!user}
@@ -1217,7 +1283,7 @@ function App() {
                   onSendMessage={sendMessage}
                   selectedModel={selectedModel}
                   onModelChange={setSelectedModel}
-                  availableModels={availableModels}
+                  availableModels={AVAILABLE_MODELS}
                   inputOnly={false}
                   customization={customization}
                   isLoggedIn={!!user}
@@ -1296,8 +1362,8 @@ function App() {
                             style={{ fontFamily: customization.fontFamily }}
                             onTouchStart={(e) => e.stopPropagation()}
                           >
-                            {availableModels.map(model => (
-                              <option key={model} value={model}>{model}</option>
+                            {AVAILABLE_MODELS.map(model => (
+                              <option key={model.code} value={model.code}>{model.name}</option>
                             ))}
                           </select>
                           {/* Search Button */}
@@ -1556,7 +1622,7 @@ function App() {
                       onSendMessage={sendMessage}
                       selectedModel={selectedModel}
                       onModelChange={setSelectedModel}
-                      availableModels={availableModels}
+                      availableModels={AVAILABLE_MODELS}
                       hideInput={true}
                       customization={customization}
                       isGenerating={isGenerating}
@@ -1570,7 +1636,7 @@ function App() {
                       onSendMessage={sendMessage}
                       selectedModel={selectedModel}
                       onModelChange={setSelectedModel}
-                      availableModels={availableModels}
+                      availableModels={AVAILABLE_MODELS}
                       hideInput={true}
                       customization={customization}
                       isGenerating={isGenerating}
@@ -1592,7 +1658,7 @@ function App() {
                       onSendMessage={sendMessage}
                       selectedModel={selectedModel}
                       onModelChange={setSelectedModel}
-                      availableModels={availableModels}
+                      availableModels={AVAILABLE_MODELS}
                       inputOnly={true}
                       customization={customization}
                       isGenerating={isGenerating}
@@ -1606,7 +1672,7 @@ function App() {
                       onSendMessage={sendMessage}
                       selectedModel={selectedModel}
                       onModelChange={setSelectedModel}
-                      availableModels={availableModels}
+                      availableModels={AVAILABLE_MODELS}
                       inputOnly={true}
                       customization={customization}
                       isGenerating={isGenerating}
