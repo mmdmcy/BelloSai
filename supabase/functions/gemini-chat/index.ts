@@ -28,10 +28,6 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🚀 Gemini Edge Function called at:', new Date().toISOString());
-    console.log('📝 Request method:', req.method);
-    console.log('📝 Request headers:', Object.fromEntries(req.headers.entries()));
-    
     // Auth check (zelfde als deepseek)
     const authHeader = req.headers.get('Authorization')
     const apiKey = req.headers.get('apikey')
