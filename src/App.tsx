@@ -207,6 +207,41 @@ function App() {
     }
   }, [user]);
 
+  // Add session health check when tab becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (!document.hidden && user) {
+        console.log('👀 Tab became visible, checking app health...');
+        
+        // Simple health check - try to get conversations
+        try {
+          await chatFeaturesService.getUserConversations(user.id);
+          console.log('✅ App health check passed');
+        } catch (error) {
+          console.warn('⚠️ App health check failed, may need session refresh:', error);
+          
+          // If it's an auth error, try to refresh
+          if (error instanceof Error && (
+            error.message.includes('Authentication') ||
+            error.message.includes('Invalid') ||
+            error.message.includes('expired')
+          )) {
+            console.log('🔄 Attempting session refresh...');
+            try {
+              await supabase.auth.refreshSession();
+              console.log('✅ Session refreshed successfully');
+            } catch (refreshError) {
+              console.error('❌ Failed to refresh session:', refreshError);
+            }
+          }
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [user]);
+
   const loadConversations = async () => {
     if (!user) {
       setConversations([]);

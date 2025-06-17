@@ -30,6 +30,58 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true)
   const [isAuthReady, setIsAuthReady] = useState(false)
 
+  // Add visibility change handler to refresh session when tab becomes active
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (!document.hidden && session) {
+        console.log('👀 Tab became visible, checking session validity...')
+        
+        // Check if session is still valid
+        const now = Date.now() / 1000
+        if (session.expires_at && session.expires_at < now + 300) { // Refresh if expires in 5 minutes
+          console.log('🔄 Session expires soon, refreshing...')
+          try {
+            const { data, error } = await supabase.auth.refreshSession()
+            if (error) {
+              console.error('❌ Failed to refresh session on visibility change:', error)
+            } else {
+              console.log('✅ Session refreshed on visibility change')
+            }
+          } catch (error) {
+            console.error('❌ Error refreshing session on visibility change:', error)
+          }
+        }
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [session])
+
+  // Add periodic session check
+  useEffect(() => {
+    if (!session) return
+
+    const checkSessionPeriodically = setInterval(async () => {
+      const now = Date.now() / 1000
+      if (session.expires_at && session.expires_at < now + 600) { // Refresh if expires in 10 minutes
+        console.log('🔄 Periodic session check - refreshing soon-to-expire session...')
+        try {
+          const { data, error } = await supabase.auth.refreshSession()
+          if (error) {
+            console.error('❌ Failed to refresh session periodically:', error)
+          } else {
+            console.log('✅ Session refreshed periodically')
+          }
+        } catch (error) {
+          console.error('❌ Error refreshing session periodically:', error)
+        }
+      }
+    }, 5 * 60 * 1000) // Check every 5 minutes
+
+    return () => clearInterval(checkSessionPeriodically)
+  }, [session])
+
   // Check if we have a stored session on mount
   useEffect(() => {
     const checkStoredSession = () => {
