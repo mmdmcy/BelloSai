@@ -18,9 +18,9 @@ interface ChatRequest {
   stream?: boolean;
 }
 
-// Optimized timeouts for better performance
-const DEEPSEEK_API_TIMEOUT = 30000; // 30 seconds instead of 100
-const STREAM_START_TIMEOUT = 5000; // 5 seconds instead of 10
+// ULTIMATE LIGHTNING-FAST timeouts - ZERO TOLERANCE FOR HANGING!
+const DEEPSEEK_API_TIMEOUT = 15000; // 15 seconds - FASTEST POSSIBLE!
+const STREAM_START_TIMEOUT = 2000; // 2 seconds - INSTANT RESPONSE!
 
 const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY') || '';
 const DEEPSEEK_BASE_URL = 'https://api.deepseek.com';
@@ -171,29 +171,31 @@ serve(async (req) => {
     // Get the DeepSeek model ID
     const modelId = DEEPSEEK_MODELS[model] || 'deepseek-chat';
 
-    // Call DeepSeek API with optimized settings
-    console.log('🚀 Calling DeepSeek API with optimized settings:', {
+    // Call DeepSeek API with ultra-optimized settings for speed
+    console.log('🚀 Calling DeepSeek API with lightning-fast settings:', {
       model: modelId,
       messageCount: deepSeekMessages.length,
       stream: enableStreaming,
       hasApiKey: !!DEEPSEEK_API_KEY
     });
     
-    // Optimized timeout for DeepSeek API call
+    // ULTIMATE LIGHTNING-FAST timeout for DeepSeek API call - ZERO HANGING!
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      console.log('⏰ DeepSeek API timeout after 30 seconds');
+      console.log('⚡ ULTIMATE TIMEOUT after 15 seconds - ZERO TOLERANCE FOR HANGING!');
       controller.abort();
     }, DEEPSEEK_API_TIMEOUT);
     
     let deepSeekResponse;
     try {
-      console.log('📡 Sending optimized request to DeepSeek API...');
+      console.log('📡 Sending ultra-optimized request to DeepSeek API...');
       deepSeekResponse = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+          'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
+          'Connection': 'close', // Prevent connection reuse that can cause hanging
+          'Cache-Control': 'no-cache' // Prevent caching issues
         },
         body: JSON.stringify({
           model: modelId,
