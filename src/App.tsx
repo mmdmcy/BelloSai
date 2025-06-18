@@ -33,6 +33,7 @@ import MobileDesignerMode from './components/MobileDesignerMode';
 import AccountMenu from './components/AccountMenu';
 import GameSection from './components/GameSection';
 import APIKeyManager from './components/APIKeyManager';
+import ModelSelector from './components/ModelSelector';
 import { useAuth } from './contexts/AuthContext';
 import { supabase } from './lib/supabase';
 import { sendChatMessage, DeepSeekModel, ChatMessage } from './lib/supabase-chat';
@@ -1686,21 +1687,13 @@ function App() {
                       <div className="flex items-center justify-between px-6 pb-4">
                         <div className="flex items-center gap-4">
                           {/* Model Selector */}
-                          <select
-                            value={selectedModel}
-                            onChange={(e) => setSelectedModel(e.target.value)}
-                            className={`text-xs px-2 py-1 rounded-md border pointer-events-auto ${
-                              isDark 
-                                ? 'bg-gray-600 border-gray-500 text-gray-300' 
-                                : 'bg-white border-gray-300 text-gray-700'
-                            }`}
-                            style={{ fontFamily: customization.fontFamily }}
-                            onTouchStart={(e) => e.stopPropagation()}
-                          >
-                            {availableModels.map(model => (
-                              <option key={model.code} value={model.code}>{model.name}</option>
-                            ))}
-                          </select>
+                          <ModelSelector
+                            selectedModel={selectedModel}
+                            onModelChange={setSelectedModel}
+                            availableModels={availableModels}
+                            isDark={isDark}
+                            customization={customization}
+                          />
                           {/* Search Button */}
                           <button 
                             type="button"
@@ -2038,20 +2031,13 @@ function App() {
                           <div className="flex items-center justify-between px-6 pb-4">
                             <div className="flex items-center gap-4">
                               {/* Model Selector */}
-                              <select
-                                value={selectedModel}
-                                onChange={(e) => setSelectedModel(e.target.value)}
-                                className={`text-xs px-2 py-1 rounded-md border ${
-                                  isDark 
-                                    ? 'bg-gray-600 border-gray-500 text-gray-300' 
-                                    : 'bg-white border-gray-300 text-gray-700'
-                                }`}
-                                style={{ fontFamily: customization.fontFamily }}
-                              >
-                                {availableModels.map(model => (
-                                  <option key={model.code} value={model.code}>{model.name}</option>
-                                ))}
-                              </select>
+                              <ModelSelector
+                                selectedModel={selectedModel}
+                                onModelChange={setSelectedModel}
+                                availableModels={availableModels}
+                                isDark={isDark}
+                                customization={customization}
+                              />
                               {/* Search Button */}
                               <button 
                                 type="button"
