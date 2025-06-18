@@ -18,9 +18,9 @@ interface ChatRequest {
   stream?: boolean;
 }
 
-// ULTIMATE LIGHTNING-FAST timeouts - ZERO TOLERANCE FOR HANGING!
-const DEEPSEEK_API_TIMEOUT = 15000; // 15 seconds - FASTEST POSSIBLE!
-const STREAM_START_TIMEOUT = 2000; // 2 seconds - INSTANT RESPONSE!
+// BALANCED timeouts for reliable performance!
+const DEEPSEEK_API_TIMEOUT = 20000; // 20 seconds - balanced for reliability
+const STREAM_START_TIMEOUT = 5000; // 5 seconds - reasonable response time
 
 const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY') || '';
 const DEEPSEEK_BASE_URL = 'https://api.deepseek.com';
@@ -179,10 +179,10 @@ serve(async (req) => {
       hasApiKey: !!DEEPSEEK_API_KEY
     });
     
-    // ULTIMATE LIGHTNING-FAST timeout for DeepSeek API call - ZERO HANGING!
+    // Balanced timeout for DeepSeek API call - reliable performance
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      console.log('⚡ ULTIMATE TIMEOUT after 15 seconds - ZERO TOLERANCE FOR HANGING!');
+      console.log('⏰ DeepSeek API timeout after 20 seconds - ensuring reliability');
       controller.abort();
     }, DEEPSEEK_API_TIMEOUT);
     
@@ -313,7 +313,7 @@ serve(async (req) => {
         }, STREAM_START_TIMEOUT);
 
         try {
-          console.log('🌊 Starting optimized streaming loop...');
+          console.log('�� Starting optimized streaming loop...');
           
           // Skip saving user message here - it's handled by the frontend
           console.log('📝 Skipping user message save - handled by frontend');

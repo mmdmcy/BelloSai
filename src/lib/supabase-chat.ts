@@ -32,13 +32,13 @@ export type DeepSeekModel = 'DeepSeek-V3' | 'DeepSeek-R1';
 
 type ModelProvider = 'DeepSeek' | 'Gemini';
 
-// ULTIMATE LIGHTNING FAST timeout settings - ABSOLUTE ZERO HANGING!
-const REQUEST_TIMEOUT = 15000; // 15 seconds - ULTIMATE SPEED!
-const STREAM_TIMEOUT = 18000; // 18 seconds for streaming
+// BALANCED timeout settings - Fast but reliable!
+const REQUEST_TIMEOUT = 25000; // 25 seconds - balanced for reliability
+const STREAM_TIMEOUT = 30000; // 30 seconds for streaming
 const OPTIMAL_CHUNK_SIZE = 12; // Optimal chunk size for smooth streaming
 
-// Performance optimization: Ultra-aggressive timeouts for immediate feedback
-const FAST_TIMEOUT = 8000; // 8 seconds for ultra-fast response
+// Performance optimization: Balanced timeouts for reliable responses
+const FAST_TIMEOUT = 20000; // 20 seconds for reliable response
 
 /**
  * Get model provider based on model code
@@ -77,7 +77,7 @@ export async function sendChatMessage(
     };
     
     timeoutId = setTimeout(() => {
-      console.error('⚡ ULTIMATE TIMEOUT after 15 seconds - ZERO HANGING TOLERANCE!');
+      console.error('⏰ Request timeout after 25 seconds - aborting for better UX');
       abortController?.abort();
     }, REQUEST_TIMEOUT);
     
@@ -192,7 +192,7 @@ export async function sendChatMessage(
           console.log('🔄 Got timeout error, retrying once...');
           return sendChatMessage(messages, modelCode, onChunk, conversationId, retryCount + 1);
         } else {
-          throw new Error('Verzoek timeout - AI service duurde te lang. Probeer opnieuw.');
+          throw new Error('Request timeout - AI service took too long. Please try again.');
         }
       }
       
