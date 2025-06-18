@@ -125,9 +125,9 @@ export default function ModelSelector({
         {/* Provider Icon */}
         <ProviderIcon className="w-3.5 h-3.5 opacity-80" />
         
-        {/* Model Name (shortened) */}
-        <span className="max-w-20 truncate">
-          {selectedModelInfo?.name.replace('Gemini ', '').replace('DeepSeek ', '') || selectedModel}
+        {/* Model Name (full) */}
+        <span className="truncate">
+          {selectedModelInfo?.name || selectedModel}
         </span>
         
         {/* Dropdown Arrow */}
