@@ -67,7 +67,7 @@ export async function sendChatMessage(
   try {
     console.log('🚀 Starting chat message request:', { messages, model: modelCode, conversationId });
     
-    // Reset abort controller with ultra-fast timeout and connection cleanup
+    // Reset abort controller with optimized timeout and connection cleanup
     abortController = new AbortController();
     
     // Add connection reset for preventing hangs on second requests
@@ -147,13 +147,7 @@ export async function sendChatMessage(
     console.log('📡 Calling Edge Function:', url);
     console.log('📡 Request payload:', { messages, model: modelCode, conversationId });
     
-    // Reset abort controller with optimized timeout
-    abortController = new AbortController();
-    timeoutId = setTimeout(() => {
-      console.error('⏰ Request timeout after 35 seconds - aborting for faster feedback');
-      abortController?.abort();
-    }, REQUEST_TIMEOUT);
-    
+    console.log('🚀 About to make fetch request...');
     const response = await fetch(url, {
       method: 'POST',
       headers: { ...authHeaders, ...connectionHeaders },
@@ -164,6 +158,7 @@ export async function sendChatMessage(
       }),
       signal: abortController.signal
     });
+    console.log('✅ Fetch request completed, got response');
 
     if (timeoutId) {
       clearTimeout(timeoutId);
@@ -176,16 +171,7 @@ export async function sendChatMessage(
       const errorData = await response.json();
       console.error('❌ Edge Function error:', errorData);
       
-      // Optimized error handling with faster retries
-      if (response.status === 429) {
-        // Rate limit - don't retry, just show message
-        let msg = 'Je hebt het maximum aantal verzoeken bereikt. Wacht even en probeer opnieuw.';
-        if (errorData && errorData.error && errorData.error.toLowerCase().includes('rate')) {
-          msg = errorData.error;
-        }
-        throw new Error(msg);
-      }
-      
+      // Handle specific error types with English messages
       if (response.status === 408) {
         // Timeout error - retry once if we haven't already
         if (retryCount === 0) {
@@ -210,7 +196,6 @@ export async function sendChatMessage(
         }
       }
       
-      // Handle specific error types with English messages
       if (response.status === 429) {
         throw new Error('Rate limit exceeded. Please wait a moment and try again.');
       }
