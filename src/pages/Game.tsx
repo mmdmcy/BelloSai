@@ -15,6 +15,13 @@ interface FamilyFeudQuestion {
   }>;
 }
 
+interface GuessResult {
+  text: string;
+  correct: boolean;
+  points?: number;
+  matchedAnswer?: string;
+}
+
 function GameComponent({ isDark, customization, onToggleTheme }: GameProps) {
   const [question, setQuestion] = useState<FamilyFeudQuestion | null>(null);
   const [revealedAnswers, setRevealedAnswers] = useState<number[]>([]);
@@ -22,13 +29,16 @@ function GameComponent({ isDark, customization, onToggleTheme }: GameProps) {
   const [aiScore, setAiScore] = useState(0);
   const [playerGuess, setPlayerGuess] = useState('');
   const [aiThinking, setAiThinking] = useState(false);
-  const [aiGuess, setAiGuess] = useState('');
   const [gameStatus, setGameStatus] = useState('loading'); // loading, playing, finished
   const [turn, setTurn] = useState<'player' | 'ai'>('player');
-  const [lastGuess, setLastGuess] = useState<{text: string, correct: boolean, points?: number} | null>(null);
+  const [lastPlayerGuess, setLastPlayerGuess] = useState<GuessResult | null>(null);
+  const [lastAiGuess, setLastAiGuess] = useState<GuessResult | null>(null);
   const [gameEnded, setGameEnded] = useState(false);
-  const [wrongAnswers, setWrongAnswers] = useState(0); // Track wrong answers
-  const [maxWrongAnswers] = useState(3); // Game over after 3 wrong answers
+  const [playerStrikes, setPlayerStrikes] = useState(0);
+  const [aiStrikes, setAiStrikes] = useState(0);
+  const [maxStrikes] = useState(3);
+  const [aiPreviousGuesses, setAiPreviousGuesses] = useState<string[]>([]);
+  const [gameLog, setGameLog] = useState<string[]>([]);
 
   // Generate question on load
   useEffect(() => {
@@ -37,21 +47,30 @@ function GameComponent({ isDark, customization, onToggleTheme }: GameProps) {
 
   // Check if game is over
   useEffect(() => {
-    if (question && (revealedAnswers.length === question.answers.length || wrongAnswers >= maxWrongAnswers)) {
+    if (question && (revealedAnswers.length === question.answers.length || playerStrikes >= maxStrikes || aiStrikes >= maxStrikes)) {
       setGameEnded(true);
       setGameStatus('finished');
     }
-  }, [revealedAnswers, question, wrongAnswers, maxWrongAnswers]);
+  }, [revealedAnswers, question, playerStrikes, aiStrikes, maxStrikes]);
 
-  // Clear last guess after 3 seconds
+  // Clear last guesses after 4 seconds
   useEffect(() => {
-    if (lastGuess) {
+    if (lastPlayerGuess) {
       const timer = setTimeout(() => {
-        setLastGuess(null);
-      }, 3000);
+        setLastPlayerGuess(null);
+      }, 4000);
       return () => clearTimeout(timer);
     }
-  }, [lastGuess]);
+  }, [lastPlayerGuess]);
+
+  useEffect(() => {
+    if (lastAiGuess) {
+      const timer = setTimeout(() => {
+        setLastAiGuess(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [lastAiGuess]);
 
   const generateQuestion = async () => {
     setGameStatus('loading');
@@ -59,17 +78,29 @@ function GameComponent({ isDark, customization, onToggleTheme }: GameProps) {
     setPlayerScore(0);
     setAiScore(0);
     setPlayerGuess('');
-    setAiGuess('');
-    setLastGuess(null);
+    setLastPlayerGuess(null);
+    setLastAiGuess(null);
     setGameEnded(false);
-    setWrongAnswers(0); // Reset wrong answers
+    setPlayerStrikes(0);
+    setAiStrikes(0);
+    setAiPreviousGuesses([]);
+    setGameLog([]);
     setTurn('player');
     
     try {
-      // Use more varied prompts for different questions
       const prompts = [
+        `Generate a Family Feud question about daily morning routines. Format:
+Question: We asked 100 people: [question]
+Answers:
+1. [answer] - [points]
+2. [answer] - [points]
+3. [answer] - [points]
+4. [answer] - [points]
+5. [answer] - [points]
+
+Make it fun and modern. No markdown formatting.`,
         `Generate a Family Feud question about workplace habits. Format:
-Question: [question]
+Question: We asked 100 people: [question]
 Answers:
 1. [answer] - [points]
 2. [answer] - [points]
@@ -79,7 +110,7 @@ Answers:
 
 Make it fun and modern. No markdown formatting.`,
         `Generate a Family Feud question about food and eating habits. Format:
-Question: [question]
+Question: We asked 100 people: [question]
 Answers:
 1. [answer] - [points]
 2. [answer] - [points]
@@ -89,7 +120,7 @@ Answers:
 
 Make it fun and modern. No markdown formatting.`,
         `Generate a Family Feud question about technology and social media. Format:
-Question: [question]
+Question: We asked 100 people: [question]
 Answers:
 1. [answer] - [points]
 2. [answer] - [points]
@@ -99,17 +130,7 @@ Answers:
 
 Make it fun and modern. No markdown formatting.`,
         `Generate a Family Feud question about daily routines and habits. Format:
-Question: [question]
-Answers:
-1. [answer] - [points]
-2. [answer] - [points]
-3. [answer] - [points]
-4. [answer] - [points]
-5. [answer] - [points]
-
-Make it fun and modern. No markdown formatting.`,
-        `Generate a Family Feud question about travel and vacations. Format:
-Question: [question]
+Question: We asked 100 people: [question]
 Answers:
 1. [answer] - [points]
 2. [answer] - [points]
@@ -133,17 +154,17 @@ Make it fun and modern. No markdown formatting.`
       // Fallback questions
       const fallbackQuestions = [
         {
-          question: "Name something people do when they can't sleep",
+          question: "We asked 100 people: What's the first thing you do when you wake up in the morning?",
           answers: [
-            { text: "Read a book", points: 32 },
-            { text: "Watch TV", points: 28 },
-            { text: "Count sheep", points: 18 },
-            { text: "Listen to music", points: 12 },
-            { text: "Get a snack", points: 10 }
+            { text: "Check your phone", points: 35 },
+            { text: "Hit the snooze button", points: 25 },
+            { text: "Brush your teeth", points: 18 },
+            { text: "Drink coffee", points: 15 },
+            { text: "Stretch or yawn", points: 7 }
           ]
         },
         {
-          question: "Name something people do when they're bored at work",
+          question: "We asked 100 people: Name something people do when they're bored at work",
           answers: [
             { text: "Scroll social media", points: 35 },
             { text: "Chat with coworkers", points: 25 },
@@ -153,7 +174,7 @@ Make it fun and modern. No markdown formatting.`
           ]
         },
         {
-          question: "Name something people do when they're stressed",
+          question: "We asked 100 people: Name something people do when they're stressed",
           answers: [
             { text: "Exercise", points: 30 },
             { text: "Eat comfort food", points: 25 },
@@ -176,11 +197,9 @@ Make it fun and modern. No markdown formatting.`
     const answers = [];
 
     for (const line of lines) {
-      // Better question parsing - look for the actual question line
       if (line.toLowerCase().includes('question:')) {
         question = line.replace(/question:\s*/i, '').trim();
       } else if (!question && line.includes('?')) {
-        // If no "Question:" prefix, take the first line with a question mark
         question = line.trim();
       } else if (line.match(/\d+\./)) {
         const match = line.match(/(\d+)\.\s*(.+?)\s*-\s*(\d+)/);
@@ -193,12 +212,10 @@ Make it fun and modern. No markdown formatting.`
       }
     }
 
-    // Fallback if parsing failed
     if (!question || question.length < 10) {
-      question = "Name something people do when they're bored at work";
+      question = "We asked 100 people: What's the first thing you do when you wake up in the morning?";
     }
 
-    // Ensure we have 5 answers
     while (answers.length < 5) {
       answers.push({
         text: `Answer ${answers.length + 1}`,
@@ -209,90 +226,156 @@ Make it fun and modern. No markdown formatting.`
     return { question, answers: answers.slice(0, 5) };
   };
 
+  // Improved answer matching function
+  const checkAnswerMatch = (guess: string, answers: Array<{ text: string; points: number }>, excludeIndices: number[] = []): { answerIndex: number; matchedText: string } | null => {
+    const guessLower = guess.toLowerCase().trim();
+    
+    for (let i = 0; i < answers.length; i++) {
+      if (excludeIndices.includes(i)) continue;
+      
+      const answerLower = answers[i].text.toLowerCase();
+      
+      // Exact match
+      if (guessLower === answerLower) {
+        return { answerIndex: i, matchedText: answers[i].text };
+      }
+      
+      // Simplified word matching - extract key words
+      const answerWords = answerLower.split(/\s+/).filter(word => word.length > 2);
+      const guessWords = guessLower.split(/\s+/).filter(word => word.length > 2);
+      
+      // Check if key words match (ignore common words like "the", "your", "my")
+      const commonWords = ['the', 'a', 'an', 'your', 'my', 'our', 'their', 'his', 'her', 'its'];
+      const meaningfulAnswerWords = answerWords.filter(word => !commonWords.includes(word));
+      const meaningfulGuessWords = guessWords.filter(word => !commonWords.includes(word));
+      
+      // If most meaningful words match, it's a match
+      const matches = meaningfulAnswerWords.filter(word => 
+        meaningfulGuessWords.some(guessWord => 
+          word.includes(guessWord) || guessWord.includes(word) || 
+          // Handle common synonyms
+          (word === 'phone' && guessWord === 'mobile') ||
+          (word === 'mobile' && guessWord === 'phone') ||
+          (word === 'brush' && guessWord === 'clean') ||
+          (word === 'clean' && guessWord === 'brush')
+        )
+      );
+      
+      if (matches.length > 0 && matches.length >= Math.min(2, meaningfulAnswerWords.length)) {
+        return { answerIndex: i, matchedText: answers[i].text };
+      }
+    }
+    
+    return null;
+  };
+
   const handlePlayerGuess = async () => {
-    if (!question || !playerGuess.trim()) return;
+    if (!question || !playerGuess.trim() || gameEnded) return;
 
-    const guess = playerGuess.trim().toLowerCase();
-    const answerIndex = question.answers.findIndex(a => 
-      a.text.toLowerCase() === guess && !revealedAnswers.includes(question.answers.indexOf(a))
-    );
+    const guess = playerGuess.trim();
+    const matchResult = checkAnswerMatch(guess, question.answers, revealedAnswers);
 
-    if (answerIndex !== -1) {
+    if (matchResult) {
       // Correct guess
-      const newRevealed = [...revealedAnswers, answerIndex];
+      const newRevealed = [...revealedAnswers, matchResult.answerIndex];
       setRevealedAnswers(newRevealed);
-      setPlayerScore(prev => prev + question.answers[answerIndex].points);
-      setLastGuess({
-        text: playerGuess.trim(),
+      setPlayerScore(prev => prev + question.answers[matchResult.answerIndex].points);
+      setLastPlayerGuess({
+        text: guess,
         correct: true,
-        points: question.answers[answerIndex].points
+        points: question.answers[matchResult.answerIndex].points,
+        matchedAnswer: matchResult.matchedText
       });
-      setPlayerGuess('');
-      setTurn('ai');
-      
-      // AI turn
-      setTimeout(() => {
-        handleAITurn();
-      }, 1000);
-    } else {
-      // Wrong guess
-      const newWrongAnswers = wrongAnswers + 1;
-      setWrongAnswers(newWrongAnswers);
-      setLastGuess({
-        text: playerGuess.trim(),
-        correct: false
-      });
+      setGameLog(prev => [...prev, `Player: "${guess}" → ✅ "${matchResult.matchedText}" (${question.answers[matchResult.answerIndex].points} pts)`]);
       setPlayerGuess('');
       
-      // Check if game over due to wrong answers
-      if (newWrongAnswers >= maxWrongAnswers) {
+      // Check if all answers revealed
+      if (newRevealed.length === question.answers.length) {
         setGameEnded(true);
         setGameStatus('finished');
-      } else {
-        setTurn('ai');
-        
-        // AI turn
-        setTimeout(() => {
-          handleAITurn();
-        }, 1000);
+        return;
       }
+      
+      setTurn('ai');
+      
+      // AI turn after delay
+      setTimeout(() => {
+        if (!gameEnded) {
+          handleAITurn();
+        }
+      }, 2000);
+    } else {
+      // Wrong guess
+      const newStrikes = playerStrikes + 1;
+      setPlayerStrikes(newStrikes);
+      setLastPlayerGuess({
+        text: guess,
+        correct: false
+      });
+      setGameLog(prev => [...prev, `Player: "${guess}" → ❌ (Strike ${newStrikes}/${maxStrikes})`]);
+      setPlayerGuess('');
+      
+      // Check if game over due to strikes
+      if (newStrikes >= maxStrikes) {
+        setGameEnded(true);
+        setGameStatus('finished');
+        return;
+      }
+      
+      setTurn('ai');
+      
+      // AI turn after delay
+      setTimeout(() => {
+        if (!gameEnded) {
+          handleAITurn();
+        }
+      }, 2000);
     }
   };
 
   const handleAITurn = async () => {
-    if (!question) return;
+    if (!question || gameEnded) return;
 
     setAiThinking(true);
-    setAiGuess('');
 
     try {
-      const availableAnswers = question.answers.filter((_, index) => !revealedAnswers.includes(index));
+      const availableAnswers = question.answers
+        .map((answer, index) => ({ answer, index }))
+        .filter(({ index }) => !revealedAnswers.includes(index));
       
       if (availableAnswers.length === 0) {
         setAiThinking(false);
         return;
       }
       
-      // FIX: Use question.question instead of just question
+      // Build context for AI
+      const revealedAnswerTexts = revealedAnswers.map(i => question.answers[i].text);
+      const previousGuessText = aiPreviousGuesses.length > 0 ? 
+        `\n\nDo NOT repeat these previous guesses: ${aiPreviousGuesses.join(', ')}` : '';
+      
       const prompt = `You are playing Family Feud. The question is: "${question.question}"
 
-Already revealed answers: ${revealedAnswers.map(i => question.answers[i].text).join(', ') || 'None'}
+Already revealed answers: ${revealedAnswerTexts.length > 0 ? revealedAnswerTexts.join(', ') : 'None'}${previousGuessText}
 
-Think of a good answer that might be on the board. Respond with a short, common answer that people would typically give for this question.
+Think of a NEW answer that might be on the board. Give a short, common response people would typically give.
 
 Reply with ONLY your answer. No explanations.`;
 
       console.log('Sending AI prompt:', prompt);
       
-      // Try DeepSeek-V3 instead of R1 (faster)
       let response;
       let retries = 0;
-      const maxRetries = 1; // Reduced retries
+      const maxRetries = 2;
       
       while (retries <= maxRetries) {
         try {
-          // Use DeepSeek-V3 instead of R1 for faster response
-          response = await sendChatMessage([{ type: 'user', content: prompt }], 'DeepSeek-V3');
+          // Use shorter timeout for faster game flow
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('AI timeout')), 6000);
+          });
+          
+          const responsePromise = sendChatMessage([{ type: 'user', content: prompt }], 'DeepSeek-V3');
+          response = await Promise.race([responsePromise, timeoutPromise]);
           break;
         } catch (error) {
           retries++;
@@ -312,78 +395,80 @@ Reply with ONLY your answer. No explanations.`;
         throw new Error('No response received from AI');
       }
       
-      // Clean up the response (remove quotes if present)
+      // Clean up the response
       const guess = response.trim().replace(/^["']|["']$/g, '');
-      setAiGuess(guess);
+      
+      // Add to AI's previous guesses to prevent repeats
+      setAiPreviousGuesses(prev => [...prev, guess]);
 
-      // Check if AI guessed correctly using fuzzy matching
-      const answerIndex = question.answers.findIndex(a => {
-        const answerLower = a.text.toLowerCase();
-        const guessLower = guess.toLowerCase();
-        
-        // Exact match
-        if (answerLower === guessLower) return true;
-        
-        // Contains match
-        if (answerLower.includes(guessLower) || guessLower.includes(answerLower)) return true;
-        
-        // Word overlap
-        const answerWords = answerLower.split(/\s+/);
-        const guessWords = guessLower.split(/\s+/);
-        const overlap = answerWords.filter(word => guessWords.includes(word));
-        
-        return overlap.length > 0 && !revealedAnswers.includes(question.answers.indexOf(a));
-      });
+      // Check if AI guessed correctly
+      const matchResult = checkAnswerMatch(guess, question.answers, revealedAnswers);
 
-      if (answerIndex !== -1) {
+      if (matchResult) {
         // AI correct
-        const newRevealed = [...revealedAnswers, answerIndex];
+        const newRevealed = [...revealedAnswers, matchResult.answerIndex];
         setRevealedAnswers(newRevealed);
-        setAiScore(prev => prev + question.answers[answerIndex].points);
-        setTurn('ai'); // AI gets another turn
+        setAiScore(prev => prev + question.answers[matchResult.answerIndex].points);
+        setLastAiGuess({
+          text: guess,
+          correct: true,
+          points: question.answers[matchResult.answerIndex].points,
+          matchedAnswer: matchResult.matchedText
+        });
+        setGameLog(prev => [...prev, `AI: "${guess}" → ✅ "${matchResult.matchedText}" (${question.answers[matchResult.answerIndex].points} pts)`]);
         
-        setTimeout(() => {
-          handleAITurn();
-        }, 1000);
-      } else {
-        // AI wrong
-        const newWrongAnswers = wrongAnswers + 1;
-        setWrongAnswers(newWrongAnswers);
-        
-        // Check if game over due to wrong answers
-        if (newWrongAnswers >= maxWrongAnswers) {
+        // Check if all answers revealed
+        if (newRevealed.length === question.answers.length) {
           setGameEnded(true);
           setGameStatus('finished');
-        } else {
-          setTurn('player');
+          setAiThinking(false);
+          return;
         }
+        
+        // AI gets another turn for correct answer
+        setTurn('ai');
+        
+        setTimeout(() => {
+          if (!gameEnded) {
+            handleAITurn();
+          }
+        }, 2000);
+      } else {
+        // AI wrong
+        const newStrikes = aiStrikes + 1;
+        setAiStrikes(newStrikes);
+        setLastAiGuess({
+          text: guess,
+          correct: false
+        });
+        setGameLog(prev => [...prev, `AI: "${guess}" → ❌ (Strike ${newStrikes}/${maxStrikes})`]);
+        
+        // Check if game over due to AI strikes
+        if (newStrikes >= maxStrikes) {
+          setGameEnded(true);
+          setGameStatus('finished');
+          setAiThinking(false);
+          return;
+        }
+        
+        setTurn('player');
       }
     } catch (error) {
       console.error('AI turn failed:', error);
       
-      // Immediate fallback: Use simple random AI
-      console.log('Using immediate random AI fallback');
-      const availableAnswers = question.answers.filter((_, index) => !revealedAnswers.includes(index));
+      // Fallback: AI makes a wrong guess to keep game moving
+      const newStrikes = aiStrikes + 1;
+      setAiStrikes(newStrikes);
+      setLastAiGuess({
+        text: "AI couldn't think of an answer",
+        correct: false
+      });
+      setGameLog(prev => [...prev, `AI: timed out → ❌ (Strike ${newStrikes}/${maxStrikes})`]);
       
-      if (availableAnswers.length > 0) {
-        const randomIndex = Math.floor(Math.random() * availableAnswers.length);
-        const randomGuess = availableAnswers[randomIndex].text;
-        
-        console.log('Random AI guess:', randomGuess);
-        setAiGuess(`AI: ${randomGuess}`);
-        
-        // Random AI is always correct (it picks from available answers)
-        const answerIndex = question.answers.findIndex(a => a.text === randomGuess);
-        const newRevealed = [...revealedAnswers, answerIndex];
-        setRevealedAnswers(newRevealed);
-        setAiScore(prev => prev + question.answers[answerIndex].points);
-        setTurn('ai');
-        
-        setTimeout(() => {
-          handleAITurn();
-        }, 1000);
+      if (newStrikes >= maxStrikes) {
+        setGameEnded(true);
+        setGameStatus('finished');
       } else {
-        setAiGuess('AI has no moves left');
         setTurn('player');
       }
     } finally {
@@ -428,11 +513,22 @@ Reply with ONLY your answer. No explanations.`;
       <div className="bg-purple-600 text-white p-4">
         <div className="flex justify-between items-center max-w-4xl mx-auto">
           <h1 className="text-2xl font-bold">Family Feud</h1>
-          <div className="flex gap-4 items-center">
-            <div>You: {playerScore}</div>
-            <div>AI: {aiScore}</div>
-            <div className="text-red-300">
-              ❌ {wrongAnswers}/{maxWrongAnswers}
+          <div className="flex gap-6 items-center">
+            <div className="flex gap-4">
+              <div className="text-center">
+                <div className="text-sm opacity-80">You</div>
+                <div className="text-xl font-bold">{playerScore}</div>
+                <div className="text-sm text-red-200">
+                  ❌ {playerStrikes}/{maxStrikes}
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-sm opacity-80">AI</div>
+                <div className="text-xl font-bold">{aiScore}</div>
+                <div className="text-sm text-red-200">
+                  ❌ {aiStrikes}/{maxStrikes}
+                </div>
+              </div>
             </div>
             <button onClick={onToggleTheme} className="px-3 py-1 bg-white/20 rounded">
               {isDark ? '☀️' : '🌙'}
@@ -444,25 +540,28 @@ Reply with ONLY your answer. No explanations.`;
       <div className="max-w-4xl mx-auto p-6">
         {/* Question */}
         <div className={`text-center mb-8 p-6 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
-          <h2 className="text-2xl font-bold mb-6">{question.question}</h2>
+          <h2 className="text-xl font-bold mb-6">{question.question}</h2>
           
           {/* Answer Board */}
           <div className="grid gap-3 max-w-2xl mx-auto">
             {question.answers.map((answer, index) => (
               <div 
                 key={index}
-                className={`flex justify-between items-center p-4 rounded-lg border-2 ${
+                className={`flex justify-between items-center p-4 rounded-lg border-2 transition-all ${
                   revealedAnswers.includes(index)
-                    ? 'bg-green-100 border-green-400 text-green-800'
+                    ? 'bg-green-100 border-green-400 text-green-800 transform scale-105'
                     : gameEnded
-                    ? 'bg-red-100 border-red-400 text-red-800'
-                    : 'bg-gray-100 border-gray-300 text-gray-500'
+                    ? 'bg-gray-100 border-gray-300 text-gray-600'
+                    : 'bg-gray-50 border-gray-200 text-gray-400'
                 }`}
               >
-                <span className="font-medium">
-                  {revealedAnswers.includes(index) || gameEnded ? answer.text : '???'}
-                </span>
-                <span className="font-bold">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-bold text-gray-500">#{index + 1}</span>
+                  <span className="font-medium">
+                    {revealedAnswers.includes(index) || gameEnded ? answer.text : '???'}
+                  </span>
+                </div>
+                <span className="font-bold text-lg">
                   {revealedAnswers.includes(index) || gameEnded ? answer.points : '??'}
                 </span>
               </div>
@@ -472,56 +571,88 @@ Reply with ONLY your answer. No explanations.`;
 
         {/* Game End Result */}
         {gameEnded && (
-          <div className={`text-center mb-6 p-6 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
-            <h3 className="text-xl font-bold mb-4">Game Over!</h3>
-            {wrongAnswers >= maxWrongAnswers && (
+          <div className={`text-center mb-6 p-6 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'} border-2 border-yellow-400`}>
+            <h3 className="text-2xl font-bold mb-4">🎉 Game Over! 🎉</h3>
+            {playerStrikes >= maxStrikes && (
               <div className="mb-4 text-red-600 font-medium">
-                Too many wrong answers! ({wrongAnswers}/{maxWrongAnswers})
+                Player eliminated! ({playerStrikes}/{maxStrikes} strikes)
+              </div>
+            )}
+            {aiStrikes >= maxStrikes && (
+              <div className="mb-4 text-green-600 font-medium">
+                AI eliminated! ({aiStrikes}/{maxStrikes} strikes)
               </div>
             )}
             {revealedAnswers.length === question.answers.length && (
-              <div className="mb-4 text-green-600 font-medium">
-                All answers found! 🎉
+              <div className="mb-4 text-blue-600 font-medium">
+                All answers found! Perfect game! 🎯
               </div>
             )}
             <div className="text-lg mb-4">
               <div className="mb-2">Final Score:</div>
               <div className="flex justify-center gap-8">
-                <div className="text-blue-600">You: {playerScore}</div>
-                <div className="text-red-600">AI: {aiScore}</div>
+                <div className={`text-xl font-bold ${playerScore > aiScore ? 'text-green-600' : 'text-gray-600'}`}>
+                  You: {playerScore}
+                </div>
+                <div className={`text-xl font-bold ${aiScore > playerScore ? 'text-green-600' : 'text-gray-600'}`}>
+                  AI: {aiScore}
+                </div>
               </div>
             </div>
-            <div className="text-lg font-bold">
-              {playerScore > aiScore ? '🎉 You Win! 🎉' : 
+            <div className="text-2xl font-bold mb-4">
+              {playerScore > aiScore ? '🏆 You Win! 🏆' : 
                aiScore > playerScore ? '🤖 AI Wins! 🤖' : 
                '🤝 It\'s a Tie! 🤝'}
             </div>
           </div>
         )}
 
-        {/* Last Guess Feedback */}
-        {lastGuess && !gameEnded && (
-          <div className={`text-center mb-6 p-4 rounded-lg ${
-            lastGuess.correct 
-              ? 'bg-green-100 border-green-400 text-green-800' 
-              : 'bg-red-100 border-red-400 text-red-800'
-          }`}>
-            <p className="font-bold">
-              {lastGuess.correct 
-                ? `✅ Correct! "${lastGuess.text}" - ${lastGuess.points} points!` 
-                : `❌ Wrong! "${lastGuess.text}" is not on the board.`
-              }
-            </p>
-          </div>
-        )}
+        {/* Last Guesses Feedback */}
+        <div className="grid md:grid-cols-2 gap-4 mb-6">
+          {/* Player's Last Guess */}
+          {lastPlayerGuess && (
+            <div className={`p-4 rounded-lg border-2 ${
+              lastPlayerGuess.correct 
+                ? 'bg-green-100 border-green-400 text-green-800' 
+                : 'bg-red-100 border-red-400 text-red-800'
+            }`}>
+              <div className="font-bold text-sm mb-1">👤 Your Last Guess:</div>
+              <p className="font-bold">
+                {lastPlayerGuess.correct 
+                  ? `✅ "${lastPlayerGuess.text}" = "${lastPlayerGuess.matchedAnswer}" (+${lastPlayerGuess.points} pts!)` 
+                  : `❌ "${lastPlayerGuess.text}" - Not on the board`
+                }
+              </p>
+            </div>
+          )}
+
+          {/* AI's Last Guess */}
+          {lastAiGuess && (
+            <div className={`p-4 rounded-lg border-2 ${
+              lastAiGuess.correct 
+                ? 'bg-green-100 border-green-400 text-green-800' 
+                : 'bg-red-100 border-red-400 text-red-800'
+            }`}>
+              <div className="font-bold text-sm mb-1">🤖 AI's Last Guess:</div>
+              <p className="font-bold">
+                {lastAiGuess.correct 
+                  ? `✅ "${lastAiGuess.text}" = "${lastAiGuess.matchedAnswer}" (+${lastAiGuess.points} pts!)` 
+                  : `❌ "${lastAiGuess.text}" - Not on the board`
+                }
+              </p>
+            </div>
+          )}
+        </div>
 
         {/* Turn Indicator */}
         {!gameEnded && (
-          <div className={`text-center mb-6 p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+          <div className={`text-center mb-6 p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'} border-2 ${
+            turn === 'player' ? 'border-blue-400' : 'border-red-400'
+          }`}>
             {turn === 'player' ? (
-              <div className="text-blue-600 font-bold">Your Turn!</div>
+              <div className="text-blue-600 font-bold text-xl">🎯 Your Turn!</div>
             ) : (
-              <div className="text-red-600 font-bold">AI's Turn</div>
+              <div className="text-red-600 font-bold text-xl">🤖 AI's Turn</div>
             )}
           </div>
         )}
@@ -530,40 +661,48 @@ Reply with ONLY your answer. No explanations.`;
         {aiThinking && !gameEnded && (
           <div className={`text-center mb-6 p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto mb-2"></div>
-            <p>AI is thinking...</p>
-          </div>
-        )}
-
-        {/* AI Guess */}
-        {aiGuess && !aiThinking && !gameEnded && (
-          <div className={`text-center mb-6 p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
-            <p>AI guessed: <span className="font-bold">{aiGuess}</span></p>
+            <p>🤖 AI is thinking...</p>
           </div>
         )}
 
         {/* Player Input */}
         {turn === 'player' && !aiThinking && !gameEnded && (
-          <div className={`p-6 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+          <div className={`p-6 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'} border-2 border-blue-400`}>
             <div className="max-w-md mx-auto">
               <input
                 type="text"
                 value={playerGuess}
                 onChange={(e) => setPlayerGuess(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handlePlayerGuess()}
-                placeholder="Type your guess..."
-                className={`w-full p-3 rounded-lg border ${
+                placeholder="Type your guess here..."
+                className={`w-full p-3 rounded-lg border-2 text-lg ${
                   isDark 
-                    ? 'bg-gray-700 border-gray-600 text-white' 
-                    : 'bg-white border-gray-300 text-gray-900'
-                }`}
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
+                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                } focus:border-blue-500 focus:outline-none`}
+                autoFocus
               />
               <button
                 onClick={handlePlayerGuess}
                 disabled={!playerGuess.trim()}
-                className="w-full mt-3 p-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:opacity-50"
+                className="w-full mt-3 p-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-lg font-bold transition-colors"
               >
                 Submit Guess
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* Game Log */}
+        {gameLog.length > 0 && (
+          <div className={`mt-6 p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+            <h3 className="font-bold mb-3">Game Log:</h3>
+            <div className="space-y-1 max-h-40 overflow-y-auto">
+              {gameLog.slice(-8).map((log, index) => (
+                <div key={index} className="text-sm font-mono">
+                  {log}
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -572,9 +711,9 @@ Reply with ONLY your answer. No explanations.`;
         <div className="text-center mt-8">
           <button
             onClick={generateQuestion}
-            className="px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600"
+            className="px-8 py-4 bg-purple-500 text-white rounded-lg hover:bg-purple-600 text-lg font-bold transition-colors"
           >
-            New Game
+            🎮 New Game
           </button>
         </div>
       </div>
