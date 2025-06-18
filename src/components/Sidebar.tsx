@@ -31,6 +31,7 @@ interface SidebarProps {
   currentConversationId?: string | null;
   onConversationSelect?: (conversationId: string) => void;
   onConversationDelete?: (conversationId: string) => void;
+  hasGlassEffect?: boolean; // New prop for glass effects
 }
 
 export default function Sidebar({ 
@@ -46,7 +47,8 @@ export default function Sidebar({
   conversations = [],
   currentConversationId,
   onConversationSelect,
-  onConversationDelete
+  onConversationDelete,
+  hasGlassEffect = false
 }: SidebarProps) {
   
 
@@ -78,9 +80,15 @@ export default function Sidebar({
   if (isCollapsed) {
     return (
       <div 
-        className={`w-full h-full ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-purple-50 border-purple-100'} border-r flex flex-col items-center py-4 gap-4`}
+        className={`w-full h-full ${
+          hasGlassEffect && !isDark 
+            ? 'glass-sidebar' 
+            : isDark 
+              ? 'bg-gray-900 border-gray-700' 
+              : 'bg-purple-50 border-purple-100'
+        } ${!hasGlassEffect ? 'border-r' : ''} flex flex-col items-center py-4 gap-4`}
         style={{
-          background: customization.gradientEnabled && !isDark 
+          background: !hasGlassEffect && customization.gradientEnabled && !isDark 
             ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
             : undefined
         }}
@@ -104,9 +112,15 @@ export default function Sidebar({
   // Full sidebar layout - simplified when in detached mode
   return (
     <div 
-      className={`w-full h-full ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-purple-50 border-purple-100'} border-r flex flex-col`}
+      className={`w-full h-full ${
+        hasGlassEffect && !isDark 
+          ? 'glass-sidebar' 
+          : isDark 
+            ? 'bg-gray-900 border-gray-700' 
+            : 'bg-purple-50 border-purple-100'
+      } ${!hasGlassEffect ? 'border-r' : ''} flex flex-col`}
       style={{
-        background: customization.gradientEnabled && !isDark 
+        background: !hasGlassEffect && customization.gradientEnabled && !isDark 
           ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
           : undefined
       }}
