@@ -1961,6 +1961,8 @@ function App() {
                       customization={customization}
                       isLoggedIn={!!user}
                       onLoginClick={() => setShowLoginModal(true)}
+                      // Alleen input tonen als er geen inputBox in layout is of als we mobiel zijn
+                      hideInput={!!layout.inputBox && !isMobile}
                     />
                   ) : !isMobile && (
                     <ChatView 
