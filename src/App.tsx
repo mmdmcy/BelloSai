@@ -1500,45 +1500,95 @@ function App() {
             </div>
           )}
 
-          {/* Mobile Main Content - Now positioned using grid */}
-          <div 
-            className="overflow-hidden pointer-events-auto"
-            style={{
-              gridColumn: `${mobileLayout.mobileMainContent.x + 1} / ${mobileLayout.mobileMainContent.x + mobileLayout.mobileMainContent.width + 1}`,
-              gridRow: `${mobileLayout.mobileMainContent.y + 1} / ${mobileLayout.mobileMainContent.y + mobileLayout.mobileMainContent.height + 1}`,
-              zIndex: mobileLayout.mobileMainContent.zIndex
-            }}
-          >
-            {messages.length === 0 ? (
-              <MainContent 
-                isDark={isDark} 
-                onSendMessage={sendMessage}
-                selectedModel={selectedModel}
-                onModelChange={setSelectedModel}
-                availableModels={availableModels}
-                customization={customization}
-                isLoggedIn={!!user}
-                onLoginClick={() => setShowLoginModal(true)}
-                hideInput={true}
-              />
-            ) : (
-              <ChatView 
-                isDark={isDark} 
-                messages={messages}
-                onSendMessage={sendMessage}
-                selectedModel={selectedModel}
-                onModelChange={setSelectedModel}
-                availableModels={availableModels}
-                customization={customization}
-                isLoggedIn={!!user}
-                onLoginClick={() => setShowLoginModal(true)}
-                error={chatError}
-                setError={setChatError}
-                onRegenerateResponse={regenerateResponse}
-                hideInput={true}
-              />
-            )}
-          </div>
+          {/* Mobile Main Content - Only show when no messages */}
+          {mobileLayout.mobileMainContent && messages.length === 0 && (
+            <div 
+              className="overflow-hidden pointer-events-auto"
+              style={{
+                gridColumn: `${mobileLayout.mobileMainContent.x + 1} / ${mobileLayout.mobileMainContent.x + mobileLayout.mobileMainContent.width + 1}`,
+                gridRow: `${mobileLayout.mobileMainContent.y + 1} / ${mobileLayout.mobileMainContent.y + mobileLayout.mobileMainContent.height + 1}`,
+                zIndex: mobileLayout.mobileMainContent.zIndex
+              }}
+            >
+              <div 
+                className={`flex-1 h-full flex flex-col ${isDark ? 'bg-gray-900' : 'bg-purple-50'}`}
+                style={{
+                  background: customization.gradientEnabled && !isDark 
+                    ? `linear-gradient(135deg, ${customization.primaryColor}05, ${customization.secondaryColor}05)`
+                    : undefined
+                }}
+              >
+                {/* Main Content Area - Responsive scaling */}
+                <div className="flex-1 flex flex-col items-center justify-center px-8">
+                  <div className="w-full text-center" style={{ maxWidth: '95%' }}>
+                    {/* Main Heading - Responsive text size */}
+                    <h1 
+                      className={`text-2xl font-semibold mb-10 ${isDark ? 'text-white' : 'text-purple-800'}`}
+                      style={{ 
+                        fontFamily: customization.fontFamily,
+                        color: isDark 
+                          ? (customization.primaryColor !== '#7c3aed' ? customization.primaryColor : undefined)
+                          : customization.primaryColor 
+                      }}
+                    >
+                      How can I help you?
+                    </h1>
+
+                    {/* Action Buttons - Responsive layout */}
+                    <div className="flex flex-wrap justify-center gap-2 mb-12">
+                      <div className={`px-4 py-2 rounded-lg border ${isDark ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-purple-200 bg-white text-purple-700'}`}>
+                        ✨ Create
+                      </div>
+                      <div className={`px-4 py-2 rounded-lg border ${isDark ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-purple-200 bg-white text-purple-700'}`}>
+                        🧭 Explore
+                      </div>
+                      <div className={`px-4 py-2 rounded-lg border ${isDark ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-purple-200 bg-white text-purple-700'}`}>
+                        💻 Code
+                      </div>
+                      <div className={`px-4 py-2 rounded-lg border ${isDark ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-purple-200 bg-white text-purple-700'}`}>
+                        🎓 Learn
+                      </div>
+                    </div>
+
+                    {/* Sample Questions - Only show if enabled in customization */}
+                    {customization.showQuestions && (
+                      <div className="space-y-3 mb-8">
+                        {['How does AI work?', 'Are black holes real?', 'How many Rs are in the word "strawberry"?', 'What is the meaning of life?'].map((question, index) => (
+                          <button
+                            key={index}
+                            onClick={() => sendMessage(question)}
+                            className={`block w-full text-left px-4 py-3 rounded-xl transition-colors text-sm ${
+                              isDark 
+                                ? 'text-gray-300 hover:bg-gray-700 hover:text-white' 
+                                : 'hover:text-purple-800'
+                            }`}
+                            style={{ 
+                              fontFamily: customization.fontFamily,
+                              color: isDark ? undefined : customization.primaryColor + 'CC'
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!isDark) {
+                                e.currentTarget.style.background = customization.gradientEnabled
+                                  ? `linear-gradient(135deg, ${customization.primaryColor}20, ${customization.secondaryColor}10)`
+                                  : customization.primaryColor + '20';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!isDark) {
+                                e.currentTarget.style.background = 'transparent';
+                              }
+                            }}
+                          >
+                            {question}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Mobile Chat Area - Separate draggable element */}
           {mobileLayout.mobileChatArea && messages.length > 0 && (
@@ -1568,7 +1618,7 @@ function App() {
             </div>
           )}
 
-          {/* Mobile Input Box - Separate draggable element */}
+          {/* Mobile Input Box - Only shows input controls, NO title */}
           {mobileLayout.mobileInputBox && (
             <div 
               className="pointer-events-auto"
@@ -1624,7 +1674,7 @@ function App() {
                       input.value = '';
                     }
                   }}>
-                    {/* Message Input Container - Exact PC styling */}
+                    {/* Message Input Container */}
                     <div className={`relative rounded-2xl border ${
                       isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-purple-200'
                     } shadow-sm pointer-events-auto`}>
@@ -1637,7 +1687,7 @@ function App() {
                         }`}
                         style={{ 
                           fontFamily: customization.fontFamily,
-                          touchAction: 'manipulation' // Ensures touch events work properly
+                          touchAction: 'manipulation'
                         }}
                         rows={1}
                         onKeyDown={(e) => {
@@ -1648,16 +1698,14 @@ function App() {
                           }
                         }}
                         onTouchStart={(e) => {
-                          // Ensure textarea can be focused on touch
                           e.stopPropagation();
                         }}
                         onFocus={(e) => {
-                          // Make sure the input is scrolled into view on focus
                           e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }}
                       />
                       
-                      {/* Bottom Controls - Exact PC styling */}
+                      {/* Bottom Controls */}
                       <div className="flex items-center justify-between px-6 pb-4">
                         <div className="flex items-center gap-4">
                           {/* Model Selector */}
@@ -1700,7 +1748,7 @@ function App() {
                           </button>
                         </div>
                         
-                        {/* Send Button - Exact PC styling */}
+                        {/* Send Button */}
                         <button 
                           type="submit"
                           className="text-white p-2.5 rounded-xl transition-colors hover:opacity-90 pointer-events-auto"
