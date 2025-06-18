@@ -109,13 +109,25 @@ serve(async (req) => {
     }
 
     if (req.method !== 'POST') {
-      return new Response('Method not allowed', { status: 405 })
+      return new Response('Method not allowed', { 
+        status: 405,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+        }
+      })
     }
 
     // Get the authorization header
     const authHeader = req.headers.get('authorization')
     if (!authHeader) {
-      return new Response('Missing authorization header', { status: 401 })
+      return new Response('Missing authorization header', { 
+        status: 401,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+        }
+      })
     }
 
     // Get user from auth token
@@ -124,7 +136,13 @@ serve(async (req) => {
 
     if (authError || !user) {
       console.error('Auth error:', authError)
-      return new Response('Unauthorized', { status: 401 })
+      return new Response('Unauthorized', { 
+        status: 401,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+        }
+      })
     }
 
     console.log('Syncing subscription for user:', user.id)
@@ -132,7 +150,11 @@ serve(async (req) => {
     const result = await syncUserSubscription(user.id)
 
     return new Response(JSON.stringify(result), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+      },
     })
 
   } catch (error) {
@@ -144,7 +166,11 @@ serve(async (req) => {
       }),
       {
         status: 500,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+        },
       }
     )
   }

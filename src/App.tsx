@@ -703,10 +703,10 @@ function App() {
       setIsGenerating(true);
       console.log('🔄 Set isGenerating to true');
 
-      // Set up request timeout (90 seconds)
+      // Set up request timeout (45 seconds - faster feedback)
       requestTimeoutId = setTimeout(() => {
-        console.error('⏰ Request timeout after 90 seconds');
-        setChatError('Het verzoek duurde te lang. Probeer het opnieuw of probeer een kortere vraag.');
+        console.error('⏰ Request timeout after 45 seconds');
+        setChatError('The request took too long. Try again or try a shorter question.');
         setIsGenerating(false);
         
         // Update AI message with timeout error
@@ -715,12 +715,12 @@ function App() {
             msg.id === aiMessageId 
               ? { 
                   ...msg, 
-                  content: 'Het verzoek duurde te lang. Probeer het opnieuw of probeer een kortere vraag.' 
+                  content: 'The request took too long. Try again or try a shorter question.' 
                 }
               : msg
           ));
         }
-      }, 90000);
+      }, 45000);
 
       // Create or get conversation
       if (!currentConvoId && user) {
@@ -870,17 +870,17 @@ function App() {
         console.error('❌ sendChatMessage failed:', error);
         
         // Handle specific error types
-        let errorMessage = 'Er is een onbekende fout opgetreden.';
+        let errorMessage = 'An unknown error occurred.';
         
         if (error instanceof Error) {
           if (error.message.includes('timeout') || error.message.includes('took too long')) {
-            errorMessage = 'Het verzoek duurde te lang. Probeer het opnieuw of probeer een kortere vraag.';
+            errorMessage = 'The request took too long. Try again or try a shorter question.';
           } else if (error.message.includes('rate limit') || error.message.includes('429')) {
-            errorMessage = 'Je hebt het maximum aantal verzoeken bereikt. Wacht even en probeer het opnieuw.';
+            errorMessage = 'You have reached the maximum number of requests. Wait a moment and try again.';
           } else if (error.message.includes('authentication') || error.message.includes('401')) {
-            errorMessage = 'Authenticatie fout. Probeer opnieuw in te loggen.';
+            errorMessage = 'Authentication error. Try logging in again.';
           } else if (error.message.includes('network') || error.message.includes('fetch')) {
-            errorMessage = 'Netwerk fout. Controleer je internetverbinding en probeer het opnieuw.';
+            errorMessage = 'Network error. Check your internet connection and try again.';
           } else {
             errorMessage = error.message;
           }
