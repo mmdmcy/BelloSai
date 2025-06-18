@@ -56,6 +56,15 @@ export async function sendChatMessage(
   try {
     console.log('🚀 Starting chat message request:', { messages, model: modelCode, conversationId });
     
+    // Create abort controller for timeout handling
+    abortController = new AbortController();
+    
+    // Set timeout for the entire request (60 seconds)
+    timeoutId = setTimeout(() => {
+      console.error('⏰ Request timeout after 60 seconds - aborting');
+      abortController?.abort();
+    }, 60000);
+    
     // Get current session (optional for anonymous users)
     let { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
@@ -120,12 +129,13 @@ export async function sendChatMessage(
     const provider = getModelProvider(modelCode);
     const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${provider === 'Gemini' ? 'gemini-chat' : 'deepseek-chat'}`;
     console.log('📡 Calling Edge Function:', url);
+    console.log('📡 Request payload:', { messages, model: modelCode, conversationId });
     
     abortController = new AbortController();
     timeoutId = setTimeout(() => {
-      console.log('⏰ Request timeout after 120 seconds');
+      console.error('⏰ Request timeout after 30 seconds - aborting');
       abortController?.abort();
-    }, 120000);
+    }, 30000);
     
     const response = await fetch(url, {
       method: 'POST',
@@ -152,7 +162,7 @@ export async function sendChatMessage(
       // Handle specific error types with retry logic
       if (response.status === 429) {
         // Rate limit - don't retry, just show message
-        let msg = 'Je hebt het maximum aantal verzoeken bereikt. Wacht even en probeer het opnieuw.';
+        let msg = 'You have reached the maximum number of requests. Wait a moment and try again.';
         if (errorData && errorData.error && errorData.error.toLowerCase().includes('rate')) {
           msg = errorData.error;
         }
@@ -165,7 +175,7 @@ export async function sendChatMessage(
           console.log('🔄 Got timeout error, retrying once...');
           return sendChatMessage(messages, modelCode, onChunk, conversationId, retryCount + 1);
         } else {
-          throw new Error('Request timeout - AI service took too long to respond. Probeer het opnieuw.');
+          throw new Error('Request timeout - AI service took too long to respond. Please try again.');
         }
       }
       
@@ -189,7 +199,7 @@ export async function sendChatMessage(
       }
       
       // Andere errors
-      throw new Error(errorData.error || `Er is een fout opgetreden bij het verwerken van je bericht. Probeer het opnieuw of neem contact op met support. (HTTP ${response.status})`);
+      throw new Error(errorData.error || `An error occurred while processing your message. Please try again or contact support. (HTTP ${response.status})`);
     }
 
     // DeepSeek: streaming, Gemini: geen streaming
@@ -295,10 +305,10 @@ export async function sendChatMessage(
     // Handle specific error types
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
-        throw new Error('Request timeout - AI service took too long to respond. Probeer het opnieuw.');
+        throw new Error('Request timeout - AI service took too long to respond. Please try again.');
       }
       if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-        throw new Error('Netwerk fout. Controleer je internetverbinding en probeer het opnieuw.');
+        throw new Error('Network error. Check your internet connection and try again.');
       }
     }
     
