@@ -1541,7 +1541,7 @@ function App() {
           </div>
 
           {/* Mobile Chat Area - Separate draggable element */}
-          {mobileLayout.mobileChatArea && (
+          {mobileLayout.mobileChatArea && messages.length > 0 && (
             <div 
               className="overflow-hidden pointer-events-auto"
               style={{
@@ -1550,34 +1550,21 @@ function App() {
                 zIndex: mobileLayout.mobileChatArea.zIndex
               }}
             >
-              {messages.length > 0 ? (
-                <ChatView
-                  isDark={isDark}
-                  messages={messages}
-                  onSendMessage={sendMessage}
-                  selectedModel={selectedModel}
-                  onModelChange={setSelectedModel}
-                  availableModels={availableModels}
-                  hideInput={true}
-                  customization={customization}
-                  isLoggedIn={!!user}
-                  onLoginClick={() => setShowLoginModal(true)}
-                  error={chatError}
-                  setError={setChatError}
-                  onRegenerateResponse={regenerateResponse}
-                />
-              ) : (
-                <MainContent 
-                  isDark={isDark} 
-                  onSendMessage={sendMessage}
-                  selectedModel={selectedModel}
-                  onModelChange={setSelectedModel}
-                  availableModels={availableModels}
-                  customization={customization}
-                  isLoggedIn={!!user}
-                  onLoginClick={() => setShowLoginModal(true)}
-                />
-              )}
+              <ChatView
+                isDark={isDark}
+                messages={messages}
+                onSendMessage={sendMessage}
+                selectedModel={selectedModel}
+                onModelChange={setSelectedModel}
+                availableModels={availableModels}
+                hideInput={true}
+                customization={customization}
+                isLoggedIn={!!user}
+                onLoginClick={() => setShowLoginModal(true)}
+                error={chatError}
+                setError={setChatError}
+                onRegenerateResponse={regenerateResponse}
+              />
             </div>
           )}
 
