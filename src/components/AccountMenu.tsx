@@ -79,7 +79,8 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
       secondaryColor: '#a855f7',
       fontFamily: 'Inter',
       gradientEnabled: false,
-      gradientColors: ['#7c3aed', '#a855f7']
+      gradientColors: ['#7c3aed', '#a855f7'],
+      selectedTheme: 'default'
     };
     
     setTempCustomization(defaultSettings);
@@ -115,6 +116,9 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
       await createCheckoutSession(SUBSCRIPTION_PLANS.MONTHLY.priceId);
     } catch (error) {
       console.error('Failed to create checkout session:', error);
+      
+      // Show user-friendly error message
+      alert('Failed to start checkout process. Please try again.');
     }
   };
 
