@@ -1580,6 +1580,41 @@ function App() {
             >
               <div className="h-full flex items-end p-4">
                 <div className="w-full">
+                  {/* Anonymous Usage Indicator */}
+                  {!user && (
+                    <div className={`mb-4 p-3 rounded-lg ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-orange-50 border-orange-200'} border`}>
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${isDark ? 'bg-orange-400' : 'bg-orange-500'}`}></div>
+                        <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-orange-700'}`}>
+                          Anonymous mode - limited messages
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Terms and Privacy Links */}
+                  <p 
+                    className={`text-xs text-center mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
+                    style={{ fontFamily: customization.fontFamily }}
+                  >
+                    Make sure you agree to our{' '}
+                    <a 
+                      href="#" 
+                      className={`underline hover:no-underline ${isDark ? 'text-gray-300' : ''}`}
+                      style={{ color: isDark ? undefined : customization.primaryColor }}
+                    >
+                      Terms
+                    </a>
+                    {' '}and our{' '}
+                    <a 
+                      href="#" 
+                      className={`underline hover:no-underline ${isDark ? 'text-gray-300' : ''}`}
+                      style={{ color: isDark ? undefined : customization.primaryColor }}
+                    >
+                      Privacy Policy
+                    </a>
+                  </p>
+
                   <form onSubmit={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
