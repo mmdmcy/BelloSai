@@ -275,35 +275,36 @@ Make it fun and modern. No markdown formatting.`
     const guess = playerGuess.trim();
     const matchResult = checkAnswerMatch(guess, question.answers, revealedAnswers);
 
-    if (matchResult) {
-      // Correct guess
-      const newRevealed = [...revealedAnswers, matchResult.answerIndex];
-      setRevealedAnswers(newRevealed);
-      setPlayerScore(prev => prev + question.answers[matchResult.answerIndex].points);
-      setLastPlayerGuess({
-        text: guess,
-        correct: true,
-        points: question.answers[matchResult.answerIndex].points,
-        matchedAnswer: matchResult.matchedText
-      });
-      setGameLog(prev => [...prev, `Player: "${guess}" → ✅ "${matchResult.matchedText}" (${question.answers[matchResult.answerIndex].points} pts)`]);
-      setPlayerGuess('');
-      
-      // Check if all answers revealed
-      if (newRevealed.length === question.answers.length) {
-        setGameEnded(true);
-        setGameStatus('finished');
-        return;
-      }
-      
-      setTurn('ai');
-      
-      // AI turn after delay
-      setTimeout(() => {
-        if (!gameEnded) {
-          handleAITurn();
+          if (matchResult) {
+        // Correct guess
+        const newRevealed = [...revealedAnswers, matchResult.answerIndex];
+        setRevealedAnswers(newRevealed);
+        setPlayerScore(prev => prev + question.answers[matchResult.answerIndex].points);
+        setLastPlayerGuess({
+          text: guess,
+          correct: true,
+          points: question.answers[matchResult.answerIndex].points,
+          matchedAnswer: matchResult.matchedText
+        });
+        setGameLog(prev => [...prev, `Player: "${guess}" → ✅ "${matchResult.matchedText}" (${question.answers[matchResult.answerIndex].points} pts)`]);
+        setPlayerGuess('');
+        
+        // Check if all answers revealed
+        if (newRevealed.length === question.answers.length) {
+          setGameEnded(true);
+          setGameStatus('finished');
+          return;
         }
-      }, 2000);
+        
+        // Always switch to AI turn after player guess (correct or wrong)
+        setTurn('ai');
+        
+        // AI turn after longer delay to prevent rate limits
+        setTimeout(() => {
+          if (!gameEnded) {
+            handleAITurn();
+          }
+        }, 3000);
     } else {
       // Wrong guess
       const newStrikes = playerStrikes + 1;
@@ -324,12 +325,12 @@ Make it fun and modern. No markdown formatting.`
       
       setTurn('ai');
       
-      // AI turn after delay
-      setTimeout(() => {
-        if (!gameEnded) {
-          handleAITurn();
-        }
-      }, 2000);
+              // AI turn after longer delay to prevent rate limits
+        setTimeout(() => {
+          if (!gameEnded) {
+            handleAITurn();
+          }
+        }, 3000);
     }
   };
 
@@ -348,16 +349,17 @@ Make it fun and modern. No markdown formatting.`
         return;
       }
       
-      // Build context for AI
-      const revealedAnswerTexts = revealedAnswers.map(i => question.answers[i].text);
-      const previousGuessText = aiPreviousGuesses.length > 0 ? 
-        `\n\nDo NOT repeat these previous guesses: ${aiPreviousGuesses.join(', ')}` : '';
-      
-      const prompt = `You are playing Family Feud. The question is: "${question.question}"
+              // Build context for AI - include both revealed answers AND all previous AI guesses
+        const revealedAnswerTexts = revealedAnswers.map(i => question.answers[i].text);
+        const allPreviousGuesses = [...revealedAnswerTexts, ...aiPreviousGuesses];
+        const previousGuessText = allPreviousGuesses.length > 0 ? 
+          `\n\nALREADY GUESSED (do NOT repeat): ${allPreviousGuesses.join(', ')}` : '';
+        
+        const prompt = `You are playing Family Feud. The question is: "${question.question}"
 
-Already revealed answers: ${revealedAnswerTexts.length > 0 ? revealedAnswerTexts.join(', ') : 'None'}${previousGuessText}
+Correctly guessed answers (on the board): ${revealedAnswerTexts.length > 0 ? revealedAnswerTexts.join(', ') : 'None'}${previousGuessText}
 
-Think of a NEW answer that might be on the board. Give a short, common response people would typically give.
+Think of a COMPLETELY NEW answer that has NOT been guessed yet. Give a short, common response people would typically give.
 
 Reply with ONLY your answer. No explanations.`;
 
@@ -367,27 +369,28 @@ Reply with ONLY your answer. No explanations.`;
       let retries = 0;
       const maxRetries = 2;
       
-      while (retries <= maxRetries) {
-        try {
-          // Use shorter timeout for faster game flow
-          const timeoutPromise = new Promise<never>((_, reject) => {
-            setTimeout(() => reject(new Error('AI timeout')), 6000);
-          });
-          
-          const responsePromise = sendChatMessage([{ type: 'user', content: prompt }], 'DeepSeek-V3');
-          response = await Promise.race([responsePromise, timeoutPromise]);
-          break;
-        } catch (error) {
-          retries++;
-          console.log(`AI request failed, attempt ${retries}/${maxRetries + 1}:`, error);
-          
-          if (retries > maxRetries) {
-            throw error;
+              while (retries <= maxRetries) {
+          try {
+            // Use shorter timeout and add delay between requests to prevent rate limits
+            const timeoutPromise = new Promise<never>((_, reject) => {
+              setTimeout(() => reject(new Error('AI timeout')), 8000);
+            });
+            
+            const responsePromise = sendChatMessage([{ type: 'user', content: prompt }], 'DeepSeek-V3');
+            response = await Promise.race([responsePromise, timeoutPromise]);
+            break;
+          } catch (error) {
+            retries++;
+            console.log(`AI request failed, attempt ${retries}/${maxRetries + 1}:`, error);
+            
+            if (retries > maxRetries) {
+              throw error;
+            }
+            
+            // Longer delay between retries to prevent rate limiting
+            await new Promise(resolve => setTimeout(resolve, 2000));
           }
-          
-          await new Promise(resolve => setTimeout(resolve, 500));
         }
-      }
       
       console.log('AI Response:', response);
       
@@ -398,41 +401,70 @@ Reply with ONLY your answer. No explanations.`;
       // Clean up the response
       const guess = response.trim().replace(/^["']|["']$/g, '');
       
-      // Add to AI's previous guesses to prevent repeats
-      setAiPreviousGuesses(prev => [...prev, guess]);
+      // Add to AI's previous guesses to prevent repeats (only add if not already in the list)
+      setAiPreviousGuesses(prev => {
+        const guessLower = guess.toLowerCase();
+        if (!prev.some(prevGuess => prevGuess.toLowerCase() === guessLower)) {
+          return [...prev, guess];
+        }
+        return prev;
+      });
 
-      // Check if AI guessed correctly
-      const matchResult = checkAnswerMatch(guess, question.answers, revealedAnswers);
-
-      if (matchResult) {
-        // AI correct
-        const newRevealed = [...revealedAnswers, matchResult.answerIndex];
-        setRevealedAnswers(newRevealed);
-        setAiScore(prev => prev + question.answers[matchResult.answerIndex].points);
-        setLastAiGuess({
-          text: guess,
-          correct: true,
-          points: question.answers[matchResult.answerIndex].points,
-          matchedAnswer: matchResult.matchedText
-        });
-        setGameLog(prev => [...prev, `AI: "${guess}" → ✅ "${matchResult.matchedText}" (${question.answers[matchResult.answerIndex].points} pts)`]);
+              // Check if AI guessed correctly (exclude already revealed answers)
+        const matchResult = checkAnswerMatch(guess, question.answers, revealedAnswers);
         
-        // Check if all answers revealed
-        if (newRevealed.length === question.answers.length) {
-          setGameEnded(true);
-          setGameStatus('finished');
+        // Additional check: if the guess exactly matches an already revealed answer, it's not valid
+        const alreadyRevealed = revealedAnswers.some(index => {
+          const revealedAnswer = question.answers[index].text.toLowerCase();
+          return revealedAnswer === guess.toLowerCase();
+        });
+        
+        if (alreadyRevealed) {
+          console.log(`AI tried to guess already revealed answer: "${guess}"`);
+          // Treat as wrong guess
+          const newStrikes = aiStrikes + 1;
+          setAiStrikes(newStrikes);
+          setLastAiGuess({
+            text: guess,
+            correct: false
+          });
+          setGameLog(prev => [...prev, `AI: "${guess}" → ❌ Already revealed! (Strike ${newStrikes}/${maxStrikes})`]);
+          
+          if (newStrikes >= maxStrikes) {
+            setGameEnded(true);
+            setGameStatus('finished');
+            setAiThinking(false);
+            return;
+          }
+          
+          setTurn('player');
           setAiThinking(false);
           return;
         }
-        
-        // AI gets another turn for correct answer
-        setTurn('ai');
-        
-        setTimeout(() => {
-          if (!gameEnded) {
-            handleAITurn();
+
+              if (matchResult) {
+          // AI correct
+          const newRevealed = [...revealedAnswers, matchResult.answerIndex];
+          setRevealedAnswers(newRevealed);
+          setAiScore(prev => prev + question.answers[matchResult.answerIndex].points);
+          setLastAiGuess({
+            text: guess,
+            correct: true,
+            points: question.answers[matchResult.answerIndex].points,
+            matchedAnswer: matchResult.matchedText
+          });
+          setGameLog(prev => [...prev, `AI: "${guess}" → ✅ "${matchResult.matchedText}" (${question.answers[matchResult.answerIndex].points} pts)`]);
+          
+          // Check if all answers revealed
+          if (newRevealed.length === question.answers.length) {
+            setGameEnded(true);
+            setGameStatus('finished');
+            setAiThinking(false);
+            return;
           }
-        }, 2000);
+          
+          // Always switch to player turn after AI guess (correct or wrong) - no more back-to-back AI turns
+          setTurn('player');
       } else {
         // AI wrong
         const newStrikes = aiStrikes + 1;
@@ -557,13 +589,13 @@ Reply with ONLY your answer. No explanations.`;
               >
                 <div className="flex items-center gap-3">
                   <span className="text-sm font-bold text-gray-500">#{index + 1}</span>
-                  <span className="font-medium">
-                    {revealedAnswers.includes(index) || gameEnded ? answer.text : '???'}
-                  </span>
-                </div>
-                <span className="font-bold text-lg">
-                  {revealedAnswers.includes(index) || gameEnded ? answer.points : '??'}
+                                  <span className="font-medium">
+                  {revealedAnswers.includes(index) ? answer.text : gameEnded ? answer.text : '???'}
                 </span>
+              </div>
+              <span className="font-bold text-lg">
+                {revealedAnswers.includes(index) ? answer.points : gameEnded ? answer.points : '??'}
+              </span>
               </div>
             ))}
           </div>
