@@ -2096,7 +2096,13 @@ function App() {
 
               {/* Main Content Area */}
               {elementKey === 'mainContent' && (
-                <div className={`h-full w-full ${isDark ? 'bg-gray-900' : 'bg-purple-50'}`}>
+                <div className={`h-full w-full ${
+                  hasGlassEffect() && !isDark 
+                    ? 'glass-element' 
+                    : isDark 
+                      ? 'bg-gray-900' 
+                      : 'bg-purple-50'
+                }`}>
                   {messages.length === 0 ? (
                     <MainContent 
                       isDark={isDark} 
@@ -2109,6 +2115,7 @@ function App() {
                       onLoginClick={() => setShowLoginModal(true)}
                       // Alleen input tonen als er geen inputBox in layout is of als we mobiel zijn
                       hideInput={!!layout.inputBox && !isMobile}
+                      hasGlassEffect={hasGlassEffect()}
                     />
                   ) : !isMobile && (
                     <ChatView 

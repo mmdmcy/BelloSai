@@ -38,6 +38,7 @@ interface MainContentProps {
   isGenerating?: boolean;
   isLoggedIn?: boolean;
   onLoginClick?: () => void;
+  hasGlassEffect?: boolean;
 }
 
 export default function MainContent({ 
@@ -51,7 +52,8 @@ export default function MainContent({
   customization,
   isGenerating = false,
   isLoggedIn = false,
-  onLoginClick
+  onLoginClick,
+  hasGlassEffect = false
 }: MainContentProps) {
   // Input state management
   const [inputValue, setInputValue] = useState('');
@@ -169,9 +171,11 @@ export default function MainContent({
           
           <form onSubmit={handleSubmit}>
             {/* Message Input Container */}
-            <div className={`relative rounded-2xl border ${
-              isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-purple-200'
-            } shadow-sm`}>
+            <div className={`relative rounded-2xl ${
+              hasGlassEffect && !isDark 
+                ? 'glass-input' 
+                : `border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-purple-200'} shadow-sm`
+            }`}>
               <textarea
                 ref={textareaRef}
                 value={inputValue}
@@ -179,9 +183,11 @@ export default function MainContent({
                 onKeyDown={handleKeyDown}
                 placeholder="Type your message here..."
                 className={`w-full px-6 py-4 pr-32 rounded-2xl resize-none focus:outline-none min-h-[60px] max-h-32 ${
-                  isDark 
-                    ? 'bg-gray-700 text-white placeholder-gray-400' 
-                    : 'bg-white text-gray-900 placeholder-gray-500'
+                  hasGlassEffect && !isDark 
+                    ? 'bg-transparent text-gray-800 placeholder-gray-600' 
+                    : isDark 
+                      ? 'bg-gray-700 text-white placeholder-gray-400' 
+                      : 'bg-white text-gray-900 placeholder-gray-500'
                 }`}
                 style={{ fontFamily: customization.fontFamily }}
                 rows={1}
@@ -202,16 +208,22 @@ export default function MainContent({
                 </div>
                 
                 {/* Send Button */}
-                <button 
-                  type="submit"
-                  disabled={!inputValue.trim()}
-                  className="text-white p-2.5 rounded-xl transition-colors hover:opacity-90 disabled:opacity-50"
-                  style={{ 
-                    background: customization.gradientEnabled 
-                      ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                      : customization.primaryColor 
-                  }}
-                >
+                                  <button 
+                    type="submit"
+                    disabled={!inputValue.trim()}
+                    className={`${
+                      hasGlassEffect && !isDark 
+                        ? 'glass-button-modern text-gray-800' 
+                        : 'text-white'
+                    } p-2.5 rounded-xl transition-colors hover:opacity-90 disabled:opacity-50`}
+                    style={{ 
+                      background: !hasGlassEffect 
+                        ? (customization.gradientEnabled 
+                            ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                            : customization.primaryColor)
+                        : undefined
+                    }}
+                  >
                   <ArrowUp className="w-4 h-4" />
                 </button>
               </div>
@@ -226,9 +238,15 @@ export default function MainContent({
   return (
     <div 
       ref={containerRef}
-      className={`flex-1 h-full flex flex-col ${isDark ? 'bg-gray-900' : 'bg-purple-50'}`}
+      className={`flex-1 h-full flex flex-col ${
+        hasGlassEffect && !isDark 
+          ? 'bg-transparent' 
+          : isDark 
+            ? 'bg-gray-900' 
+            : 'bg-purple-50'
+      }`}
       style={{
-        background: customization.gradientEnabled && !isDark 
+        background: !hasGlassEffect && customization.gradientEnabled && !isDark 
           ? `linear-gradient(135deg, ${customization.primaryColor}05, ${customization.secondaryColor}05)`
           : undefined
       }}
@@ -238,12 +256,20 @@ export default function MainContent({
         <div className="w-full text-center" style={{ maxWidth: getResponsiveMaxWidth() }}>
           {/* Main Heading - Responsive text size */}
           <h1 
-            className={`${containerWidth < 600 ? 'text-2xl' : containerWidth < 1200 ? 'text-3xl' : 'text-4xl'} font-semibold mb-10 ${isDark ? 'text-white' : 'text-purple-800'}`}
+            className={`${containerWidth < 600 ? 'text-2xl' : containerWidth < 1200 ? 'text-3xl' : 'text-4xl'} font-semibold mb-10 ${
+              hasGlassEffect && !isDark 
+                ? 'text-gray-800' 
+                : isDark 
+                  ? 'text-white' 
+                  : 'text-purple-800'
+            }`}
             style={{ 
               fontFamily: customization.fontFamily,
-              color: isDark 
-                ? (customization.primaryColor !== '#7c3aed' ? customization.primaryColor : undefined)
-                : customization.primaryColor 
+              color: hasGlassEffect && !isDark 
+                ? '#1f2937'
+                : isDark 
+                  ? (customization.primaryColor !== '#7c3aed' ? customization.primaryColor : undefined)
+                  : customization.primaryColor 
             }}
           >
             How can I help you?
@@ -265,13 +291,17 @@ export default function MainContent({
                   key={index}
                   onClick={() => handleQuestionClick(question)}
                   className={`block w-full text-left px-6 py-3.5 rounded-xl transition-colors ${
-                    isDark 
-                      ? 'text-gray-300 hover:bg-gray-700 hover:text-white' 
-                      : 'hover:text-purple-800'
+                    hasGlassEffect && !isDark
+                      ? 'text-gray-700 hover:bg-white/30 hover:text-gray-800'
+                      : isDark 
+                        ? 'text-gray-300 hover:bg-gray-700 hover:text-white' 
+                        : 'hover:text-purple-800'
                   } ${containerWidth < 600 ? 'text-sm px-4 py-3' : 'px-6 py-3.5'}`}
                   style={{ 
                     fontFamily: customization.fontFamily,
-                    color: getTextColor(customization.primaryColor + 'CC', isDark)
+                    color: hasGlassEffect && !isDark 
+                      ? '#374151'
+                      : getTextColor(customization.primaryColor + 'CC', isDark)
                   }}
                   onMouseEnter={(e) => {
                     if (!isDark) {
@@ -305,22 +335,52 @@ export default function MainContent({
             
             {/* Terms and Privacy Links */}
             <p 
-              className={`text-xs text-center mb-6 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
+              className={`text-xs text-center mb-6 ${
+                hasGlassEffect && !isDark 
+                  ? 'text-gray-600' 
+                  : isDark 
+                    ? 'text-gray-400' 
+                    : 'text-gray-500'
+              }`}
               style={{ fontFamily: customization.fontFamily }}
             >
               Make sure you agree to our{' '}
               <a 
                 href="#" 
-                className={`underline hover:no-underline ${isDark ? 'text-gray-300' : ''}`}
-                style={{ color: isDark ? undefined : customization.primaryColor }}
+                className={`underline hover:no-underline ${
+                  hasGlassEffect && !isDark 
+                    ? 'text-gray-700' 
+                    : isDark 
+                      ? 'text-gray-300' 
+                      : ''
+                }`}
+                style={{ 
+                  color: hasGlassEffect && !isDark 
+                    ? '#374151'
+                    : isDark 
+                      ? undefined 
+                      : customization.primaryColor 
+                }}
               >
                 Terms
               </a>
               {' '}and our{' '}
               <a 
                 href="#" 
-                className={`underline hover:no-underline ${isDark ? 'text-gray-300' : ''}`}
-                style={{ color: isDark ? undefined : customization.primaryColor }}
+                className={`underline hover:no-underline ${
+                  hasGlassEffect && !isDark 
+                    ? 'text-gray-700' 
+                    : isDark 
+                      ? 'text-gray-300' 
+                      : ''
+                }`}
+                style={{ 
+                  color: hasGlassEffect && !isDark 
+                    ? '#374151'
+                    : isDark 
+                      ? undefined 
+                      : customization.primaryColor 
+                }}
               >
                 Privacy Policy
               </a>
@@ -338,9 +398,11 @@ export default function MainContent({
                   onKeyDown={handleKeyDown}
                   placeholder="Type your message here..."
                   className={`w-full px-6 py-4 pr-32 rounded-2xl resize-none focus:outline-none min-h-[60px] max-h-32 ${
-                    isDark 
-                      ? 'bg-gray-700 text-white placeholder-gray-400' 
-                      : 'bg-white text-gray-900 placeholder-gray-500'
+                    hasGlassEffect && !isDark 
+                      ? 'bg-transparent text-gray-800 placeholder-gray-600' 
+                      : isDark 
+                        ? 'bg-gray-700 text-white placeholder-gray-400' 
+                        : 'bg-white text-gray-900 placeholder-gray-500'
                   }`}
                   style={{ fontFamily: customization.fontFamily }}
                   rows={1}
