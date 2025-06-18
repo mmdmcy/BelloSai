@@ -184,6 +184,22 @@ export function useSubscription(): UseSubscriptionReturn {
 
   // Refresh subscription data
   const refreshSubscription = useCallback(async () => {
+    console.log('🔄 [useSubscription] Refreshing subscription data...')
+    
+    try {
+      // First try to force sync from Stripe
+      const syncSuccess = await StripeService.forceSyncSubscription()
+      
+      if (syncSuccess) {
+        console.log('✅ [useSubscription] Force sync successful, refetching data...')
+      } else {
+        console.warn('⚠️ [useSubscription] Force sync failed, still refetching data...')
+      }
+    } catch (error) {
+      console.warn('⚠️ [useSubscription] Force sync error, still refetching data:', error)
+    }
+    
+    // Always refetch the data regardless of sync result
     await fetchSubscriptionData()
   }, [fetchSubscriptionData])
 

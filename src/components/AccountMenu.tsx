@@ -21,13 +21,15 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [upgradeLoading, setUpgradeLoading] = useState(false);
+  const [syncLoading, setSyncLoading] = useState(false);
   
   // Use subscription hook
   const { 
     subscription, 
     hasActiveSubscription, 
     loading: subscriptionLoading, 
-    createCheckoutSession 
+    createCheckoutSession,
+    refreshSubscription 
   } = useSubscription();
 
   // Add a local timeout to override subscription loading if it takes too long
@@ -149,6 +151,22 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
       alert('Er ging iets mis bij het starten van de checkout. Probeer het opnieuw.');
     } finally {
       setUpgradeLoading(false);
+    }
+  };
+
+  const handleSyncSubscription = async () => {
+    if (syncLoading) return;
+    
+    setSyncLoading(true);
+    
+    try {
+      await refreshSubscription();
+      alert('Abonnement status is bijgewerkt!');
+    } catch (error) {
+      console.error('❌ [AccountMenu] Failed to sync subscription:', error);
+      alert('Er ging iets mis bij het synchroniseren. Probeer het opnieuw.');
+    } finally {
+      setSyncLoading(false);
     }
   };
 
@@ -289,6 +307,33 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
                 Your subscription will cancel at the end of the current billing period.
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Subscription Sync Section - Always show when logged in */}
+      {user && (
+        <div className={`p-4 rounded-lg border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <div className="flex justify-between items-center">
+            <div>
+              <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                Subscription Status
+              </h4>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                Heb je net een abonnement gekocht? Synchroniseer je status.
+              </p>
+            </div>
+            <button
+              onClick={handleSyncSubscription}
+              disabled={syncLoading}
+              className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+                isDark 
+                  ? 'bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50' 
+                  : 'bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50'
+              }`}
+            >
+              {syncLoading ? 'Synchroniseren...' : 'Synchroniseer'}
+            </button>
           </div>
         </div>
       )}
