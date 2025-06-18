@@ -1,7 +1,7 @@
 /**
- * Family Feud AI Service
+ * AI Feud AI Service
  * 
- * Handles AI integration for Family Feud game:
+ * Handles AI integration for AI Feud game:
  * - DeepSeek-V3 generates questions and top 5 answers
  * - DeepSeek-R1 provides AI player responses
  * - Answer matching and scoring logic
@@ -9,7 +9,7 @@
 
 import { sendChatMessage, ChatMessage } from './supabase-chat';
 
-export interface FamilyFeudQuestion {
+export interface AIFeudQuestion {
   question: string;
   answers: Array<{
     text: string;
@@ -30,12 +30,12 @@ export interface AIGuessResult {
 }
 
 /**
- * Generate a Family Feud question using DeepSeek-V3
+ * Generate an AI Feud question using DeepSeek-V3
  */
-export async function generateFamilyFeudQuestion(): Promise<FamilyFeudQuestion> {
+export async function generateAIFeudQuestion(): Promise<AIFeudQuestion> {
   // Create a more varied and creative prompt
   const prompts = [
-    `Generate a creative Family Feud style question with exactly 5 answers and their point values. Make it fun and engaging!
+    `Generate a creative AI Feud style question with exactly 5 answers and their point values. Make it fun and engaging!
 
 IMPORTANT: Do NOT use any markdown formatting like **, *, #, or any special characters. Just use plain text.
 
@@ -51,14 +51,14 @@ Answers:
 Make sure:
 - Total points add up to 100
 - Answers are common, relatable responses
-- Question is creative and different from typical Family Feud questions
+- Question is creative and different from typical AI Feud questions
 - Points are realistic (higher for more common answers)
 - Make it about modern life, technology, social media, food, travel, hobbies, etc.
 - Use ONLY plain text, no formatting
 
 Generate a unique question:`,
     
-    `Create an original Family Feud question that hasn't been used before. Think outside the box!
+    `Create an original AI Feud question that hasn't been used before. Think outside the box!
 
 IMPORTANT: Use plain text only. No markdown, no asterisks, no special formatting.
 
@@ -83,7 +83,7 @@ Make it about:
 
 Be creative and original! Use plain text only.`,
 
-    `Invent a completely new Family Feud question that would be fun to play. Make it contemporary and relatable.
+    `Invent a completely new AI Feud question that would be fun to play. Make it contemporary and relatable.
 
 IMPORTANT: Plain text only. No formatting, no asterisks, no markdown.
 
@@ -120,7 +120,7 @@ Make it fresh and entertaining! Plain text only.`
     const parsed = parseAIResponse(response);
     return parsed;
   } catch (error) {
-    console.error('Failed to generate Family Feud question:', error);
+    console.error('Failed to generate AI Feud question:', error);
     // Fallback to a default question
     return {
       question: "Name something people do when they can't sleep",
@@ -138,7 +138,7 @@ Make it fresh and entertaining! Plain text only.`
 /**
  * Parse AI response to extract question and answers
  */
-function parseAIResponse(response: string): FamilyFeudQuestion {
+function parseAIResponse(response: string): AIFeudQuestion {
   try {
     // Clean up markdown formatting
     const cleanResponse = response
@@ -253,7 +253,7 @@ export async function getAIGuess(
   console.log('  - Revealed:', revealedTexts);
   console.log('  - Available options:', unrevealedAnswers.map(a => a.text));
   
-  const prompt = `Family Feud game. Question: "${question}"
+  const prompt = `AI Feud game. Question: "${question}"
 
 Revealed: ${revealedTexts.length > 0 ? revealedTexts.join(', ') : 'None'}
 
