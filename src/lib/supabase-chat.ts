@@ -32,13 +32,13 @@ export type DeepSeekModel = 'DeepSeek-V3' | 'DeepSeek-R1';
 
 type ModelProvider = 'DeepSeek' | 'Gemini';
 
-// Optimized timeout settings for better UX
-const REQUEST_TIMEOUT = 35000; // 35 seconds instead of 15 - gives more time for AI response
-const STREAM_TIMEOUT = 45000; // 45 seconds for streaming
+// ULTIMATE LIGHTNING FAST timeout settings - ABSOLUTE ZERO HANGING!
+const REQUEST_TIMEOUT = 15000; // 15 seconds - ULTIMATE SPEED!
+const STREAM_TIMEOUT = 18000; // 18 seconds for streaming
 const OPTIMAL_CHUNK_SIZE = 12; // Optimal chunk size for smooth streaming
 
-// Performance optimization: Reduce timeouts for faster feedback
-const FAST_TIMEOUT = 15000; // 15 seconds instead of 30-60
+// Performance optimization: Ultra-aggressive timeouts for immediate feedback
+const FAST_TIMEOUT = 8000; // 8 seconds for ultra-fast response
 
 /**
  * Get model provider based on model code
@@ -67,38 +67,45 @@ export async function sendChatMessage(
   try {
     console.log('🚀 Starting chat message request:', { messages, model: modelCode, conversationId });
     
-    // Create abort controller for timeout handling
+    // Reset abort controller with ultra-fast timeout and connection cleanup
     abortController = new AbortController();
     
-    // Optimized timeout - longer for better AI response completion
+    // Add connection reset for preventing hangs on second requests
+    const connectionHeaders = {
+      'Connection': 'close', // Force connection close to prevent hanging
+      'Cache-Control': 'no-cache', // Prevent caching issues
+    };
+    
     timeoutId = setTimeout(() => {
-      console.error('⏰ Request timeout after 35 seconds - aborting for faster UX');
+      console.error('⚡ ULTIMATE TIMEOUT after 15 seconds - ZERO HANGING TOLERANCE!');
       abortController?.abort();
     }, REQUEST_TIMEOUT);
     
-    // Get current session (optional for anonymous users)
+    // Get current session with error recovery
     let { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
     console.log('🔍 Session check:', { session: !!session, error: sessionError });
 
-    // Prepare authentication headers
-    const authHeaders: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
     // Enhanced retry logic for failed authentication
     if (sessionError && retryCount === 0) {
-      console.log('🔄 Session error detected, attempting refresh...');
+      console.log('🔄 Session error detected, attempting fresh refresh...');
       try {
+        // Force a fresh session
+        await supabase.auth.signOut();
         const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
         if (!refreshError && refreshData.session) {
           session = refreshData.session;
-          console.log('✅ Session refreshed successfully after error');
+          console.log('✅ Session completely refreshed after error');
         }
       } catch (refreshError) {
-        console.warn('⚠️ Session refresh failed, continuing as anonymous');
+        console.warn('⚠️ Complete session refresh failed, continuing as anonymous');
       }
     }
+    
+    // Prepare authentication headers with optimized settings
+    const authHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
     
     if (session) {
       console.log('✅ Authentication successful, user:', session.user.email);
@@ -149,7 +156,7 @@ export async function sendChatMessage(
     
     const response = await fetch(url, {
       method: 'POST',
-      headers: authHeaders,
+      headers: { ...authHeaders, ...connectionHeaders },
       body: JSON.stringify({
         messages,
         model: modelCode,
