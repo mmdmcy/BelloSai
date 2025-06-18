@@ -14,7 +14,6 @@ interface UseSubscriptionReturn {
   cancelSubscription: () => Promise<boolean>
   reactivateSubscription: () => Promise<boolean>
   refreshSubscription: () => Promise<void>
-  forceSyncSubscription: () => Promise<void>
 }
 
 export function useSubscription(): UseSubscriptionReturn {
@@ -71,26 +70,17 @@ export function useSubscription(): UseSubscriptionReturn {
       setLoading(true)
       setError(null)
 
-      // Add a timeout to prevent infinite loading
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Subscription data fetch timeout')), 10000) // 10 second timeout
-      })
-
-      const dataPromise = Promise.all([
+      const [subscriptionData, customerData, hasActive] = await Promise.all([
         StripeService.getUserSubscription(),
         StripeService.getStripeCustomer(),
         StripeService.hasActiveSubscription()
       ])
 
-      const [subscriptionData, customerData, hasActive] = await Promise.race([
-        dataPromise,
-        timeoutPromise
-      ]) as [any, any, boolean]
-
       console.log('✅ [useSubscription] Data fetched successfully:', { 
         hasSubscription: !!subscriptionData, 
         hasCustomer: !!customerData, 
-        hasActive 
+        hasActive,
+        subscriptionStatus: subscriptionData?.subscription_status
       })
 
       setSubscription(subscriptionData)
@@ -202,32 +192,6 @@ export function useSubscription(): UseSubscriptionReturn {
     fetchSubscriptionData()
   }, [fetchSubscriptionData])
 
-  // Force sync subscription data
-  const forceSyncSubscription = useCallback(async () => {
-    try {
-      console.log('🔧 [useSubscription] Force syncing subscription...')
-      setLoading(true)
-      setError(null)
-      
-      // Use the new force refresh method
-      const syncResult = await StripeService.forceRefreshSubscription()
-      
-      if (syncResult.success) {
-        console.log('✅ [useSubscription] Force sync successful, refreshing data...')
-        // Refresh local data after successful sync
-        await fetchSubscriptionData()
-      } else {
-        console.error('❌ [useSubscription] Force sync failed:', syncResult.message)
-        setError(syncResult.message)
-      }
-    } catch (err) {
-      console.error('❌ [useSubscription] Force sync error:', err)
-      setError('Failed to sync subscription data')
-    } finally {
-      setLoading(false)
-    }
-  }, [fetchSubscriptionData])
-
   return {
     subscription,
     customer,
@@ -239,6 +203,5 @@ export function useSubscription(): UseSubscriptionReturn {
     cancelSubscription,
     reactivateSubscription,
     refreshSubscription,
-    forceSyncSubscription,
   }
 } 
