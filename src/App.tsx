@@ -1619,7 +1619,7 @@ function App() {
           )}
 
           {/* Mobile Input Box - Only shows input controls, NO title */}
-          {mobileLayout.mobileInputBox && (
+          {mobileLayout.mobileInputBox && isMobile && (
             <div 
               className="pointer-events-auto"
               style={{
@@ -1641,29 +1641,6 @@ function App() {
                       </div>
                     </div>
                   )}
-                  
-                  {/* Terms and Privacy Links */}
-                  <p 
-                    className={`text-xs text-center mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
-                    style={{ fontFamily: customization.fontFamily }}
-                  >
-                    Make sure you agree to our{' '}
-                    <a 
-                      href="#" 
-                      className={`underline hover:no-underline ${isDark ? 'text-gray-300' : ''}`}
-                      style={{ color: isDark ? undefined : customization.primaryColor }}
-                    >
-                      Terms
-                    </a>
-                    {' '}and our{' '}
-                    <a 
-                      href="#" 
-                      className={`underline hover:no-underline ${isDark ? 'text-gray-300' : ''}`}
-                      style={{ color: isDark ? undefined : customization.primaryColor }}
-                    >
-                      Privacy Policy
-                    </a>
-                  </p>
 
                   <form onSubmit={(e) => {
                     e.preventDefault();
@@ -2024,29 +2001,6 @@ function App() {
                           </div>
                         </div>
                       )}
-                      
-                      {/* Terms and Privacy Links */}
-                      <p 
-                        className={`text-xs text-center mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
-                        style={{ fontFamily: customization.fontFamily }}
-                      >
-                        Make sure you agree to our{' '}
-                        <a 
-                          href="#" 
-                          className={`underline hover:no-underline ${isDark ? 'text-gray-300' : ''}`}
-                          style={{ color: isDark ? undefined : customization.primaryColor }}
-                        >
-                          Terms
-                        </a>
-                        {' '}and our{' '}
-                        <a 
-                          href="#" 
-                          className={`underline hover:no-underline ${isDark ? 'text-gray-300' : ''}`}
-                          style={{ color: isDark ? undefined : customization.primaryColor }}
-                        >
-                          Privacy Policy
-                        </a>
-                      </p>
 
                       <form onSubmit={(e) => {
                         e.preventDefault();
