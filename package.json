@@ -1,8 +1,28 @@
 {
-  "name": "vite-react-typescript-starter",
+  "name": "bellosai",
+  "description": "A modern AI chat assistant with multiple models, real-time streaming, and an AI Feud game",
+  "version": "1.0.0",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
+  "author": "mmdmcy",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mmdmcy/BelloSai.git"
+  },
+  "homepage": "https://bellosai.com",
+  "keywords": [
+    "ai",
+    "chat",
+    "assistant",
+    "react",
+    "typescript",
+    "supabase",
+    "deepseek",
+    "gemini",
+    "streaming",
+    "game"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",
