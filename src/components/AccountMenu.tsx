@@ -20,6 +20,7 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
   const [tempCustomization, setTempCustomization] = useState<CustomizationSettings>(customization);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
   
   // Use subscription hook
   const { 
@@ -28,6 +29,22 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
     loading: subscriptionLoading, 
     createCheckoutSession 
   } = useSubscription();
+
+  // Add a local timeout to override subscription loading if it takes too long
+  const [localSubscriptionLoading, setLocalSubscriptionLoading] = React.useState(true);
+  
+  React.useEffect(() => {
+    if (!subscriptionLoading) {
+      setLocalSubscriptionLoading(false);
+    } else {
+      // Force subscription loading to false after 5 seconds
+      const timeout = setTimeout(() => {
+        setLocalSubscriptionLoading(false);
+      }, 5000);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [subscriptionLoading]);
 
   const tabs = ['Account', 'Customization', 'History & Sync', 'Models', 'API Keys', 'Attachments', 'Contact Us'];
 
@@ -101,7 +118,7 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
   };
 
   const getPlanStatus = () => {
-    if (subscriptionLoading) return 'Loading...';
+    if (localSubscriptionLoading) return 'Checking...';
     if (hasActiveSubscription) return 'Pro Plan';
     return 'Free Plan';
   };
@@ -112,13 +129,26 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
   };
 
   const handleUpgradeClick = async () => {
+    if (upgradeLoading) return; // Prevent multiple clicks
+    
+    setUpgradeLoading(true);
+    
     try {
-      await createCheckoutSession(SUBSCRIPTION_PLANS.MONTHLY.priceId);
+      // Add timeout to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Checkout timeout')), 15000) // 15 second timeout
+      })
+      
+      const checkoutPromise = createCheckoutSession(SUBSCRIPTION_PLANS.MONTHLY.priceId);
+      
+      await Promise.race([checkoutPromise, timeoutPromise]);
     } catch (error) {
-      console.error('Failed to create checkout session:', error);
+      console.error('❌ [AccountMenu] Failed to create checkout session:', error);
       
       // Show user-friendly error message
-      alert('Failed to start checkout process. Please try again.');
+      alert('Er ging iets mis bij het starten van de checkout. Probeer het opnieuw.');
+    } finally {
+      setUpgradeLoading(false);
     }
   };
 
@@ -212,7 +242,7 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
 
           <button 
             onClick={handleUpgradeClick}
-            disabled={subscriptionLoading}
+            disabled={upgradeLoading}
             className="w-full py-3 rounded-lg font-medium transition-colors text-white hover:opacity-90 disabled:opacity-50"
             style={{ 
               background: customization.gradientEnabled 
@@ -220,7 +250,7 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
                 : customization.primaryColor
             }}
           >
-            {subscriptionLoading ? 'Loading...' : 'Upgrade Now'}
+            {upgradeLoading ? 'Loading...' : 'Upgrade Now'}
           </button>
 
           <p className={`text-xs mt-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
