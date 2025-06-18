@@ -833,7 +833,7 @@ function App() {
       // Optimized request timeout (30 seconds instead of 45 for faster feedback)
       requestTimeoutId = setTimeout(() => {
         console.error('⏰ Request timeout after 30 seconds');
-        setChatError('Het verzoek duurde te lang. Probeer opnieuw of probeer een kortere vraag.');
+        setChatError('Request took too long. Please try again or try a shorter question.');
         setIsGenerating(false);
         
         // Update AI message with timeout error
@@ -842,7 +842,7 @@ function App() {
             msg.id === aiMessageId 
               ? { 
                   ...msg, 
-                  content: 'Het verzoek duurde te lang. Probeer opnieuw of probeer een kortere vraag.' 
+                  content: 'Request took too long. Please try again or try a shorter question.' 
                 }
               : msg
           ));
@@ -857,7 +857,7 @@ function App() {
                          const title = await chatFeaturesService.generateConversationTitle(
                chatMessages.map(msg => ({ role: msg.type === 'user' ? 'user' : 'assistant', content: msg.content }))
              );
-            if (title && title !== 'Nieuwe Conversatie') {
+            if (title && title !== 'New Conversation') {
               setConversationTitle(title);
               console.log('✅ Generated conversation title:', title);
             }
@@ -869,7 +869,7 @@ function App() {
       
       // Validation checks
       if (!chatMessages || chatMessages.length === 0) {
-        throw new Error('Geen chatberichten beschikbaar voor verzending');
+        throw new Error('No chat messages available for sending');
       }
       
       if (!modelToUse) {
@@ -958,13 +958,13 @@ function App() {
                 const existingConvo = userConversations.find(conv => conv.id === currentConvoId);
                 if (!existingConvo) {
                   console.log('📝 Creating new conversation in database...');
-                  await chatFeaturesService.createConversationWithId(currentConvoId, user.id, conversationTitle || 'Nieuwe Conversatie', modelToUse);
+                  await chatFeaturesService.createConversationWithId(currentConvoId, user.id, conversationTitle || 'New Conversation', modelToUse);
                   console.log('✅ Conversation created in database');
                 }
               } catch (convoError) {
                 console.log('📝 Creating conversation (error checking):', convoError);
                 try {
-                  await chatFeaturesService.createConversationWithId(currentConvoId, user.id, conversationTitle || 'Nieuwe Conversatie', modelToUse);
+                  await chatFeaturesService.createConversationWithId(currentConvoId, user.id, conversationTitle || 'New Conversation', modelToUse);
                   console.log('✅ Conversation created in database');
                 } catch (createError) {
                   console.error('❌ Failed to create conversation:', createError);
@@ -996,7 +996,7 @@ function App() {
                   chatMessages.concat([{ type: 'ai', content: fullResponse }])
                     .map(msg => ({ role: msg.type === 'user' ? 'user' : 'assistant', content: msg.content }))
                 );
-                if (title && title !== 'Nieuwe Conversatie') {
+                if (title && title !== 'New Conversation') {
                   setConversationTitle(title);
                   console.log('✅ Updated conversation title:', title);
                 }
@@ -1154,7 +1154,7 @@ function App() {
     const conversation = conversations.find(c => c.id === conversationId);
     
     setCurrentConversationId(conversationId);
-    setConversationTitle(conversation?.title || 'Conversatie wordt geladen...');
+    setConversationTitle(conversation?.title || 'Loading conversation...');
     
     try {
       // Check cache first
@@ -1200,7 +1200,7 @@ function App() {
       console.error('Failed to load conversation messages:', error);
       // Show error but still allow user to use the conversation
       setMessages([]);
-      setConversationTitle(conversation?.title || 'Conversatie (laden mislukt)');
+      setConversationTitle(conversation?.title || 'Conversation (failed to load)');
     } finally {
       setIsLoadingConversation(false);
     }
@@ -1231,7 +1231,7 @@ function App() {
       console.log('Conversation deleted successfully');
     } catch (error) {
       console.error('Failed to delete conversation:', error);
-      alert('Er is een fout opgetreden bij het verwijderen van de conversatie.');
+      alert('An error occurred while deleting the conversation.');
     }
   };
 
@@ -2605,7 +2605,7 @@ function App() {
             {searchResults.length > 0 && (
               <div className="mt-6">
                 <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                  {searchResults.length} resultaten gevonden
+                  {searchResults.length} results found
                 </h4>
                 <div className="max-h-64 overflow-y-auto space-y-3">
                   {searchResults.map((result, index) => (
@@ -2624,10 +2624,10 @@ function App() {
                       }`}
                     >
                       <div className={`font-medium text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                        {result.conversation.title || 'Naamloze Conversatie'}
+                        {result.conversation.title || 'Untitled Conversation'}
                       </div>
                       <div className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                        {result.type === 'title' ? 'Titel overeenkomst' : `${result.matchCount} berichten gevonden`}
+                                                  {result.type === 'title' ? 'Title match' : `${result.matchCount} messages found`}
                       </div>
                       {result.type === 'content' && result.messages && (
                         <div className={`text-xs mt-2 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -2646,7 +2646,7 @@ function App() {
             {/* No Results */}
             {searchQuery && searchResults.length === 0 && !isSearching && (
               <div className={`mt-6 text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-                <p>Geen resultaten gevonden voor "{searchQuery}"</p>
+                <p>No results found for "{searchQuery}"</p>
               </div>
             )}
           </div>

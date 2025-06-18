@@ -199,7 +199,7 @@ export default function Sidebar({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    if (window.confirm(`Weet je zeker dat je "${conversation.title || 'Untitled Conversation'}" wilt verwijderen?`)) {
+                    if (window.confirm(`Are you sure you want to delete "${conversation.title || 'Untitled Conversation'}"?`)) {
                       onConversationDelete?.(conversation.id);
                     }
                   }}
@@ -208,7 +208,7 @@ export default function Sidebar({
                       ? 'text-gray-400 hover:text-red-400 hover:bg-gray-600' 
                       : 'text-gray-500 hover:text-red-600 hover:bg-white'
                   }`}
-                  title="Conversatie verwijderen"
+                  title="Delete conversation"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>

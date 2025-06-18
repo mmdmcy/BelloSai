@@ -741,7 +741,7 @@ class ChatFeaturesService {
    * Generate an AI-powered conversation title based on the content
    */
   async generateConversationTitle(messages: Array<{role: string, content: string}>): Promise<string> {
-    if (messages.length === 0) return 'Nieuwe Conversatie';
+    if (messages.length === 0) return 'New Conversation';
     
     // Take first few messages to understand the topic
     const contextMessages = messages.slice(0, 4); // First 4 messages for context
@@ -774,11 +774,11 @@ class ChatFeaturesService {
           messages: [
             {
               role: 'system',
-              content: 'Je bent een assistent die korte, informatieve titels maakt voor gesprekken. Maak een titel van maximaal 40 karakters die het hoofdonderwerp van de conversatie weergeeft. Antwoord alleen met de titel, geen verdere uitleg.'
+              content: 'You are an assistant that creates short, informative titles for conversations. Create a title of maximum 40 characters that captures the main topic of the conversation. Respond only with the title, no further explanation.'
             },
             {
               role: 'user',
-              content: `Maak een korte, informatieve titel voor deze conversatie:\n\n${truncatedContext}`
+              content: `Create a short, informative title for this conversation:\n\n${truncatedContext}`
             }
           ],
           model: 'DeepSeek-V3',
