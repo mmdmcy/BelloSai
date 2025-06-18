@@ -340,6 +340,8 @@ function App() {
   // Search state for detached search functionality
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   // Mobile responsive state
   const [isMobile, setIsMobile] = useState(false);
@@ -1117,11 +1119,61 @@ function App() {
   /**
    * Handle search functionality
    */
-  const handleSearch = () => {
-    if (searchQuery.trim()) {
-      sendMessage(`Search my chat history for: ${searchQuery.trim()}`);
-      setSearchQuery('');
-      setIsSearchFocused(false);
+  const handleSearch = async () => {
+    if (!searchQuery.trim() || !user) {
+      return;
+    }
+
+    setIsSearching(true);
+    try {
+      const query = searchQuery.trim().toLowerCase();
+      
+      // Search through conversations (titles)
+      const titleMatches = conversations.filter(conv => 
+        conv.title && conv.title.toLowerCase().includes(query)
+      );
+
+      // Search through message content
+      const messageMatches = [];
+      for (const conv of conversations) {
+        try {
+          const messages = await chatFeaturesService.getConversationMessages(conv.id);
+          const matchingMessages = messages.filter(msg => 
+            msg.content && msg.content.toLowerCase().includes(query)
+          );
+          
+          if (matchingMessages.length > 0) {
+            messageMatches.push({
+              conversation: conv,
+              messages: matchingMessages,
+              matchCount: matchingMessages.length
+            });
+          }
+        } catch (error) {
+          console.error('Error searching conversation:', conv.id, error);
+        }
+      }
+
+      // Combine results
+      const results = [
+        ...titleMatches.map(conv => ({
+          type: 'title',
+          conversation: conv,
+          matchText: conv.title
+        })),
+        ...messageMatches.map(match => ({
+          type: 'content',
+          conversation: match.conversation,
+          messages: match.messages,
+          matchCount: match.matchCount
+        }))
+      ];
+
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Search error:', error);
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -1733,27 +1785,20 @@ function App() {
                             customization={customization}
                           />
                           {/* Search Button */}
-                          <button 
-                            type="button"
-                            className={`p-1 pointer-events-auto ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
-                            style={{ color: isDark ? undefined : customization.primaryColor }}
-                            onTouchStart={(e) => e.stopPropagation()}
-                          >
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/>
-                            </svg>
-                          </button>
-                          {/* Attachment Button */}
-                          <button 
-                            type="button"
-                            className={`p-1 pointer-events-auto ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
-                            style={{ color: isDark ? undefined : customization.primaryColor }}
-                            onTouchStart={(e) => e.stopPropagation()}
-                          >
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M16.5,6V17.5A4,4 0 0,1 12.5,21.5A4,4 0 0,1 8.5,17.5V5A2.5,2.5 0 0,1 11,2.5A2.5,2.5 0 0,1 13.5,5V15.5A1,1 0 0,1 12.5,16.5A1,1 0 0,1 11.5,15.5V6H10V15.5A2.5,2.5 0 0,0 12.5,18A2.5,2.5 0 0,0 15,15.5V5A4,4 0 0,0 11,1A4,4 0 0,0 7,5V17.5A5.5,5.5 0 0,0 12.5,23A5.5,5.5 0 0,0 18,17.5V6H16.5Z"/>
-                            </svg>
-                          </button>
+                          {user && (
+                            <button 
+                              type="button"
+                              onClick={() => setIsSearchFocused(true)}
+                              className={`p-1 pointer-events-auto ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
+                              style={{ color: isDark ? undefined : customization.primaryColor }}
+                              onTouchStart={(e) => e.stopPropagation()}
+                              title="Zoek in chat geschiedenis"
+                            >
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/>
+                              </svg>
+                            </button>
+                          )}
                         </div>
                         
                         {/* Send Button */}
@@ -2077,25 +2122,19 @@ function App() {
                                 customization={customization}
                               />
                               {/* Search Button */}
-                              <button 
-                                type="button"
-                                className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
-                                style={{ color: isDark ? undefined : customization.primaryColor }}
-                              >
-                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                  <path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/>
-                                </svg>
-                              </button>
-                              {/* Attachment Button */}
-                              <button 
-                                type="button"
-                                className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
-                                style={{ color: isDark ? undefined : customization.primaryColor }}
-                              >
-                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                  <path d="M16.5,6V17.5A4,4 0 0,1 12.5,21.5A4,4 0 0,1 8.5,17.5V5A2.5,2.5 0 0,1 11,2.5A2.5,2.5 0 0,1 13.5,5V15.5A1,1 0 0,1 12.5,16.5A1,1 0 0,1 11.5,15.5V6H10V15.5A2.5,2.5 0 0,0 12.5,18A2.5,2.5 0 0,0 15,15.5V5A4,4 0 0,0 11,1A4,4 0 0,0 7,5V17.5A5.5,5.5 0 0,0 12.5,23A5.5,5.5 0 0,0 18,17.5V6H16.5Z"/>
-                                </svg>
-                              </button>
+                              {user && (
+                                <button 
+                                  type="button"
+                                  onClick={() => setIsSearchFocused(true)}
+                                  className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
+                                  style={{ color: isDark ? undefined : customization.primaryColor }}
+                                  title="Zoek in chat geschiedenis"
+                                >
+                                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/>
+                                  </svg>
+                                </button>
+                              )}
                             </div>
                             
                             {/* Send Button */}
@@ -2279,22 +2318,24 @@ function App() {
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setIsSearchFocused(false);
+              setSearchResults([]);
+              setSearchQuery('');
             }
           }}
         >
           <div 
-            className={`w-96 max-w-[90vw] p-6 rounded-lg shadow-xl ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+            className={`w-[500px] max-w-[90vw] max-h-[80vh] p-6 rounded-lg shadow-xl ${isDark ? 'bg-gray-800' : 'bg-white'}`}
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Search Chat History
+              Zoek in Chat Geschiedenis
             </h3>
             <form onSubmit={(e) => { e.preventDefault(); handleSearch(); }}>
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search your conversations..."
+                placeholder="Zoek in je conversaties..."
                 className={`w-full p-3 rounded-lg border ${
                   isDark 
                     ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400' 
@@ -2307,34 +2348,97 @@ function App() {
                 onKeyDown={(e) => {
                   if (e.key === 'Escape') {
                     setIsSearchFocused(false);
+                    setSearchResults([]);
+                    setSearchQuery('');
                   }
                 }}
               />
               <div className="flex gap-3 mt-4">
                 <button
                   type="submit"
-                  className="flex-1 py-2 px-4 rounded-lg text-white transition-colors hover:opacity-90"
+                  disabled={isSearching || !searchQuery.trim()}
+                  className="flex-1 py-2 px-4 rounded-lg text-white transition-colors hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
                   style={{ 
                     background: customization.gradientEnabled 
                       ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
                       : customization.primaryColor
                   }}
                 >
-                  Search
+                  {isSearching ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Zoeken...
+                    </>
+                  ) : (
+                    'Zoeken'
+                  )}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setIsSearchFocused(false)}
+                  onClick={() => {
+                    setIsSearchFocused(false);
+                    setSearchResults([]);
+                    setSearchQuery('');
+                  }}
                   className={`px-4 py-2 rounded-lg transition-colors ${
                     isDark 
                       ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
                 >
-                  Cancel
+                  Annuleren
                 </button>
               </div>
             </form>
+
+            {/* Search Results */}
+            {searchResults.length > 0 && (
+              <div className="mt-6">
+                <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                  {searchResults.length} resultaten gevonden
+                </h4>
+                <div className="max-h-64 overflow-y-auto space-y-3">
+                  {searchResults.map((result, index) => (
+                    <div
+                      key={index}
+                      onClick={() => {
+                        handleConversationSelect(result.conversation.id);
+                        setIsSearchFocused(false);
+                        setSearchResults([]);
+                        setSearchQuery('');
+                      }}
+                      className={`p-3 rounded-lg cursor-pointer border transition-colors ${
+                        isDark 
+                          ? 'bg-gray-700 border-gray-600 hover:bg-gray-600' 
+                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className={`font-medium text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        {result.conversation.title || 'Naamloze Conversatie'}
+                      </div>
+                      <div className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                        {result.type === 'title' ? 'Titel overeenkomst' : `${result.matchCount} berichten gevonden`}
+                      </div>
+                      {result.type === 'content' && result.messages && (
+                        <div className={`text-xs mt-2 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                          {result.messages[0].content.length > 100 
+                            ? result.messages[0].content.substring(0, 100) + '...'
+                            : result.messages[0].content
+                          }
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* No Results */}
+            {searchQuery && searchResults.length === 0 && !isSearching && (
+              <div className={`mt-6 text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                <p>Geen resultaten gevonden voor "{searchQuery}"</p>
+              </div>
+            )}
           </div>
         </div>
       )}

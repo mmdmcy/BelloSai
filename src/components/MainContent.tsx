@@ -19,7 +19,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, Compass, Code, GraduationCap, ChevronDown, Search, Paperclip, ArrowUp } from 'lucide-react';
+import { Sparkles, Compass, Code, GraduationCap, ChevronDown, ArrowUp } from 'lucide-react';
 import ActionButton from './ActionButton';
 import ModelSelector from './ModelSelector';
 import { CustomizationSettings } from '../App';
@@ -198,22 +198,7 @@ export default function MainContent({
                     isDark={isDark}
                     customization={customization}
                   />
-                  {/* Search Button */}
-                  <button 
-                    type="button"
-                    className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
-                    style={{ color: isDark ? undefined : customization.primaryColor }}
-                  >
-                    <Search className="w-4 h-4" />
-                  </button>
-                  {/* Attachment Button */}
-                  <button 
-                    type="button"
-                    className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
-                    style={{ color: isDark ? undefined : customization.primaryColor }}
-                  >
-                    <Paperclip className="w-4 h-4" />
-                  </button>
+
                 </div>
                 
                 {/* Send Button */}
@@ -371,20 +356,7 @@ export default function MainContent({
                       isDark={isDark}
                       customization={customization}
                     />
-                    <button 
-                      type="button"
-                      className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
-                      style={{ color: isDark ? undefined : customization.primaryColor }}
-                    >
-                      <Search className="w-4 h-4" />
-                    </button>
-                    <button 
-                      type="button"
-                      className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
-                      style={{ color: isDark ? undefined : customization.primaryColor }}
-                    >
-                      <Paperclip className="w-4 h-4" />
-                    </button>
+
                   </div>
                   
                   <button 

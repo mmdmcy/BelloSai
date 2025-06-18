@@ -17,7 +17,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Search, Paperclip, ArrowUp, Copy, RotateCcw, RefreshCw, Share2, Image, Globe, X } from 'lucide-react';
+import { ChevronDown, ArrowUp, Copy, RotateCcw, RefreshCw, Share2, Image, Globe, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
@@ -575,33 +575,7 @@ export default function ChatView({
                     isDark={isDark}
                     customization={customization}
                   />
-                  <button 
-                    type="button"
-                    onClick={() => setShowWebSearch(!showWebSearch)}
-                    className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
-                    style={{ color: isDark ? undefined : customization.primaryColor }}
-                    title="Web zoeken"
-                  >
-                    <Globe className="w-4 h-4" />
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => setShowAttachmentUpload(!showAttachmentUpload)}
-                    className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
-                    style={{ color: isDark ? undefined : customization.primaryColor }}
-                    title="Bestand uploaden"
-                  >
-                    <Paperclip className="w-4 h-4" />
-                  </button>
-                  <button 
-                    type="button"
-                    onClick={() => setShowImageGeneration(!showImageGeneration)}
-                    className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
-                    style={{ color: isDark ? undefined : customization.primaryColor }}
-                    title="Afbeelding genereren"
-                  >
-                    <Image className="w-4 h-4" />
-                  </button>
+
                   {conversationId && (
                     <button 
                       type="button"
@@ -712,20 +686,7 @@ export default function ChatView({
                       isDark={isDark}
                       customization={customization}
                     />
-                    <button 
-                      type="button"
-                      className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
-                      style={{ color: isDark ? undefined : customization.primaryColor }}
-                    >
-                      <Search className="w-4 h-4" />
-                    </button>
-                    <button 
-                      type="button"
-                      className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
-                      style={{ color: isDark ? undefined : customization.primaryColor }}
-                    >
-                      <Paperclip className="w-4 h-4" />
-                    </button>
+
                   </div>
                   
                   <button 
