@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { X, RotateCcw, Save, Sun, Moon, Move, Maximize2, Menu, User, LogIn } from 'lucide-react';
-import { CustomizationSettings } from '../App';
+import { X, RotateCcw, Save, Sun, Moon, Move, Maximize2, Menu, User, LogIn, Sparkles } from 'lucide-react';
+import { CustomizationSettings, AVAILABLE_THEMES } from '../App';
 import { MobileLayoutConfig, defaultMobileLayout } from '../lib/auth-integration';
 import ThemeToggle from './ThemeToggle';
 
@@ -13,6 +13,7 @@ interface MobileDesignerModeProps {
   customization: CustomizationSettings;
   onCustomizationChange: (settings: Partial<CustomizationSettings>) => void;
   isAuthenticated: boolean;
+  onApplyTheme?: (themeId: string) => void;
 }
 
 interface DragState {
@@ -44,7 +45,8 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
   onToggleTheme,
   customization,
   onCustomizationChange,
-  isAuthenticated
+  isAuthenticated,
+  onApplyTheme
 }) => {
   const [selectedElement, setSelectedElement] = useState<keyof MobileLayoutConfig | null>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -186,6 +188,17 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
+          <select
+            value={customization.selectedTheme}
+            onChange={(e) => onApplyTheme?.(e.target.value)}
+            className="px-2 py-1 bg-white/20 text-white rounded text-sm border border-white/30"
+          >
+            {AVAILABLE_THEMES.map((theme) => (
+              <option key={theme.id} value={theme.id} className="text-black">
+                {theme.name}
+              </option>
+            ))}
+          </select>
           <button
             onClick={resetLayout}
             className="px-3 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg"

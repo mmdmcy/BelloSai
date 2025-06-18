@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { X, RotateCcw, Save, Sun, Moon, Plus, Minus, ChevronUp, ChevronDown, GripVertical, Palette, Type, Eye, EyeOff, Move, Maximize2 } from 'lucide-react';
-import { LayoutConfig, CustomizationSettings } from '../App';
+import { X, RotateCcw, Save, Sun, Moon, Plus, Minus, ChevronUp, ChevronDown, GripVertical, Palette, Type, Eye, EyeOff, Move, Maximize2, Sparkles } from 'lucide-react';
+import { LayoutConfig, CustomizationSettings, AVAILABLE_THEMES, Theme } from '../App';
 import { defaultLayoutWithAuth, layoutManager, ExtendedLayoutConfig } from '../lib/auth-integration';
 
 interface DesignerModeProps {
@@ -11,6 +11,7 @@ interface DesignerModeProps {
   onToggleTheme: () => void;
   customization: CustomizationSettings;
   onCustomizationChange: (settings: Partial<CustomizationSettings>) => void;
+  onApplyTheme?: (themeId: string) => void;
 }
 
 interface DragState {
@@ -44,7 +45,8 @@ export default function DesignerMode({
   onExitDesigner,
   onToggleTheme,
   customization,
-  onCustomizationChange
+  onCustomizationChange,
+  onApplyTheme
 }: DesignerModeProps) {
   const [dragState, setDragState] = useState<DragState>({
     isDragging: false,
@@ -618,6 +620,59 @@ export default function DesignerMode({
             <h4 className={`font-medium`} style={{ fontFamily: customization.fontFamily }}>
               Appearance Settings
             </h4>
+
+            {/* Theme Selector */}
+            <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+              <h4 className={`font-medium mb-4 flex items-center gap-2 ${isDark ? 'text-gray-200' : 'text-gray-800'}`} style={{ fontFamily: customization.fontFamily }}>
+                <Sparkles className="w-5 h-5" />
+                Aesthetic Themes
+              </h4>
+              
+              <div className="space-y-3 max-h-60 overflow-y-auto">
+                {AVAILABLE_THEMES.map((theme) => (
+                  <div
+                    key={theme.id}
+                    className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                      customization.selectedTheme === theme.id
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                        : isDark ? 'border-gray-600 bg-gray-800 hover:border-gray-500' : 'border-gray-200 bg-white hover:border-gray-300'
+                    }`}
+                    onClick={() => onApplyTheme?.(theme.id)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`} style={{ fontFamily: customization.fontFamily }}>
+                          {theme.name}
+                        </div>
+                        <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`} style={{ fontFamily: customization.fontFamily }}>
+                          {theme.description}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-3">
+                        <div
+                          className="w-4 h-4 rounded-full border border-white/50"
+                          style={{ backgroundColor: theme.primaryColor }}
+                        />
+                        <div
+                          className="w-4 h-4 rounded-full border border-white/50"
+                          style={{ backgroundColor: theme.secondaryColor }}
+                        />
+                      </div>
+                    </div>
+                    {theme.glassEffect && (
+                      <div className={`text-xs mt-1 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
+                        ✨ Glass Effects
+                      </div>
+                    )}
+                    {theme.retroMode && (
+                      <div className={`text-xs mt-1 ${isDark ? 'text-green-400' : 'text-green-600'}`}>
+                        🔥 Retro Mode
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
             
             {/* Show Questions Toggle */}
             <div className={`p-4 rounded-lg`}>

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { sendChatMessage, ChatMessage } from '../lib/supabase-chat';
+import { ArrowLeft } from 'lucide-react';
 
 interface GameProps {
   isDark: boolean;
   customization: any;
   onToggleTheme: () => void;
+  onBackToHome?: () => void;
 }
 
 interface FamilyFeudQuestion {
@@ -22,7 +24,7 @@ interface GuessResult {
   matchedAnswer?: string;
 }
 
-function GameComponent({ isDark, customization, onToggleTheme }: GameProps) {
+function GameComponent({ isDark, customization, onToggleTheme, onBackToHome }: GameProps) {
   const [question, setQuestion] = useState<FamilyFeudQuestion | null>(null);
   const [revealedAnswers, setRevealedAnswers] = useState<number[]>([]);
   const [playerScore, setPlayerScore] = useState(0);
@@ -39,6 +41,7 @@ function GameComponent({ isDark, customization, onToggleTheme }: GameProps) {
   const [maxStrikes] = useState(3);
   const [aiPreviousGuesses, setAiPreviousGuesses] = useState<string[]>([]);
   const [gameLog, setGameLog] = useState<string[]>([]);
+  const [rateLimitMode, setRateLimitMode] = useState(false);
 
   // Generate question on load
   useEffect(() => {
@@ -85,6 +88,7 @@ function GameComponent({ isDark, customization, onToggleTheme }: GameProps) {
     setAiStrikes(0);
     setAiPreviousGuesses([]);
     setGameLog([]);
+    setRateLimitMode(false);
     setTurn('player');
     
     try {
@@ -151,7 +155,7 @@ Make it fun and modern. No markdown formatting.`
       setTurn('player');
     } catch (error) {
       console.error('Failed to generate question:', error);
-      // Fallback questions
+      // Fallback questions - larger variety to prevent repetition
       const fallbackQuestions = [
         {
           question: "We asked 100 people: What's the first thing you do when you wake up in the morning?",
@@ -174,13 +178,83 @@ Make it fun and modern. No markdown formatting.`
           ]
         },
         {
-          question: "We asked 100 people: Name something people do when they're stressed",
+          question: "We asked 100 people: Name something people always forget to pack when traveling",
           answers: [
-            { text: "Exercise", points: 30 },
-            { text: "Eat comfort food", points: 25 },
-            { text: "Listen to music", points: 20 },
-            { text: "Take deep breaths", points: 15 },
-            { text: "Call a friend", points: 10 }
+            { text: "Phone charger", points: 32 },
+            { text: "Toothbrush", points: 28 },
+            { text: "Underwear", points: 18 },
+            { text: "Medications", points: 12 },
+            { text: "Passport", points: 10 }
+          ]
+        },
+        {
+          question: "We asked 100 people: Name something people do while stuck in traffic",
+          answers: [
+            { text: "Listen to music", points: 30 },
+            { text: "Check their phone", points: 25 },
+            { text: "Sing along to radio", points: 20 },
+            { text: "People watch", points: 15 },
+            { text: "Plan their day", points: 10 }
+          ]
+        },
+        {
+          question: "We asked 100 people: Name something you see at every birthday party",
+          answers: [
+            { text: "Birthday cake", points: 40 },
+            { text: "Balloons", points: 25 },
+            { text: "Presents", points: 20 },
+            { text: "Candles", points: 10 },
+            { text: "Party hats", points: 5 }
+          ]
+        },
+        {
+          question: "We asked 100 people: Name something people do to avoid small talk",
+          answers: [
+            { text: "Look at their phone", points: 35 },
+            { text: "Pretend to be busy", points: 25 },
+            { text: "Wear headphones", points: 18 },
+            { text: "Avoid eye contact", points: 12 },
+            { text: "Take a different route", points: 10 }
+          ]
+        },
+        {
+          question: "We asked 100 people: Name something people buy but never use",
+          answers: [
+            { text: "Exercise equipment", points: 30 },
+            { text: "Books", points: 25 },
+            { text: "Kitchen gadgets", points: 20 },
+            { text: "Gym membership", points: 15 },
+            { text: "Apps", points: 10 }
+          ]
+        },
+        {
+          question: "We asked 100 people: Name something people do when they can't sleep",
+          answers: [
+            { text: "Scroll on phone", points: 30 },
+            { text: "Watch TV", points: 25 },
+            { text: "Read a book", points: 20 },
+            { text: "Count sheep", points: 15 },
+            { text: "Get a snack", points: 10 }
+          ]
+        },
+        {
+          question: "We asked 100 people: Name something people always say they'll do tomorrow",
+          answers: [
+            { text: "Start dieting", points: 30 },
+            { text: "Exercise", points: 25 },
+            { text: "Clean the house", points: 20 },
+            { text: "Call someone back", points: 15 },
+            { text: "Start studying", points: 10 }
+          ]
+        },
+        {
+          question: "We asked 100 people: Name something people hoard but shouldn't",
+          answers: [
+            { text: "Old clothes", points: 30 },
+            { text: "Plastic bags", points: 25 },
+            { text: "Old magazines", points: 20 },
+            { text: "Cables and chargers", points: 15 },
+            { text: "Receipts", points: 10 }
           ]
         }
       ];
@@ -304,7 +378,7 @@ Make it fun and modern. No markdown formatting.`
           if (!gameEnded) {
             handleAITurn();
           }
-        }, 3000);
+        }, 5000);
     } else {
       // Wrong guess
       const newStrikes = playerStrikes + 1;
@@ -330,7 +404,7 @@ Make it fun and modern. No markdown formatting.`
           if (!gameEnded) {
             handleAITurn();
           }
-        }, 3000);
+        }, 5000);
     }
   };
 
@@ -338,6 +412,45 @@ Make it fun and modern. No markdown formatting.`
     if (!question || gameEnded) return;
 
     setAiThinking(true);
+
+    // If we're in rate limit mode, use simple offline AI
+    if (rateLimitMode) {
+      console.log('Using offline AI mode due to rate limits...');
+      
+      const availableAnswers = question.answers
+        .map((answer, index) => ({ answer, index }))
+        .filter(({ index }) => !revealedAnswers.includes(index));
+      
+      if (availableAnswers.length > 0) {
+        // Simple AI: pick a random answer (they're all correct)
+        const randomChoice = availableAnswers[Math.floor(Math.random() * availableAnswers.length)];
+        const guess = randomChoice.answer.text;
+        
+        setLastAiGuess({
+          text: guess,
+          correct: true,
+          points: randomChoice.answer.points,
+          matchedAnswer: guess
+        });
+        
+        const newRevealed = [...revealedAnswers, randomChoice.index];
+        setRevealedAnswers(newRevealed);
+        setAiScore(prev => prev + randomChoice.answer.points);
+        setGameLog(prev => [...prev, `AI (offline): "${guess}" → ✅ (${randomChoice.answer.points} pts)`]);
+        
+        if (newRevealed.length === question.answers.length) {
+          setGameEnded(true);
+          setGameStatus('finished');
+        } else {
+          setTurn('player');
+        }
+      } else {
+        setTurn('player');
+      }
+      
+      setAiThinking(false);
+      return;
+    }
 
     try {
       const availableAnswers = question.answers
@@ -388,7 +501,7 @@ Reply with ONLY your answer. No explanations.`;
             }
             
             // Longer delay between retries to prevent rate limiting
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            await new Promise(resolve => setTimeout(resolve, 5000));
           }
         }
       
@@ -488,20 +601,64 @@ Reply with ONLY your answer. No explanations.`;
     } catch (error) {
       console.error('AI turn failed:', error);
       
-      // Fallback: AI makes a wrong guess to keep game moving
-      const newStrikes = aiStrikes + 1;
-      setAiStrikes(newStrikes);
-      setLastAiGuess({
-        text: "AI couldn't think of an answer",
-        correct: false
-      });
-      setGameLog(prev => [...prev, `AI: timed out → ❌ (Strike ${newStrikes}/${maxStrikes})`]);
+      // Check if it's a rate limit error
+      const isRateLimit = error instanceof Error && (
+        error.message.includes('rate limit') || 
+        error.message.includes('429') ||
+        error.message.includes('maximum aantal verzoeken')
+      );
       
-      if (newStrikes >= maxStrikes) {
-        setGameEnded(true);
-        setGameStatus('finished');
-      } else {
+      if (isRateLimit) {
+        // Switch to rate limit mode - use simple AI without API calls
+        setRateLimitMode(true);
+        console.log('Rate limit detected, switching to offline AI mode...');
+        
+        // Use simple fallback AI that picks random unrevealed answers
+        const availableAnswers = question.answers
+          .map((answer, index) => ({ answer, index }))
+          .filter(({ index }) => !revealedAnswers.includes(index));
+        
+        if (availableAnswers.length > 0) {
+          const randomChoice = availableAnswers[Math.floor(Math.random() * availableAnswers.length)];
+          const guess = randomChoice.answer.text;
+          
+          setLastAiGuess({
+            text: guess,
+            correct: true,
+            points: randomChoice.answer.points,
+            matchedAnswer: guess
+          });
+          
+          const newRevealed = [...revealedAnswers, randomChoice.index];
+          setRevealedAnswers(newRevealed);
+          setAiScore(prev => prev + randomChoice.answer.points);
+          setGameLog(prev => [...prev, `AI (offline): "${guess}" → ✅ (${randomChoice.answer.points} pts)`]);
+          
+          if (newRevealed.length === question.answers.length) {
+            setGameEnded(true);
+            setGameStatus('finished');
+            setAiThinking(false);
+            return;
+          }
+        }
+        
         setTurn('player');
+      } else {
+        // For other errors (timeout, etc.), give AI a strike
+        const newStrikes = aiStrikes + 1;
+        setAiStrikes(newStrikes);
+        setLastAiGuess({
+          text: "AI couldn't think of an answer",
+          correct: false
+        });
+        setGameLog(prev => [...prev, `AI: timed out → ❌ (Strike ${newStrikes}/${maxStrikes})`]);
+        
+        if (newStrikes >= maxStrikes) {
+          setGameEnded(true);
+          setGameStatus('finished');
+        } else {
+          setTurn('player');
+        }
       }
     } finally {
       setAiThinking(false);
@@ -541,35 +698,67 @@ Reply with ONLY your answer. No explanations.`;
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-gray-900 text-white' : 'bg-purple-50 text-gray-900'}`}>
-      {/* Header */}
-      <div className="bg-purple-600 text-white p-4">
-        <div className="flex justify-between items-center max-w-4xl mx-auto">
-          <h1 className="text-2xl font-bold">Family Feud</h1>
-          <div className="flex gap-6 items-center">
-            <div className="flex gap-4">
-              <div className="text-center">
-                <div className="text-sm opacity-80">You</div>
-                <div className="text-xl font-bold">{playerScore}</div>
-                <div className="text-sm text-red-200">
-                  ❌ {playerStrikes}/{maxStrikes}
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-sm opacity-80">AI</div>
-                <div className="text-xl font-bold">{aiScore}</div>
-                <div className="text-sm text-red-200">
-                  ❌ {aiStrikes}/{maxStrikes}
-                </div>
-              </div>
-            </div>
-            <button onClick={onToggleTheme} className="px-3 py-1 bg-white/20 rounded">
-              {isDark ? '☀️' : '🌙'}
-            </button>
+      {/* Header with Back Button */}
+      <div className={`p-4 border-b ${isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
+        <div className="flex items-center justify-between max-w-4xl mx-auto">
+          <div className="flex items-center gap-4">
+            {onBackToHome && (
+              <button
+                onClick={onBackToHome}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                  isDark 
+                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-gray-900'
+                }`}
+                title="Back to Home"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span>Back to Home</span>
+              </button>
+            )}
+            <h1 className="text-2xl font-bold">🎮 Family Feud Game</h1>
           </div>
+          <button
+            onClick={onToggleTheme}
+            className={`p-2 rounded-lg transition-colors ${
+              isDark 
+                ? 'bg-gray-700 text-yellow-400 hover:bg-gray-600' 
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+            title="Toggle Theme"
+          >
+            {isDark ? (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12,9c1.65,0 3,1.35 3,3s-1.35,3 -3,3s-3,-1.35 -3,-3S10.35,9 12,9M12,7c-2.76,0 -5,2.24 -5,5s2.24,5 5,5s5,-2.24 5,-5S14.76,7 12,7L12,7z"/>
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M17.75,4.09L15.22,6.03L16.13,9.09L13.5,7.28L10.87,9.09L11.78,6.03L9.25,4.09L12.44,4L13.5,1L14.56,4L17.75,4.09M21.25,11L19.61,12.25L20.2,14.23L18.5,13.06L16.8,14.23L17.39,12.25L15.75,11L17.81,10.95L18.5,9L19.19,10.95L21.25,11M18.97,15.95C19.8,15.87 20.69,17.05 20.16,17.8C19.84,18.25 19.5,18.67 19.08,19.07C15.17,23 8.84,23 4.94,19.07C1.03,15.17 1.03,8.83 4.94,4.93C5.34,4.53 5.76,4.17 6.21,3.85C6.96,3.32 8.14,4.21 8.06,5.04C7.79,7.9 8.75,10.87 10.95,13.06C13.14,15.26 16.1,16.22 18.97,15.95M17.33,17.97C14.5,17.81 11.7,16.64 9.53,14.5C7.36,12.31 6.2,9.5 6.04,6.68C3.23,9.82 3.34,14.4 6.35,17.41C9.37,20.43 14,20.54 17.33,17.97Z"/>
+              </svg>
+            )}
+          </button>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="p-6 max-w-4xl mx-auto">
+        {/* Score Display */}
+        <div className={`flex justify-center gap-8 mb-6 p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+          <div className="text-center">
+            <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>You</div>
+            <div className="text-2xl font-bold">{playerScore}</div>
+            <div className="text-sm text-red-500">
+              ❌ {playerStrikes}/{maxStrikes}
+            </div>
+          </div>
+          <div className="text-center">
+            <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>AI</div>
+            <div className="text-2xl font-bold">{aiScore}</div>
+            <div className="text-sm text-red-500">
+              ❌ {aiStrikes}/{maxStrikes}
+            </div>
+          </div>
+        </div>
+
         {/* Question */}
         <div className={`text-center mb-8 p-6 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
           <h2 className="text-xl font-bold mb-6">{question.question}</h2>
@@ -762,11 +951,16 @@ export default function Game() {
     fontFamily: 'Inter'
   });
 
+  const handleBackToHome = () => {
+    window.location.href = '/';
+  };
+
   return (
     <GameComponent
       isDark={isDark}
       customization={customization}
       onToggleTheme={() => setIsDark(!isDark)}
+      onBackToHome={handleBackToHome}
     />
   );
 } 
