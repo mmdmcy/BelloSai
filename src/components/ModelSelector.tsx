@@ -5,6 +5,7 @@
  * Provides a clean interface for switching between different AI models.
  * 
  * Features:
+ * - Compact pill-shaped design for chatbox
  * - Dropdown interface with smooth animations
  * - Click outside to close functionality
  * - Customizable theming and colors
@@ -56,8 +57,8 @@ function getPopupPosition(element: HTMLElement | null) {
   const rect = element.getBoundingClientRect();
   const spaceBelow = window.innerHeight - rect.bottom;
   const spaceAbove = rect.top;
-  // 220px is ongeveer de hoogte van de popup
-  if (spaceBelow < 220 && spaceAbove > spaceBelow) {
+  // 250px is ongeveer de hoogte van de popup
+  if (spaceBelow < 250 && spaceAbove > spaceBelow) {
     return 'top';
   }
   return 'bottom';
@@ -102,136 +103,166 @@ export default function ModelSelector({
     setInfoOpen(null);
   };
 
+  const selectedModelInfo = availableModels.find(m => m.code === selectedModel);
+  const ProviderIcon = selectedModelInfo ? PROVIDER_ICON[selectedModelInfo.provider] : Brain;
+
   return (
     <div className="relative" ref={dropdownRef}>
-      {/* Dropdown Trigger Button */}
+      {/* Compact Pill-shaped Trigger Button */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-1 text-sm font-medium transition-colors ${
-          isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'
-        }`}
+        className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border ${
+          isDark 
+            ? 'bg-gray-600/80 border-gray-500 text-gray-200 hover:bg-gray-600 hover:border-gray-400' 
+            : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 hover:border-gray-300'
+        } ${isOpen ? 'ring-2' : ''}`}
         style={{ 
           fontFamily: customization.fontFamily,
-          color: isDark ? undefined : customization.primaryColor 
-        }}
+          '--tw-ring-color': customization.primaryColor + '40'
+        } as React.CSSProperties}
       >
-        {availableModels.find(m => m.code === selectedModel)?.name || selectedModel}
-        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        {/* Provider Icon */}
+        <ProviderIcon className="w-3.5 h-3.5 opacity-80" />
+        
+        {/* Model Name (shortened) */}
+        <span className="max-w-20 truncate">
+          {selectedModelInfo?.name.replace('Gemini ', '').replace('DeepSeek ', '') || selectedModel}
+        </span>
+        
+        {/* Dropdown Arrow */}
+        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
-      {/* Dropdown Menu */}
+      {/* Enhanced Dropdown Menu */}
       {isOpen && (
-        <div className={`absolute bottom-full left-0 mb-2 min-w-64 rounded-lg border shadow-lg z-50 ${
-          isDark 
-            ? 'bg-gray-700 border-gray-600' 
-            : 'bg-white border-purple-200'
-        }`}>
-          <div className="py-1">
+        <div 
+          className={`absolute bottom-full left-0 mb-2 min-w-72 rounded-xl border shadow-xl z-50 backdrop-blur-sm ${
+            isDark 
+              ? 'bg-gray-800/95 border-gray-600' 
+              : 'bg-white/95 border-gray-200'
+          }`}
+        >
+          {/* Header */}
+          <div className={`px-4 py-3 border-b ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+            <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Kies AI Model
+            </h3>
+          </div>
+          
+          {/* Model List */}
+          <div className="py-1 max-h-64 overflow-y-auto">
             {availableModels.map((model) => {
               const isSelected = model.code === selectedModel;
+              const ModelProviderIcon = PROVIDER_ICON[model.provider];
+              const providerColor = PROVIDER_COLOR[model.provider];
+              
               return (
                 <div
                   key={model.code}
-                  className={`flex items-center justify-between px-4 py-2 text-sm cursor-pointer transition-colors rounded-md ${
+                  className={`relative flex items-start gap-3 px-4 py-3 cursor-pointer transition-all duration-200 ${
                     isSelected
                       ? isDark
-                        ? 'text-white'
-                        : 'text-purple-800'
+                        ? 'bg-gray-700 text-white'
+                        : 'bg-purple-50 text-purple-900'
                       : isDark
-                        ? 'text-gray-300 hover:bg-gray-600 hover:text-white'
-                        : 'text-gray-700 hover:text-purple-800'
+                        ? 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
+                        : 'text-gray-700 hover:bg-gray-50'
                   }`}
-                  style={{
-                    fontFamily: customization.fontFamily,
-                    backgroundColor: isSelected
-                      ? (isDark ? customization.primaryColor : customization.primaryColor + '20')
-                      : undefined
-                  }}
                   onClick={() => handleModelSelect(model.code)}
                   onMouseEnter={() => setHoveredModel(model.code)}
                   onMouseLeave={() => setHoveredModel(null)}
                 >
-                  {/* Modelnaam + eventueel brain icoon rechts */}
-                  <span className="flex items-center gap-2 min-w-0">
-                    <span className="truncate font-medium">{model.name}</span>
-                    {(model.code === 'DeepSeek-R1' || model.code === 'gemini-2.5-pro-preview-06-05') && (
-                      <span title="Advanced reasoning"><Brain className="w-4 h-4 ml-1 opacity-80" /></span>
-                    )}
-                  </span>
-                  {/* Info icoon met popup */}
-                  <span
-                    className="ml-2 relative"
-                    onClick={e => { e.stopPropagation(); setInfoOpen(infoOpen === model.code ? null : model.code); }}
-                    onMouseEnter={e => {
-                      setInfoOpen(model.code);
-                      // Force rerender for popup position
-                      setTimeout(() => setInfoOpen(model.code), 10);
+                  {/* Provider Icon with Color */}
+                  <div 
+                    className="flex-shrink-0 p-2 rounded-lg"
+                    style={{ 
+                      backgroundColor: isSelected ? providerColor + '20' : (isDark ? '#374151' : '#f3f4f6'),
+                      color: isSelected ? providerColor : (isDark ? '#9CA3AF' : '#6B7280')
                     }}
-                    onMouseLeave={() => setInfoOpen(null)}
                   >
-                    <Info className="inline w-4 h-4 opacity-70 hover:opacity-100" />
-                    {infoOpen === model.code && (
-                      <PopupInfo
-                        anchorRef={dropdownRef}
-                        isDark={isDark}
-                        customization={customization}
-                        model={model}
-                      />
+                    <ModelProviderIcon className="w-4 h-4" />
+                  </div>
+                  
+                  {/* Model Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-sm truncate">{model.name}</span>
+                      {(model.code === 'DeepSeek-R1' || model.code === 'gemini-2.5-pro-preview-06-05') && (
+                        <span 
+                          className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                          style={{ 
+                            backgroundColor: providerColor + '20',
+                            color: providerColor
+                          }}
+                        >
+                          <Brain className="w-3 h-3" />
+                          Reasoning
+                        </span>
+                      )}
+                      {isSelected && (
+                        <span 
+                          className="px-2 py-0.5 rounded-full text-xs font-medium text-white"
+                          style={{ backgroundColor: providerColor }}
+                        >
+                          Actief
+                        </span>
+                      )}
+                    </div>
+                    
+                    {/* Description */}
+                    {model.description && (
+                      <p className={`text-xs mt-1 line-clamp-2 ${
+                        isDark ? 'text-gray-400' : 'text-gray-500'
+                      }`}>
+                        {model.description}
+                      </p>
                     )}
-                  </span>
+                    
+                    {/* Capabilities */}
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {model.capabilities.slice(0, 4).map((cap: string) => {
+                        const capInfo = (MODEL_CAPABILITIES as any)[cap];
+                        if (!capInfo) return null;
+                        const Icon = ICON_MAP[capInfo.icon] || FileText;
+                        return (
+                          <span
+                            key={cap}
+                            className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs ${
+                              isDark 
+                                ? 'bg-gray-600 text-gray-300' 
+                                : 'bg-gray-100 text-gray-600'
+                            }`}
+                            title={capInfo.label}
+                          >
+                            <Icon className="w-3 h-3" />
+                            <span className="hidden sm:inline">{capInfo.label}</span>
+                          </span>
+                        );
+                      })}
+                      {model.capabilities.length > 4 && (
+                        <span className={`px-2 py-0.5 rounded text-xs ${
+                          isDark ? 'bg-gray-600 text-gray-300' : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          +{model.capabilities.length - 4}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  
+                  {/* Selection Indicator */}
+                  {isSelected && (
+                    <div 
+                      className="absolute right-3 top-3 w-2 h-2 rounded-full"
+                      style={{ backgroundColor: providerColor }}
+                    />
+                  )}
                 </div>
               );
             })}
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-// PopupInfo component voor betere positionering en styling
-function PopupInfo({ anchorRef, isDark, customization, model }: any) {
-  const popupRef = React.useRef<HTMLDivElement>(null);
-  const [position, setPosition] = React.useState<'top' | 'bottom'>('bottom');
-  React.useEffect(() => {
-    setPosition(getPopupPosition(anchorRef?.current));
-  }, [anchorRef]);
-  return (
-    <div
-      ref={popupRef}
-      className={`absolute left-6 z-50 min-w-56 max-w-xs p-3 rounded-lg shadow-xl border text-xs ${
-        isDark
-          ? 'bg-gray-200 border-gray-400 text-gray-900'
-          : 'bg-white border-purple-200 text-gray-900'
-      }`}
-      style={{
-        fontFamily: customization.fontFamily,
-        top: position === 'top' ? 'auto' : '1.5rem',
-        bottom: position === 'top' ? '2.5rem' : 'auto',
-        maxHeight: '220px',
-        overflowY: 'auto',
-      }}
-    >
-      <div className="font-semibold mb-1">{model.name}</div>
-      {model.description && <div className="mb-2 text-xs opacity-80">{model.description}</div>}
-      <div className="flex flex-wrap gap-2">
-        {model.capabilities.map((cap: string) => {
-          const capInfo = (MODEL_CAPABILITIES as any)[cap];
-          if (!capInfo) return null;
-          const Icon = ICON_MAP[capInfo.icon] || FileText;
-          return (
-            <span
-              key={cap}
-              className={`flex items-center gap-1 px-2 py-1 rounded text-xs bg-purple-100 ${isDark ? 'text-purple-900' : 'text-purple-900'}`}
-              style={{ background: isDark ? '#ede9fe' : '#ede9fe' }}
-            >
-              <Icon className="w-4 h-4" />
-              {capInfo.label}
-            </span>
-          );
-        })}
-      </div>
     </div>
   );
 }
