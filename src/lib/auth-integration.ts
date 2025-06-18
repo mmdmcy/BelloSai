@@ -58,7 +58,7 @@ export const defaultLayoutWithAuth: ExtendedLayoutConfig = {
   mainContent: { x: 5, y: 1, width: 10, height: 12, zIndex: 1 },
   themeToggle: { x: 17, y: 0, width: 1, height: 1, zIndex: 4 },
   topBar: { x: 0, y: 0, width: 20, height: 1, zIndex: 2 },
-  inputBox: { x: 4, y: 13, width: 12, height: 2, zIndex: 1 },
+  inputBox: { x: 5, y: 13, width: 10, height: 2, zIndex: 1 },
   designerButton: { x: 19, y: 0, width: 1, height: 1, zIndex: 999 },
   settingsButton: { x: 18, y: 0, width: 1, height: 1, zIndex: 4 },
   appLogo: { x: 0, y: 1, width: 3, height: 1, zIndex: 3 },
