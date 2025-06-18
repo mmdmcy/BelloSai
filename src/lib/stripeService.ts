@@ -262,4 +262,50 @@ export class StripeService {
       return false
     }
   }
+
+  /**
+   * Verifieer betaling via checkout session ID
+   */
+  static async verifyPaymentSession(sessionId: string): Promise<{
+    success: boolean
+    subscriptionActive: boolean
+    message: string
+  }> {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.access_token) {
+        throw new Error('User not authenticated')
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-verify-session`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            session_id: sessionId
+          })
+        }
+      )
+
+      if (!response.ok) {
+        const error = await response.text()
+        throw new Error(`Failed to verify payment session: ${error}`)
+      }
+
+      const result = await response.json()
+      return result
+    } catch (error) {
+      console.error('Error verifying payment session:', error)
+      return {
+        success: false,
+        subscriptionActive: false,
+        message: 'Kon betaling niet verifiëren'
+      }
+    }
+  }
 } 
