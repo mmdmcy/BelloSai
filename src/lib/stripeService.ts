@@ -1,9 +1,9 @@
 import { supabase } from './supabase'
 import type { Database } from './supabase'
 
-type StripeCustomer = Database['public']['Tables']['stripe_customers']['Row']
-type StripeSubscription = Database['public']['Tables']['stripe_subscriptions']['Row']
-type StripeUserSubscription = Database['public']['Views']['stripe_user_subscriptions']['Row']
+export type StripeCustomer = Database['public']['Tables']['stripe_customers']['Row']
+export type StripeSubscription = Database['public']['Tables']['stripe_subscriptions']['Row']
+export type StripeUserSubscription = Database['public']['Views']['stripe_user_subscriptions']['Row']
 
 // Subscription plans configuratie (zoals in Bible Kitty)
 export interface SubscriptionPlan {
@@ -65,7 +65,7 @@ export class StripeService {
           body: JSON.stringify({
             price_id: priceId,
             success_url: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${window.location.origin}/pricing`
+            cancel_url: `${window.location.origin}/`
           })
         }
       )
@@ -262,7 +262,4 @@ export class StripeService {
       return false
     }
   }
-}
-
-// Export types voor gebruik in andere bestanden
-export type { StripeCustomer, StripeSubscription, StripeUserSubscription } 
+} 
