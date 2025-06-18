@@ -60,24 +60,38 @@ const AnimatedText: React.FC<{
   const [displayContent, setDisplayContent] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
   const animationRef = useRef<number>();
+  const intervalRef = useRef<NodeJS.Timeout>();
   
   useEffect(() => {
     if (!isStreaming) {
       setDisplayContent(content);
+      setCurrentIndex(content.length);
       return;
+    }
+    
+    // Clear any existing animation
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+    }
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
     }
     
     // Smooth character-by-character animation for streaming
     if (currentIndex < content.length) {
-      animationRef.current = requestAnimationFrame(() => {
+      // Use slower, more natural timing for character reveal
+      intervalRef.current = setTimeout(() => {
         setDisplayContent(content.slice(0, currentIndex + 1));
         setCurrentIndex(prev => prev + 1);
-      });
+      }, 25 + Math.random() * 15); // Variable timing between 25-40ms for natural effect
     }
     
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
+      }
+      if (intervalRef.current) {
+        clearTimeout(intervalRef.current);
       }
     };
   }, [content, currentIndex, isStreaming]);
@@ -89,74 +103,89 @@ const AnimatedText: React.FC<{
   
   return (
     <div 
-      className={`prose ${isDark ? 'prose-invert' : 'prose-gray'} max-w-none mb-4 transition-all duration-300 ease-in-out`}
+      className={`prose ${isDark ? 'prose-invert' : 'prose-gray'} max-w-none mb-4 transition-all duration-500 ease-out streaming-container`}
       style={{ 
         fontFamily: customization.fontFamily,
-        opacity: isStreaming ? 0.95 : 1
+        opacity: isStreaming ? 0.95 : 1,
+        transform: isStreaming ? 'translateY(2px)' : 'translateY(0)',
       }}
     >
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeHighlight]}
-        components={{
-          // Custom styling for code blocks with fade animation
-          pre: ({ children, ...props }) => (
-            <div className={`rounded-xl overflow-hidden ${
-              isDark ? 'bg-gray-900' : 'bg-white'
-            } border ${isDark ? 'border-gray-700' : 'border-purple-200'} transform transition-all duration-500 ease-in-out hover:scale-[1.02]`}>
-              <div 
-                className="flex items-center justify-between px-4 py-3 border-b text-white"
-                style={{ 
-                  backgroundColor: customization.primaryColor,
-                  borderBottomColor: isDark ? '#374151' : customization.primaryColor + '40'
-                }}
-              >
-                <span 
-                  className="text-sm font-medium"
-                  style={{ fontFamily: customization.fontFamily }}
-                >
-                  Code
-                </span>
-                <button 
-                  className="p-1 rounded hover:bg-black/10 text-white transition-all duration-200 hover:scale-110"
-                  onClick={() => {
-                    const code = (children as any)?.props?.children?.[0]?.props?.children;
-                    if (code && typeof code === 'string') {
-                      navigator.clipboard.writeText(code);
-                    }
+      <div className="relative">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          rehypePlugins={[rehypeHighlight]}
+          components={{
+            // Custom styling for code blocks with fade animation
+            pre: ({ children, ...props }) => (
+              <div className={`rounded-xl overflow-hidden ${
+                isDark ? 'bg-gray-900' : 'bg-white'
+              } border ${isDark ? 'border-gray-700' : 'border-purple-200'} transform transition-all duration-500 ease-in-out hover:scale-[1.02] shadow-lg`}>
+                <div 
+                  className="flex items-center justify-between px-4 py-3 border-b text-white"
+                  style={{ 
+                    backgroundColor: customization.primaryColor,
+                    borderBottomColor: isDark ? '#374151' : customization.primaryColor + '40'
                   }}
                 >
-                  <Copy className="w-4 h-4" />
-                </button>
+                  <span 
+                    className="text-sm font-medium"
+                    style={{ fontFamily: customization.fontFamily }}
+                  >
+                    Code
+                  </span>
+                  <button 
+                    className="p-1 rounded hover:bg-black/10 text-white transition-all duration-200 hover:scale-110"
+                    onClick={() => {
+                      const code = (children as any)?.props?.children?.[0]?.props?.children;
+                      if (code && typeof code === 'string') {
+                        navigator.clipboard.writeText(code);
+                      }
+                    }}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="p-4">
+                  <pre 
+                    {...props}
+                    className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'} overflow-x-auto m-0`}
+                    style={{ fontFamily: 'Monaco, Consolas, monospace' }}
+                  >
+                    {children}
+                  </pre>
+                </div>
               </div>
-              <div className="p-4">
-                <pre 
-                  {...props}
-                  className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'} overflow-x-auto m-0`}
-                  style={{ fontFamily: 'Monaco, Consolas, monospace' }}
-                >
-                  {children}
-                </pre>
-              </div>
-            </div>
-          ),
-          // Animated paragraphs
-          p: ({ children, ...props }) => (
-            <p 
-              className={`mb-4 leading-relaxed ${isDark ? 'text-gray-200' : 'text-gray-700'} transition-all duration-300 ease-in-out`}
-              style={{ fontFamily: customization.fontFamily }}
-              {...props}
-            >
-              {children}
-            </p>
-          ),
-        }}
-      >
-        {displayContent}
-      </ReactMarkdown>
-      {isStreaming && (
-        <span className="inline-block w-2 h-5 bg-current animate-pulse ml-1" />
-      )}
+            ),
+            // Animated paragraphs with fade effect
+            p: ({ children, ...props }) => (
+              <p 
+                className={`mb-4 leading-relaxed ${isDark ? 'text-gray-200' : 'text-gray-700'} transition-all duration-500 ease-out`}
+                style={{ 
+                  fontFamily: customization.fontFamily,
+                  textShadow: isStreaming ? '0 0 8px rgba(139, 92, 246, 0.3)' : 'none'
+                }}
+                {...props}
+              >
+                {children}
+              </p>
+            ),
+          }}
+        >
+          {displayContent}
+        </ReactMarkdown>
+        
+        {/* Enhanced streaming cursor with glow effect */}
+        {isStreaming && (
+          <span 
+            className="inline-block w-0.5 h-5 ml-1 animate-pulse"
+            style={{
+              background: `linear-gradient(to bottom, ${customization.primaryColor}, ${customization.secondaryColor})`,
+              boxShadow: `0 0 8px ${customization.primaryColor}60`,
+              borderRadius: '1px'
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 });
