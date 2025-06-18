@@ -1591,7 +1591,7 @@ function App() {
           )}
 
           {/* Mobile Chat Area - Separate draggable element */}
-          {mobileLayout.mobileChatArea && messages.length > 0 && (
+          {mobileLayout.mobileChatArea && messages.length > 0 && isMobile && (
             <div 
               className="overflow-hidden pointer-events-auto"
               style={{
@@ -1962,7 +1962,7 @@ function App() {
                       isLoggedIn={!!user}
                       onLoginClick={() => setShowLoginModal(true)}
                     />
-                  ) : (
+                  ) : !isMobile && (
                     <ChatView 
                       isDark={isDark} 
                       messages={messages}
