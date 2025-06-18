@@ -14,6 +14,7 @@ interface UseSubscriptionReturn {
   cancelSubscription: () => Promise<boolean>
   reactivateSubscription: () => Promise<boolean>
   refreshSubscription: () => Promise<void>
+  forceSyncSubscription: () => Promise<void>
 }
 
 export function useSubscription(): UseSubscriptionReturn {
@@ -201,6 +202,32 @@ export function useSubscription(): UseSubscriptionReturn {
     fetchSubscriptionData()
   }, [fetchSubscriptionData])
 
+  // Force sync subscription data
+  const forceSyncSubscription = useCallback(async () => {
+    try {
+      console.log('🔧 [useSubscription] Force syncing subscription...')
+      setLoading(true)
+      setError(null)
+      
+      // Use the new force refresh method
+      const syncResult = await StripeService.forceRefreshSubscription()
+      
+      if (syncResult.success) {
+        console.log('✅ [useSubscription] Force sync successful, refreshing data...')
+        // Refresh local data after successful sync
+        await fetchSubscriptionData()
+      } else {
+        console.error('❌ [useSubscription] Force sync failed:', syncResult.message)
+        setError(syncResult.message)
+      }
+    } catch (err) {
+      console.error('❌ [useSubscription] Force sync error:', err)
+      setError('Failed to sync subscription data')
+    } finally {
+      setLoading(false)
+    }
+  }, [fetchSubscriptionData])
+
   return {
     subscription,
     customer,
@@ -212,5 +239,6 @@ export function useSubscription(): UseSubscriptionReturn {
     cancelSubscription,
     reactivateSubscription,
     refreshSubscription,
+    forceSyncSubscription,
   }
 } 

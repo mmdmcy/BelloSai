@@ -27,7 +27,8 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
     subscription, 
     hasActiveSubscription, 
     loading: subscriptionLoading, 
-    createCheckoutSession 
+    createCheckoutSession,
+    forceSyncSubscription
   } = useSubscription();
 
   // Add a local timeout to override subscription loading if it takes too long
@@ -258,6 +259,27 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
           </p>
         </div>
       )}
+
+      {/* Debug: Force Sync Button */}
+      <div className={`mt-4 p-4 rounded-lg border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+        <h3 className={`text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+          Subscription Debug
+        </h3>
+        <button
+          onClick={forceSyncSubscription}
+          disabled={localSubscriptionLoading}
+          className={`px-4 py-2 text-sm rounded-md border transition-colors ${
+            isDark 
+              ? 'border-gray-600 text-gray-300 hover:bg-gray-700 disabled:opacity-50' 
+              : 'border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50'
+          }`}
+        >
+          {localSubscriptionLoading ? 'Syncing...' : 'Force Sync Subscription'}
+        </button>
+        <p className={`text-xs mt-2 ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+          Als je een betaling hebt gedaan maar nog steeds "Free Plan" ziet, klik hier om je abonnement te synchroniseren.
+        </p>
+      </div>
 
       {/* Current Subscription Info - Show if subscribed */}
       {hasActiveSubscription && subscription && (
@@ -495,165 +517,33 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
           </div>
         </div>
       </div>
-
-      {/* Font Selection */}
-      <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
-        <h4 className={`font-medium mb-4 flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          <Type className="w-5 h-5" />
-          Font Family
-        </h4>
-        
-        <select
-          value={tempCustomization.fontFamily}
-          onChange={(e) => handleTempCustomizationChange({ fontFamily: e.target.value })}
-          className={`w-full p-3 rounded-lg border ${
-            isDark 
-              ? 'bg-gray-700 border-gray-600 text-white' 
-              : 'bg-white border-gray-300 text-gray-900'
-          }`}
-        >
-          {fontOptions.map((font) => (
-            <option key={font} value={font} style={{ fontFamily: font }}>
-              {font}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Gradient Toggle */}
-      <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
-        <div className="flex items-center justify-between">
-          <div>
-            <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Gradient Effects
-            </h4>
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-              Enable gradient backgrounds and effects
-            </p>
-          </div>
-          <button
-            onClick={() => handleTempCustomizationChange({ gradientEnabled: !tempCustomization.gradientEnabled })}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              tempCustomization.gradientEnabled ? 'bg-purple-600' : isDark ? 'bg-gray-600' : 'bg-gray-300'
-            }`}
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                tempCustomization.gradientEnabled ? 'translate-x-6' : 'translate-x-1'
-              }`}
-            />
-          </button>
-        </div>
-      </div>
     </div>
   );
-
-  const renderAPIKeysTab = () => (
-    <div className="space-y-6" style={{ fontFamily: customization.fontFamily }}>
-      <div className={`p-8 text-center rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
-        <h3 className={`text-xl font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          API Keys (BYOK)
-        </h3>
-        <p className={`mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-          Gebruik je eigen API keys voor directe toegang tot AI providers. 
-          Keys worden veilig versleuteld opgeslagen.
-        </p>
-        <button
-          onClick={() => {
-            onOpenAPIKeyManager?.();
-          }}
-          className="px-6 py-3 rounded-lg text-white font-medium transition-colors hover:opacity-90"
-          style={{ 
-            background: customization.gradientEnabled 
-              ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-              : customization.primaryColor
-          }}
-        >
-          Beheer API Keys
-        </button>
-      </div>
-    </div>
-  );
-
-  const renderGenericTab = (title: string) => (
-    <div className="space-y-6" style={{ fontFamily: customization.fontFamily }}>
-      <div className={`p-8 text-center rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
-        <h3 className={`text-xl font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          {title}
-        </h3>
-        <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-          This section is coming soon. We're working hard to bring you more features!
-        </p>
-      </div>
-    </div>
-  );
-
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'Account':
-        return renderAccountTab();
-      case 'Customization':
-        return renderCustomizationTab();
-      case 'API Keys':
-        return renderAPIKeysTab();
-      default:
-        return renderGenericTab(activeTab);
-    }
-  };
 
   return (
-    <div 
-      className={`w-[800px] max-w-[90vw] max-h-[90vh] rounded-lg shadow-2xl overflow-hidden ${
-        isDark ? 'bg-gray-900 text-white' : 'bg-white text-gray-900'
-      }`}
-      style={{ fontFamily: customization.fontFamily }}
-    >
+    <div className="flex flex-col h-full">
       {/* Header */}
-      <div className={`flex items-center justify-between p-6 border-b ${
-        isDark ? 'border-gray-700' : 'border-gray-200'
-      }`}>
-        <h2 className="text-2xl font-bold">Account Settings</h2>
+      <div className="flex items-center justify-between p-4">
         <button
           onClick={onClose}
           className={`p-2 rounded-lg transition-colors ${
-            isDark 
-              ? 'text-gray-400 hover:text-white hover:bg-gray-700' 
-              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            isDark ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-800'
           }`}
         >
-          <X className="w-6 h-6" />
+          <ChevronLeft className="w-5 h-5" />
         </button>
+        <h1 className="text-xl font-semibold">Account</h1>
+        <div className="flex items-center gap-4">
+          {/* Add any other header components here */}
+        </div>
       </div>
 
-      <div className="flex h-[600px]">
-        {/* Sidebar */}
-        <div className={`w-64 border-r ${isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-gray-50'}`}>
-          <nav className="p-4 space-y-2">
-            {tabs.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
-                  activeTab === tab
-                    ? isDark
-                      ? 'bg-gray-700 text-white'
-                      : 'bg-white text-gray-900 shadow-sm'
-                    : isDark
-                      ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                      : 'text-gray-600 hover:bg-white hover:text-gray-900'
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-6">
-            {renderTabContent()}
-          </div>
+      {/* Tabs */}
+      <div className="flex flex-col flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden">
+          {/* Tab Content */}
+          {activeTab === 'Account' && renderAccountTab()}
+          {activeTab === 'Customization' && renderCustomizationTab()}
         </div>
       </div>
     </div>
