@@ -23,7 +23,7 @@
  * - UI state (modals, sidebars, etc.)
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatView from './components/ChatView';
 import MainContent from './components/MainContent';
@@ -743,56 +743,79 @@ function App() {
    * Creates user message and gets AI response from DeepSeek
    * Supports both authenticated and anonymous users
    */
-  const sendMessage = async (content: string) => {
-    setChatError(null); // Reset error bij nieuw bericht
-    let aiMessageId: string | null = null;
-    let currentConvoId: string | null = currentConversationId;
+  const sendMessage = async (content: string, regenerate = false, targetModel?: string) => {
+    console.log('📨 sendMessage called with:', { content, regenerate, targetModel });
+    
+    // Performance optimization: Early validation
+    if (!content.trim() && !regenerate) {
+      console.warn('⚠️ Empty message content, aborting');
+      return;
+    }
+
+    if (isGenerating) {
+      console.warn('⚠️ Already generating, aborting new request');
+      return;
+    }
+
+    // Clear any existing errors
+    setChatError(null);
+
+    // Use target model if provided, otherwise use selected model
+    const modelToUse = targetModel || selectedModel;
+    if (!modelToUse) {
+      console.error('❌ No model selected');
+      setChatError('Geen model geselecteerd. Selecteer een AI model om te chatten.');
+      return;
+    }
+
     let requestTimeoutId: NodeJS.Timeout | null = null;
+    let aiMessageId: string | null = null;
 
     try {
-      console.log('🚀 sendMessage called with:', content);
-      console.log('🔍 Current isGenerating state:', isGenerating);
+      console.log('🚀 Starting message send process...');
       
-      if (isGenerating) {
-        console.log('⚠️ Already generating, skipping request');
-        return; // Prevent multiple simultaneous requests
-      }
-
-      if (!content || content.trim() === '') {
-        console.log('⚠️ Empty message content, skipping request');
-        return; // Don't send empty messages
-      }
-
-      // Check anonymous user limits if not logged in
-      if (!user) {
-        if (!anonymousUsageService.canSendMessage()) {
-          const stats = anonymousUsageService.getUsageStats();
-          const errorMessage: Message = {
-            id: Date.now().toString(),
-            type: 'ai',
-            content: `Je hebt je dagelijkse limiet van ${stats.limit} berichten bereikt. Log in voor onbeperkt gebruik of probeer het morgen opnieuw. Je limiet wordt gereset om ${stats.resetTime}.`,
-            timestamp: new Date()
-          };
-          setMessages(prev => [...prev, errorMessage]);
-          return;
-        }
+      // Add user message to UI (only if not regenerating)
+      let userMessageId: string | null = null;
+      if (!regenerate) {
+        userMessageId = Date.now().toString();
+        const userMessage: Message = {
+          id: userMessageId,
+          type: 'user',
+          content: content.trim(),
+          timestamp: new Date()
+        };
         
-        // Increment usage for anonymous users
-        anonymousUsageService.incrementMessageCount();
+        setMessages(prev => [...prev, userMessage]);
+        console.log('✅ User message added to UI');
+      } else {
+        console.log('🔄 Regenerating - skipping user message');
+      }
+
+      // Prepare chat messages for API
+      const currentMessages = !regenerate ? 
+        [...messages, { id: userMessageId!, type: 'user' as const, content: content.trim(), timestamp: new Date() }] :
+        messages;
+        
+      const chatMessages = currentMessages
+        .filter(msg => msg.content.trim() !== '')
+        .map(msg => ({
+          type: msg.type,
+          content: msg.content
+        }));
+      
+      console.log('📋 Prepared chat messages:', chatMessages.length);
+      
+      // Get current conversation ID
+      const currentConvoId = regenerate ? currentConversationId : (currentConversationId || crypto.randomUUID());
+      if (!regenerate && !currentConversationId) {
+        setCurrentConversationId(currentConvoId);
+        console.log('🆔 Generated new conversation ID:', currentConvoId);
       }
       
-      const userMessage: Message = {
-        id: Date.now().toString(),
-        type: 'user',
-        content: content.trim(),
-        timestamp: new Date()
-      };
-
-      console.log('📝 Adding user message:', userMessage);
-      setMessages(prev => [...prev, userMessage]);
+      // Increment message count
       setMessageCount(prev => prev + 1);
       
-      // Create AI message placeholder for streaming
+      // Create AI message placeholder for streaming with optimized initial state
       console.log('🤖 Creating AI message placeholder...');
       aiMessageId = (Date.now() + 1).toString();
       const aiMessage: Message = {
@@ -800,17 +823,17 @@ function App() {
         type: 'ai',
         content: '',
         timestamp: new Date(),
-        model: selectedModel // modelcode opslaan
+        model: modelToUse // store model code
       };
       
       setMessages(prev => [...prev, aiMessage]);
       setIsGenerating(true);
       console.log('🔄 Set isGenerating to true');
 
-      // Set up request timeout (45 seconds - faster feedback)
+      // Optimized request timeout (30 seconds instead of 45 for faster feedback)
       requestTimeoutId = setTimeout(() => {
-        console.error('⏰ Request timeout after 45 seconds');
-        setChatError('The request took too long. Try again or try a shorter question.');
+        console.error('⏰ Request timeout after 30 seconds');
+        setChatError('Het verzoek duurde te lang. Probeer opnieuw of probeer een kortere vraag.');
         setIsGenerating(false);
         
         // Update AI message with timeout error
@@ -819,97 +842,94 @@ function App() {
             msg.id === aiMessageId 
               ? { 
                   ...msg, 
-                  content: 'The request took too long. Try again or try a shorter question.' 
+                  content: 'Het verzoek duurde te lang. Probeer opnieuw of probeer een kortere vraag.' 
                 }
               : msg
           ));
         }
-      }, 45000);
+      }, 30000); // Reduced from 45 seconds to 30 seconds
 
-      // Create or get conversation
-      if (!currentConvoId && user) {
-        console.log('🆕 Creating new conversation for user:', user.id);
-        try {
-          const newConversation = await chatFeaturesService.createConversation(user.id, content.trim(), selectedModel);
-          currentConvoId = newConversation.id; // Extract only the ID
-          setCurrentConversationId(currentConvoId);
-          console.log('✅ New conversation created:', currentConvoId);
-          
-          // Add the new conversation to the conversations list immediately
-          setConversations(prev => [newConversation, ...prev]);
-          console.log('✅ New conversation added to list');
-        } catch (error) {
-          console.error('❌ Failed to create conversation:', error);
-          // Continue without conversation - AI will still work, just won't be saved
-          console.log('⚠️ Continuing without conversation - messages will not be saved');
-        }
+      // Early conversation title generation for better UX
+      if (!regenerate && currentMessages.length <= 2 && conversationTitle === 'Untitled Conversation') {
+        // Generate title in background without blocking the main request
+        setTimeout(async () => {
+          try {
+                         const title = await chatFeaturesService.generateConversationTitle(
+               chatMessages.map(msg => ({ role: msg.type === 'user' ? 'user' : 'assistant', content: msg.content }))
+             );
+            if (title && title !== 'Nieuwe Conversatie') {
+              setConversationTitle(title);
+              console.log('✅ Generated conversation title:', title);
+            }
+          } catch (titleError) {
+            console.warn('⚠️ Failed to generate title:', titleError);
+          }
+        }, 100); // Small delay to not interfere with main request
       }
-
-      // Save user message to database if we have a conversation
-      if (currentConvoId) {
-        try {
-          console.log('💾 Saving user message to database...');
-          // Ensure we pass a string ID
-          await chatFeaturesService.saveMessage(currentConvoId, 'user', content.trim());
-          console.log('✅ User message saved to database');
-        } catch (error) {
-          console.error('❌ Failed to save user message:', error);
-          // Continue without saving
-        }
-      }
-
-      // Convert messages to ChatMessage format
-      const chatMessages: ChatMessage[] = [...messages, userMessage].map(msg => ({
-        type: msg.type,
-        content: msg.content
-      }));
-
-      console.log('🔄 About to call sendChatMessage...');
-      console.log('📋 Chat messages count:', chatMessages.length);
-      console.log('📋 Last message:', chatMessages[chatMessages.length - 1]);
-      console.log('🤖 Selected model:', selectedModel);
       
       // Validation checks
       if (!chatMessages || chatMessages.length === 0) {
-        throw new Error('No chat messages available for sending');
+        throw new Error('Geen chatberichten beschikbaar voor verzending');
       }
       
-      if (!selectedModel) {
-        throw new Error('No model selected');
+      if (!modelToUse) {
+        throw new Error('Geen model geselecteerd');
       }
       
       console.log('✅ Pre-flight checks passed, calling sendChatMessage...');
 
-      // Send to DeepSeek with streaming
+      // Optimized streaming with better chunk handling
       console.log('📡 Calling sendChatMessage with parameters:');
       console.log('  - Messages count:', chatMessages.length);
-      console.log('  - Model:', selectedModel);
+      console.log('  - Model:', modelToUse);
       console.log('  - AI Message ID:', aiMessageId);
       console.log('  - Conversation ID:', currentConvoId);
       
       let fullResponse = '';
+      let streamBuffer = '';
+      let lastUpdateTime = Date.now();
+      const UPDATE_THROTTLE = 50; // Update UI every 50ms for smoother streaming
 
       try {
         console.log('🚀 Starting sendChatMessage call...');
         fullResponse = await sendChatMessage(
             chatMessages,
-            selectedModel as DeepSeekModel,
+            modelToUse as DeepSeekModel,
             async (chunk: string) => {
               if (!chunk) return;
               
-              console.log('📦 Received streaming chunk:', chunk.length, 'chars');
+              // Add chunk to buffer
+              streamBuffer += chunk;
               
-              // Update the AI message with streaming content (UI only, no database save yet)
-              setMessages(prev => prev.map(msg => 
-                msg.id === aiMessageId 
-                  ? { ...msg, content: msg.content + chunk }
-                  : msg
-              ));
+              // Throttled UI updates for better performance
+              const now = Date.now();
+              if (now - lastUpdateTime >= UPDATE_THROTTLE || streamBuffer.length > 100) {
+                console.log('📦 Processing buffered chunks:', streamBuffer.length, 'chars');
+                
+                // Update the AI message with buffered content
+                setMessages(prev => prev.map(msg => 
+                  msg.id === aiMessageId 
+                    ? { ...msg, content: msg.content + streamBuffer }
+                    : msg
+                ));
 
-              fullResponse += chunk;
+                fullResponse += streamBuffer;
+                streamBuffer = ''; // Clear buffer
+                lastUpdateTime = now;
+              }
             },
             currentConvoId || undefined
           );
+        
+        // Process any remaining buffer
+        if (streamBuffer) {
+          setMessages(prev => prev.map(msg => 
+            msg.id === aiMessageId 
+              ? { ...msg, content: msg.content + streamBuffer }
+              : msg
+          ));
+          fullResponse += streamBuffer;
+        }
         
         console.log('✅ sendChatMessage completed successfully');
         console.log('📝 Full response length:', fullResponse?.length || 0);
@@ -919,103 +939,73 @@ function App() {
           clearTimeout(requestTimeoutId);
           requestTimeoutId = null;
         }
+        
+        // Validate response
+        if (!fullResponse || fullResponse.trim() === '') {
+          throw new Error('Lege response ontvangen van AI service');
+        }
 
-        // Save final message to database if we have a conversation
-        if (currentConvoId && fullResponse) {
-          try {
-            console.log('💾 Saving final AI message to database...');
-            await chatFeaturesService.saveMessage(currentConvoId, 'assistant', fullResponse, selectedModel);
-            console.log('✅ Final AI message saved to database');
-            
-            // Generate and update conversation title if this is a new conversation
-            if (messages.length <= 2) { // Only for new conversations (user + AI message)
-              // Do this in the background to not block the UI
-              const updateTitle = async () => {
-                try {
-                  console.log('📝 Generating conversation title...');
-                  const conversationMessages = [
-                    { role: 'user', content: content.trim() },
-                    { role: 'assistant', content: fullResponse }
-                  ];
-                  const newTitle = await chatFeaturesService.generateConversationTitle(conversationMessages);
-                  
-                  // Update database in background
-                  if (currentConvoId) {
-                    chatFeaturesService.updateConversationTitle(currentConvoId, newTitle)
-                      .catch(error => console.error('⚠️ Failed to update title in database:', error));
-                  }
-                  
-                  // Update local state immediately
-                  setConversationTitle(newTitle);
-                  setConversations(prev => prev.map(conv => 
-                    conv.id === currentConvoId ? { ...conv, title: newTitle } : conv
-                  ));
-                  console.log('✅ Conversation title updated:', newTitle);
-                } catch (titleError) {
-                  console.error('⚠️ Failed to generate conversation title:', titleError);
-                }
-              };
-              
-              // Don't await this - let it run in background
-              updateTitle();
+        console.log('💾 Saving messages to database...');
+        
+        // Save messages to database with fire-and-forget for better performance
+        if (user && currentConvoId) {
+          const savePromise = (async () => {
+            try {
+                             // Save user message (if not regenerating)
+               if (!regenerate && userMessageId) {
+                 await chatFeaturesService.saveMessage(
+                   currentConvoId,
+                   'user',
+                   content.trim()
+                 );
+                 console.log('✅ User message saved to database');
+               }
+
+               // Save AI response
+               await chatFeaturesService.saveMessage(
+                 currentConvoId,
+                 'assistant',
+                 fullResponse,
+                 modelToUse
+               );
+               console.log('✅ AI response saved to database');
+
+               // Update conversation title if needed (background task)
+               if (conversationTitle === 'Untitled Conversation' || !conversationTitle) {
+                 const title = await chatFeaturesService.generateConversationTitle(
+                   chatMessages.concat([{ type: 'ai', content: fullResponse }])
+                     .map(msg => ({ role: msg.type === 'user' ? 'user' : 'assistant', content: msg.content }))
+                 );
+                 if (title && title !== 'Nieuwe Conversatie') {
+                   setConversationTitle(title);
+                   console.log('✅ Updated conversation title:', title);
+                 }
+               }
+
+               // Refresh conversations list
+               await loadConversations();
+              console.log('✅ Conversations list refreshed');
+            } catch (saveError) {
+              console.error('❌ Error saving messages:', saveError);
+              // Don't throw - this is fire-and-forget
             }
-          } catch (error) {
-            console.error('❌ Failed to save final AI message:', error);
-          }
-        }
-
-      } catch (error) {
-        // Clear timeout since request failed
-        if (requestTimeoutId) {
-          clearTimeout(requestTimeoutId);
-          requestTimeoutId = null;
-        }
-
-        console.error('❌ sendChatMessage failed:', error);
-        
-        // Handle specific error types
-        let errorMessage = 'An unknown error occurred.';
-        
-        if (error instanceof Error) {
-          if (error.message.includes('timeout') || error.message.includes('took too long')) {
-            errorMessage = 'The request took too long. Try again or try a shorter question.';
-          } else if (error.message.includes('rate limit') || error.message.includes('429')) {
-            errorMessage = 'You have reached the maximum number of requests. Wait a moment and try again.';
-          } else if (error.message.includes('authentication') || error.message.includes('401')) {
-            errorMessage = 'Authentication error. Try logging in again.';
-          } else if (error.message.includes('network') || error.message.includes('fetch')) {
-            errorMessage = 'Network error. Check your internet connection and try again.';
-          } else {
-            errorMessage = error.message;
-          }
+          })();
+          
+          // Don't await the save operation - let it run in background
+          savePromise.catch(err => console.error('Background save error:', err));
         }
         
-        setChatError(errorMessage);
-        
-        // Update AI message with error
+        // Update with final response (ensure content is set correctly)
         setMessages(prev => prev.map(msg => 
           msg.id === aiMessageId 
-            ? { 
-                ...msg, 
-                content: errorMessage
-              }
+            ? { ...msg, content: fullResponse, model: modelToUse }
             : msg
         ));
-        
-        throw error;
-      }
 
-      // Ensure we have content
-      if (!fullResponse || fullResponse.trim() === '') {
-        throw new Error('Empty response received from AI service');
+      } catch (streamError) {
+        console.error('❌ Streaming error:', streamError);
+        throw streamError; // Re-throw to be handled by outer catch
       }
-      
-      // Update with final response
-      setMessages(prev => prev.map(msg => 
-        msg.id === aiMessageId 
-          ? { ...msg, content: fullResponse, model: selectedModel }
-          : msg
-      ));
 
     } catch (error) {
       console.error('❌ Message sending failed:', error);
@@ -1026,13 +1016,32 @@ function App() {
         requestTimeoutId = null;
       }
       
-      // Only show error message if we haven't already
+      // Enhanced error handling with better user messages
+      let errorMessage = 'Er is een fout opgetreden bij het verwerken van je bericht.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('timeout') || error.message.includes('Timeout')) {
+          errorMessage = 'Het verzoek duurde te lang. Probeer opnieuw met een kortere vraag.';
+        } else if (error.message.includes('limit') || error.message.includes('Limit')) {
+          errorMessage = 'Je hebt je berichtenlimiet bereikt. Upgrade je account voor meer berichten.';
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = 'Netwerkfout. Controleer je internetverbinding en probeer opnieuw.';
+        } else if (error.message.includes('auth') || error.message.includes('token')) {
+          errorMessage = 'Authenticatiefout. Log opnieuw in en probeer het opnieuw.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setChatError(errorMessage);
+      
+      // Update AI message with error (if message was created)
       if (aiMessageId) {
         setMessages(prev => prev.map(msg => 
           msg.id === aiMessageId 
             ? { 
                 ...msg, 
-                content: 'Er is een fout opgetreden bij het verwerken van je bericht. Probeer het opnieuw of neem contact op met support als het probleem aanhoudt.' 
+                content: errorMessage
               }
             : msg
         ));
@@ -1046,6 +1055,33 @@ function App() {
       }
     }
   };
+
+  /**
+   * Regenerate the last AI response with the same or different model
+   */
+  const handleRegenerateResponse = useCallback(async (targetModel?: string) => {
+    if (isGenerating || messages.length === 0) return;
+    
+    // Find the last user message
+    const lastUserMessage = [...messages].reverse().find(msg => msg.type === 'user');
+    if (!lastUserMessage) {
+      console.warn('⚠️ No user message found to regenerate response');
+      return;
+    }
+    
+    // Remove the last AI message if it exists
+    const filteredMessages = messages.filter((msg, index) => {
+      if (index === messages.length - 1 && msg.type === 'ai') {
+        return false; // Remove last AI message
+      }
+      return true;
+    });
+    
+    setMessages(filteredMessages);
+    
+    // Regenerate with the last user message
+    await sendMessage(lastUserMessage.content, true, targetModel);
+  }, [messages, isGenerating, sendMessage]);
 
   /**
    * Handle new chat creation
@@ -1183,40 +1219,7 @@ function App() {
    * Regenerate the last AI response
    * Removes the last AI message and tries to generate a new response
    */
-  const regenerateResponse = async () => {
-    if (isGenerating || messages.length === 0) return;
-    
-    // Find the last AI message
-    let lastAiMessageIndex = -1;
-    for (let i = messages.length - 1; i >= 0; i--) {
-      if (messages[i].type === 'ai') {
-        lastAiMessageIndex = i;
-        break;
-      }
-    }
-    
-    if (lastAiMessageIndex === -1) return;
-    
-    // Find the last user message before the AI message
-    let lastUserMessageIndex = -1;
-    for (let i = lastAiMessageIndex - 1; i >= 0; i--) {
-      if (messages[i].type === 'user') {
-        lastUserMessageIndex = i;
-        break;
-      }
-    }
-    
-    if (lastUserMessageIndex === -1) return;
-    
-    const lastUserMessage = messages[lastUserMessageIndex];
-    
-    // Remove the last AI message
-    setMessages(prev => prev.slice(0, lastAiMessageIndex));
-    
-    // Try to send the last user message again
-    console.log('🔄 Regenerating response for:', lastUserMessage.content);
-    await sendMessage(lastUserMessage.content);
-  };
+
 
   /**
    * Handle search functionality
@@ -1837,7 +1840,7 @@ function App() {
                 onLoginClick={() => setShowLoginModal(true)}
                 error={chatError}
                 setError={setChatError}
-                onRegenerateResponse={regenerateResponse}
+                onRegenerateResponse={() => handleRegenerateResponse()}
               />
             </div>
           )}
@@ -2228,7 +2231,7 @@ function App() {
                       onLoginClick={() => setShowLoginModal(true)}
                       error={chatError}
                       setError={setChatError}
-                      onRegenerateResponse={regenerateResponse}
+                      onRegenerateResponse={() => handleRegenerateResponse()}
                     />
                   )}
                 </div>

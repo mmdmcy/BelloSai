@@ -164,3 +164,236 @@
     background: rgba(255, 255, 255, 0.2);
   }
 }
+
+/* Custom animations voor BelloSai */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes typewriter {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes smoothBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* Utility classes voor animaties */
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slideInFromRight 0.4s ease-out forwards;
+}
+
+.animate-slide-in-left {
+  animation: slideInFromLeft 0.4s ease-out forwards;
+}
+
+.animate-typewriter {
+  animation: typewriter 1s steps(40, end) forwards;
+}
+
+.animate-smooth-bounce {
+  animation: smoothBounce 2s ease-in-out infinite;
+}
+
+/* Streaming text animations */
+.streaming-text {
+  position: relative;
+  overflow: hidden;
+}
+
+.streaming-text::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background: currentColor;
+  animation: pulse 1s infinite;
+}
+
+/* Smooth transitions voor alle interactieve elementen */
+.smooth-transition {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hover effecten voor knoppen */
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Loading spinner optimalisatie */
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Performance optimalisaties */
+.gpu-accelerated {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}
+
+/* Scrollbar styling voor WebKit browsers */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* Dark mode scrollbar */
+.dark .custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Geoptimaliseerde focus states */
+.focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+/* Verbeterde performance voor animaties */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-slide-in-right,
+  .animate-slide-in-left,
+  .animate-typewriter,
+  .animate-smooth-bounce,
+  .smooth-transition {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* Responsive breakpoints voor animaties */
+@media (max-width: 640px) {
+  .animate-fade-in {
+    animation-duration: 0.3s;
+  }
+  
+  .animate-slide-in-right,
+  .animate-slide-in-left {
+    animation-duration: 0.2s;
+  }
+}
+
+/* Container voor streaming animaties */
+.streaming-container {
+  position: relative;
+  min-height: 1.5rem;
+}
+
+.streaming-container .streaming-indicator {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 1rem;
+  background: currentColor;
+  animation: pulse 1s infinite;
+  border-radius: 1px;
+}
+
+/* Smooth transition voor message containers */
+.message-container {
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transform: translateZ(0); /* GPU acceleration */
+}
+
+.message-container:hover {
+  transform: translateY(-1px) translateZ(0);
+}
+
+/* Performance optimalisatie voor markdown content */
+.markdown-content {
+  contain: layout style;
+  will-change: contents;
+}
+
+/* Optimalisatie voor grote content */
+.large-content {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 500px;
+}

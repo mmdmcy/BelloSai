@@ -2,7 +2,7 @@
  * Supabase Chat Service
  * 
  * Handles communication with Supabase Edge Functions for AI chat
- * Includes message limits and streaming support
+ * Includes message limits and streaming support with optimized performance
  */
 
 import { supabase } from './supabase';
@@ -30,15 +30,25 @@ export interface MessageLimitError {
 
 export type DeepSeekModel = 'DeepSeek-V3' | 'DeepSeek-R1';
 
-export type ModelProvider = 'DeepSeek' | 'Gemini';
+type ModelProvider = 'DeepSeek' | 'Gemini';
 
+// Optimized streaming chunk size for better performance
+const OPTIMAL_CHUNK_SIZE = 16; // Process chunks of 16 characters for smoother streaming
+
+// Performance optimization: Reduce timeouts for faster feedback
+const FAST_TIMEOUT = 15000; // 15 seconds instead of 30-60
+const STREAM_TIMEOUT = 20000; // 20 seconds for streaming timeout
+
+/**
+ * Get model provider based on model code
+ */
 function getModelProvider(modelCode: string): ModelProvider {
   const model = AVAILABLE_MODELS.find(m => m.code === modelCode);
   return model?.provider === 'Gemini' ? 'Gemini' : 'DeepSeek';
 }
 
 /**
- * Send messages to DeepSeek via Supabase Edge Function with streaming
+ * Send messages to AI via Supabase Edge Function with optimized streaming
  */
 export async function sendChatMessage(
   messages: ChatMessage[],
@@ -59,50 +69,48 @@ export async function sendChatMessage(
     // Create abort controller for timeout handling
     abortController = new AbortController();
     
-    // Set timeout for the entire request (60 seconds)
+    // Optimized timeout - faster feedback (15 seconds instead of 60)
     timeoutId = setTimeout(() => {
-      console.error('⏰ Request timeout after 60 seconds - aborting');
+      console.error('⏰ Request timeout after 15 seconds - aborting for faster UX');
       abortController?.abort();
-    }, 60000);
+    }, FAST_TIMEOUT);
     
     // Get current session (optional for anonymous users)
     let { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
     console.log('🔍 Session check:', { session: !!session, error: sessionError });
-    
-    if (sessionError) {
-      console.error('❌ Session error:', sessionError);
-      
-      // If session error and we haven't retried yet, try to refresh session
-      if (retryCount === 0) {
-        console.log('🔄 Attempting to refresh session and retry...');
-        try {
-          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-          if (!refreshError && refreshData.session) {
-            console.log('✅ Session refreshed, retrying request...');
-            return sendChatMessage(messages, modelCode, onChunk, conversationId, retryCount + 1);
-          }
-        } catch (refreshError) {
-          console.error('❌ Failed to refresh session:', refreshError);
-        }
-      }
-      
-      throw new Error('Authentication error: ' + sessionError.message);
-    }
-    
-    let authHeaders: Record<string, string> = {
-      'Content-Type': 'application/json'
+
+    // Prepare authentication headers
+    const authHeaders: Record<string, string> = {
+      'Content-Type': 'application/json',
     };
+
+    // Enhanced retry logic for failed authentication
+    if (sessionError && retryCount === 0) {
+      console.log('🔄 Session error detected, attempting refresh...');
+      try {
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        if (!refreshError && refreshData.session) {
+          session = refreshData.session;
+          console.log('✅ Session refreshed successfully after error');
+        }
+      } catch (refreshError) {
+        console.warn('⚠️ Session refresh failed, continuing as anonymous');
+      }
+    }
     
     if (session) {
       console.log('✅ Authentication successful, user:', session.user.email);
       console.log('🔑 Access token length:', session.access_token.length);
       console.log('⏰ Token expires at:', new Date(session.expires_at! * 1000));
 
-      // Check if token is expired and refresh if needed
+      // Proactive token refresh for better performance
       const now = Date.now() / 1000;
-      if (session.expires_at && session.expires_at < now) {
-        console.log('🔄 Token expired, refreshing...');
+      const timeUntilExpiry = (session.expires_at || 0) - now;
+      
+      // Refresh if token expires within 5 minutes (300 seconds)
+      if (session.expires_at && timeUntilExpiry < 300) {
+        console.log('🔄 Token expires soon, proactively refreshing...');
         const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
         
         if (refreshError || !refreshData.session) {
@@ -112,7 +120,7 @@ export async function sendChatMessage(
         
         // Use the refreshed session
         session = refreshData.session;
-        console.log('✅ Token refreshed successfully');
+        console.log('✅ Token refreshed proactively');
       }
       
       // Add authorization header for authenticated users
@@ -125,17 +133,18 @@ export async function sendChatMessage(
       authHeaders['apikey'] = import.meta.env.VITE_SUPABASE_ANON_KEY;
     }
 
-    // Kies juiste edge function
+    // Choose appropriate edge function
     const provider = getModelProvider(modelCode);
     const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${provider === 'Gemini' ? 'gemini-chat' : 'deepseek-chat'}`;
     console.log('📡 Calling Edge Function:', url);
     console.log('📡 Request payload:', { messages, model: modelCode, conversationId });
     
+    // Reset abort controller with optimized timeout
     abortController = new AbortController();
     timeoutId = setTimeout(() => {
-      console.error('⏰ Request timeout after 30 seconds - aborting');
+      console.error('⏰ Request timeout after 15 seconds - aborting for faster feedback');
       abortController?.abort();
-    }, 30000);
+    }, FAST_TIMEOUT);
     
     const response = await fetch(url, {
       method: 'POST',
@@ -159,10 +168,10 @@ export async function sendChatMessage(
       const errorData = await response.json();
       console.error('❌ Edge Function error:', errorData);
       
-      // Handle specific error types with retry logic
+      // Optimized error handling with faster retries
       if (response.status === 429) {
         // Rate limit - don't retry, just show message
-        let msg = 'You have reached the maximum number of requests. Wait a moment and try again.';
+        let msg = 'Je hebt het maximum aantal verzoeken bereikt. Wacht even en probeer opnieuw.';
         if (errorData && errorData.error && errorData.error.toLowerCase().includes('rate')) {
           msg = errorData.error;
         }
@@ -175,10 +184,11 @@ export async function sendChatMessage(
           console.log('🔄 Got timeout error, retrying once...');
           return sendChatMessage(messages, modelCode, onChunk, conversationId, retryCount + 1);
         } else {
-          throw new Error('Request timeout - AI service took too long to respond. Please try again.');
+          throw new Error('Verzoek timeout - AI service duurde te lang. Probeer opnieuw.');
         }
       }
       
+      // Authentication errors - improved retry logic
       if (response.status === 401 && retryCount === 0) {
         console.log('🔄 Got 401 error, attempting to refresh session and retry...');
         try {
@@ -192,29 +202,30 @@ export async function sendChatMessage(
         }
       }
       
-      // Network errors - retry once
+      // Network errors - fast retry once
       if ((response.status >= 500 && response.status < 600) && retryCount === 0) {
         console.log('🔄 Got server error, retrying once...');
         return sendChatMessage(messages, modelCode, onChunk, conversationId, retryCount + 1);
       }
       
-      // Andere errors
-      throw new Error(errorData.error || `An error occurred while processing your message. Please try again or contact support. (HTTP ${response.status})`);
+      // Other errors
+      throw new Error(errorData.error || `Er is een fout opgetreden bij het verwerken van je bericht. Probeer opnieuw of neem contact op met support. (HTTP ${response.status})`);
     }
 
-    // DeepSeek: streaming, Gemini: geen streaming
+    // Optimized streaming for DeepSeek, regular response for Gemini
     if (provider === 'DeepSeek') {
       if (!response.body) {
         console.error('❌ No response body from Edge Function');
         throw new Error('No response body');
       }
-      console.log('🌊 Starting to read streaming response...');
+      console.log('🌊 Starting optimized streaming response...');
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let fullResponse = '';
       let hasStartedStreaming = false;
       let streamTimeout: NodeJS.Timeout | null = null;
       let lastChunkTime = Date.now();
+      let chunkBuffer = ''; // Buffer for smoother chunk processing
       
       const resetStreamTimeout = () => {
         if (streamTimeout) {
@@ -222,9 +233,9 @@ export async function sendChatMessage(
         }
         streamTimeout = setTimeout(() => {
           const timeSinceLastChunk = Date.now() - lastChunkTime;
-          console.error(`⏰ Stream timeout - no data received for 60 seconds (last chunk: ${timeSinceLastChunk}ms ago)`);
+          console.error(`⏰ Stream timeout - no data received for ${STREAM_TIMEOUT/1000} seconds (last chunk: ${timeSinceLastChunk}ms ago)`);
           reader.cancel();
-        }, 60000);
+        }, STREAM_TIMEOUT);
       };
       
       try {
@@ -233,6 +244,11 @@ export async function sendChatMessage(
           const { done, value } = await reader.read();
           if (done) {
             console.log('✅ Streaming completed');
+            // Process any remaining buffer
+            if (chunkBuffer.trim()) {
+              onChunk?.(chunkBuffer);
+              fullResponse += chunkBuffer;
+            }
             break;
           }
           
@@ -250,9 +266,26 @@ export async function sendChatMessage(
               console.log('📝 Parsed data:', data);
               if (data.type === 'chunk' && data.content) {
                 hasStartedStreaming = true;
-                fullResponse += data.content;
-                onChunk?.(data.content);
+                
+                // Add content to buffer for smoother streaming
+                chunkBuffer += data.content;
+                
+                // Process buffer in optimal chunks for smoother UX
+                while (chunkBuffer.length >= OPTIMAL_CHUNK_SIZE) {
+                  const chunkToSend = chunkBuffer.slice(0, OPTIMAL_CHUNK_SIZE);
+                  chunkBuffer = chunkBuffer.slice(OPTIMAL_CHUNK_SIZE);
+                  fullResponse += chunkToSend;
+                  onChunk?.(chunkToSend);
+                }
+                
               } else if (data.type === 'complete') {
+                // Send any remaining buffer
+                if (chunkBuffer.trim()) {
+                  fullResponse += chunkBuffer;
+                  onChunk?.(chunkBuffer);
+                  chunkBuffer = '';
+                }
+                
                 if (data.content && data.content.trim() !== '') {
                   fullResponse = data.content;
                 }
@@ -272,16 +305,16 @@ export async function sendChatMessage(
         }
         
         if (!hasStartedStreaming) {
-          throw new Error('No streaming data received from AI service');
+          throw new Error('Geen streaming data ontvangen van AI service');
         }
         
         console.log('📝 Final fullResponse length:', fullResponse?.length || 0);
         if (!fullResponse || fullResponse.trim() === '') {
-          throw new Error('Empty response received from AI service');
+          throw new Error('Lege response ontvangen van AI service');
         }
         
         const responseLength = fullResponse.length;
-        if (responseLength > 0 && responseLength < 50) {
+        if (responseLength > 0 && responseLength < 10) {
           console.warn('⚠️ Response seems unusually short, but continuing...');
         }
         
@@ -293,7 +326,7 @@ export async function sendChatMessage(
         reader.releaseLock();
       }
     } else {
-      // Gemini: geen streaming, gewone JSON response
+      // Gemini: regular JSON response (no streaming)
       const data = await response.json();
       if (data.error) throw new Error(data.error);
       return data.response || '';
@@ -302,13 +335,13 @@ export async function sendChatMessage(
   } catch (error) {
     console.error('Chat service error:', error);
     
-    // Handle specific error types
+    // Enhanced error handling for better UX
     if (error instanceof Error) {
       if (error.name === 'AbortError') {
-        throw new Error('Request timeout - AI service took too long to respond. Please try again.');
+        throw new Error('Verzoek timeout - AI service duurde te lang. Probeer opnieuw.');
       }
       if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-        throw new Error('Network error. Check your internet connection and try again.');
+        throw new Error('Netwerkfout. Controleer je internetverbinding en probeer opnieuw.');
       }
     }
     

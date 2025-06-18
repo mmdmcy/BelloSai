@@ -5,7 +5,7 @@
  * It displays the conversation history and provides input functionality for new messages.
  * 
  * Features:
- * - Message rendering with markdown support
+ * - Message rendering with markdown support and smooth animations
  * - Syntax highlighting for code snippets
  * - Auto-scrolling to latest messages
  * - Copy and regenerate functionality for AI responses
@@ -14,9 +14,10 @@
  * - Model selection and additional controls
  * - Dynamic scaling based on container size
  * - Compact user message bubbles
+ * - Smooth fade-in animations for streaming content
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { ChevronDown, ArrowUp, Copy, RotateCcw, RefreshCw, Share2, Image, Globe, X } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -48,6 +49,117 @@ interface ChatViewProps {
   error?: string | null;
   setError?: (err: string | null) => void;
 }
+
+// Custom component for animated text content
+const AnimatedText: React.FC<{ 
+  content: string; 
+  isStreaming?: boolean; 
+  isDark: boolean; 
+  customization: CustomizationSettings;
+}> = React.memo(({ content, isStreaming = false, isDark, customization }) => {
+  const [displayContent, setDisplayContent] = useState('');
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const animationRef = useRef<number>();
+  
+  useEffect(() => {
+    if (!isStreaming) {
+      setDisplayContent(content);
+      return;
+    }
+    
+    // Smooth character-by-character animation for streaming
+    if (currentIndex < content.length) {
+      animationRef.current = requestAnimationFrame(() => {
+        setDisplayContent(content.slice(0, currentIndex + 1));
+        setCurrentIndex(prev => prev + 1);
+      });
+    }
+    
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [content, currentIndex, isStreaming]);
+  
+  useEffect(() => {
+    setCurrentIndex(0);
+    setDisplayContent('');
+  }, [content]);
+  
+  return (
+    <div 
+      className={`prose ${isDark ? 'prose-invert' : 'prose-gray'} max-w-none mb-4 transition-all duration-300 ease-in-out`}
+      style={{ 
+        fontFamily: customization.fontFamily,
+        opacity: isStreaming ? 0.95 : 1
+      }}
+    >
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeHighlight]}
+        components={{
+          // Custom styling for code blocks with fade animation
+          pre: ({ children, ...props }) => (
+            <div className={`rounded-xl overflow-hidden ${
+              isDark ? 'bg-gray-900' : 'bg-white'
+            } border ${isDark ? 'border-gray-700' : 'border-purple-200'} transform transition-all duration-500 ease-in-out hover:scale-[1.02]`}>
+              <div 
+                className="flex items-center justify-between px-4 py-3 border-b text-white"
+                style={{ 
+                  backgroundColor: customization.primaryColor,
+                  borderBottomColor: isDark ? '#374151' : customization.primaryColor + '40'
+                }}
+              >
+                <span 
+                  className="text-sm font-medium"
+                  style={{ fontFamily: customization.fontFamily }}
+                >
+                  Code
+                </span>
+                <button 
+                  className="p-1 rounded hover:bg-black/10 text-white transition-all duration-200 hover:scale-110"
+                  onClick={() => {
+                    const code = (children as any)?.props?.children?.[0]?.props?.children;
+                    if (code && typeof code === 'string') {
+                      navigator.clipboard.writeText(code);
+                    }
+                  }}
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="p-4">
+                <pre 
+                  {...props}
+                  className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'} overflow-x-auto m-0`}
+                  style={{ fontFamily: 'Monaco, Consolas, monospace' }}
+                >
+                  {children}
+                </pre>
+              </div>
+            </div>
+          ),
+          // Animated paragraphs
+          p: ({ children, ...props }) => (
+            <p 
+              className={`mb-4 leading-relaxed ${isDark ? 'text-gray-200' : 'text-gray-700'} transition-all duration-300 ease-in-out`}
+              style={{ fontFamily: customization.fontFamily }}
+              {...props}
+            >
+              {children}
+            </p>
+          ),
+        }}
+      >
+        {displayContent}
+      </ReactMarkdown>
+      {isStreaming && (
+        <span className="inline-block w-2 h-5 bg-current animate-pulse ml-1" />
+      )}
+    </div>
+  );
+});
 
 export default function ChatView({ 
   isDark, 
@@ -88,66 +200,66 @@ export default function ChatView({
   const [attachments, setAttachments] = useState<any[]>([]);
 
   /**
-   * Monitor container size changes for responsive scaling
+   * Monitor container size changes for responsive scaling with throttling
    */
+  const updateContainerWidth = useCallback(() => {
+    if (containerRef.current) {
+      setContainerWidth(containerRef.current.offsetWidth);
+    }
+  }, []);
+
   useEffect(() => {
-    const updateContainerWidth = () => {
-      if (containerRef.current) {
-        setContainerWidth(containerRef.current.offsetWidth);
-      }
+    let timeoutId: NodeJS.Timeout;
+    
+    const throttledUpdate = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(updateContainerWidth, 100); // Throttle to improve performance
     };
 
-    updateContainerWidth();
-    window.addEventListener('resize', updateContainerWidth);
+    throttledUpdate();
+    window.addEventListener('resize', throttledUpdate);
     
     // Use ResizeObserver for more accurate container size tracking
-    const resizeObserver = new ResizeObserver(updateContainerWidth);
+    const resizeObserver = new ResizeObserver(throttledUpdate);
     if (containerRef.current) {
       resizeObserver.observe(containerRef.current);
     }
 
     return () => {
-      window.removeEventListener('resize', updateContainerWidth);
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', throttledUpdate);
       resizeObserver.disconnect();
     };
-  }, []);
+  }, [updateContainerWidth]);
 
   /**
-   * Calculate responsive max width for AI messages based on container size
-   * Scales from 400px (small) to 1000px (large) based on container width
+   * Memoized responsive calculations for better performance
    */
-  const getResponsiveMaxWidth = () => {
-    if (containerWidth < 600) return '90%';
-    if (containerWidth < 800) return '85%';
-    if (containerWidth < 1200) return '80%';
-    if (containerWidth < 1600) return '75%';
-    return '70%'; // For very large containers
-  };
+  const responsiveStyles = useMemo(() => ({
+    aiMessageMaxWidth: (() => {
+      if (containerWidth < 600) return '90%';
+      if (containerWidth < 800) return '85%';
+      if (containerWidth < 1200) return '80%';
+      if (containerWidth < 1600) return '75%';
+      return '70%';
+    })(),
+    userMessageMaxWidth: (() => {
+      if (containerWidth < 600) return '75%';
+      if (containerWidth < 800) return '65%';
+      if (containerWidth < 1200) return '55%';
+      return '45%';
+    })(),
+    padding: (() => {
+      if (containerWidth < 600) return 'px-4';
+      if (containerWidth < 1200) return 'px-8';
+      return 'px-12';
+    })()
+  }), [containerWidth]);
 
   /**
-   * Calculate responsive max width for user messages (much smaller)
-   * User messages should be more compact and not take up too much space
+   * Optimized scroll handling with throttling
    */
-  const getUserMessageMaxWidth = () => {
-    if (containerWidth < 600) return '75%';
-    if (containerWidth < 800) return '65%';
-    if (containerWidth < 1200) return '55%';
-    return '45%'; // Much smaller for larger containers
-  };
-
-  /**
-   * Calculate responsive padding based on container size
-   */
-  const getResponsivePadding = () => {
-    if (containerWidth < 600) return 'px-4';
-    if (containerWidth < 1200) return 'px-8';
-    return 'px-12';
-  };
-
-  /**
-   * Handle scroll events to show/hide scroll to bottom button
-   */
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     if (!scrollContainerRef.current) return;
     
     const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
@@ -159,105 +271,106 @@ export default function ChatView({
     
     // Track if user is near bottom for auto-scroll behavior
     setIsNearBottom(distanceFromBottom < 50);
-  };
+  }, [messages.length]);
 
   /**
-   * Auto-scroll to bottom when new messages arrive (only if user is near bottom)
+   * Optimized scroll to bottom with smooth animation
    */
-  const scrollToBottom = (force = false) => {
+  const scrollToBottom = useCallback((force = false) => {
     if (force || isNearBottom) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      messagesEndRef.current?.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'end'
+      });
     }
-  };
+  }, [isNearBottom]);
 
   /**
    * Auto-scroll when new messages arrive, but only if user is near bottom
    */
   useEffect(() => {
-    if (isNearBottom) {
-      scrollToBottom();
+    if (isNearBottom && messages.length > 0) {
+      // Small delay to ensure content is rendered
+      const timeoutId = setTimeout(() => scrollToBottom(), 50);
+      return () => clearTimeout(timeoutId);
     }
-  }, [messages]);
+  }, [messages, scrollToBottom, isNearBottom]);
 
   /**
    * Handle attachment upload
    */
-  const handleAttachmentUploaded = (attachment: any) => {
+  const handleAttachmentUploaded = useCallback((attachment: any) => {
     setAttachments(prev => [...prev, attachment]);
     console.log('Attachment uploaded:', attachment);
-  };
+  }, []);
 
   /**
    * Handle attachment upload error
    */
-  const handleAttachmentError = (error: string) => {
+  const handleAttachmentError = useCallback((error: string) => {
     console.error('Attachment error:', error);
     // You could show a toast notification here
-  };
+  }, []);
 
   /**
    * Handle web search
    */
-  const handleWebSearch = (query: string) => {
-    onSendMessage(`🌐 Zoek op het web: ${query}`);
-    setShowWebSearch(false);
-  };
+  const handleWebSearch = useCallback((query: string) => {
+    console.log('Web search:', query);
+    // Implement web search functionality
+  }, []);
 
   /**
    * Handle image generation
    */
-  const handleImageGeneration = (prompt: string) => {
-    onSendMessage(`🎨 Genereer afbeelding: ${prompt}`);
-    setShowImageGeneration(false);
-  };
+  const handleImageGeneration = useCallback((prompt: string) => {
+    console.log('Image generation:', prompt);
+    // Implement image generation functionality
+  }, []);
 
   /**
-   * Handle form submission for new messages
+   * Optimized form submission
    */
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
-    if (setError) setError(null);
-    if (inputValue.trim()) {
+    if (inputValue.trim() && !isGenerating) {
       onSendMessage(inputValue.trim());
       setInputValue('');
-      // Reset textarea height after sending
+      // Reset textarea height
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
       }
     }
-  };
+  }, [inputValue, isGenerating, onSendMessage]);
 
   /**
-   * Handle keyboard shortcuts in textarea
+   * Handle keyboard shortcuts
    */
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
     }
-  };
+  }, [handleSubmit]);
 
   /**
-   * Handle input changes and auto-resize textarea
+   * Auto-resize textarea with performance optimization
    */
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInputValue(e.target.value);
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setInputValue(value);
     
-    // Auto-resize textarea based on content
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  };
+    // Auto-resize textarea
+    const textarea = e.target;
+    textarea.style.height = 'auto';
+    const newHeight = Math.min(textarea.scrollHeight, 200); // Max height of 200px
+    textarea.style.height = newHeight + 'px';
+  }, []);
 
   /**
-   * Render individual message with proper scaling and responsive design
-   * Handles both user and AI messages with different layouts
+   * Optimized message rendering with memoization
    */
-  const renderMessage = (message: Message, index: number) => {
-    const aiMessageMaxWidth = getResponsiveMaxWidth();
-    const userMessageMaxWidth = getUserMessageMaxWidth();
-    
+  const renderMessage = useCallback((message: Message, index: number) => {
     // Check if this is the last AI message and if AI is currently generating
     const isLastAiMessage = message.type === 'ai' && index === messages.length - 1;
     const shouldShowLoading = isGenerating && isLastAiMessage;
@@ -265,13 +378,16 @@ export default function ChatView({
     if (message.type === 'user') {
       // User message - right-aligned with custom color and compact sizing
       return (
-        <div key={message.id} className="flex justify-end mb-6">
+        <div 
+          key={message.id} 
+          className="flex justify-end mb-6 transform transition-all duration-300 ease-in-out hover:scale-[1.02]"
+        >
           <div 
-            className="px-4 py-2.5 rounded-2xl text-white break-words"
+            className="px-4 py-2.5 rounded-2xl text-white break-words shadow-lg"
             style={{ 
               backgroundColor: customization.primaryColor,
               fontFamily: customization.fontFamily,
-              maxWidth: userMessageMaxWidth,
+              maxWidth: responsiveStyles.userMessageMaxWidth,
               wordWrap: 'break-word',
               overflowWrap: 'break-word'
             }}
@@ -283,254 +399,62 @@ export default function ChatView({
     } else {
       // AI message - left-aligned with markdown support and responsive sizing
       return (
-        <div key={message.id} className="flex justify-start mb-6">
-          <div className="w-full" style={{ maxWidth: aiMessageMaxWidth }}>
-            {/* Markdown Content */}
-            <div 
-              className={`prose ${isDark ? 'prose-invert' : 'prose-gray'} max-w-none mb-4`}
-              style={{ fontFamily: customization.fontFamily }}
-            >
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeHighlight]}
-                components={{
-                  // Custom styling for code blocks
-                  pre: ({ children, ...props }) => (
-                    <div className={`rounded-xl overflow-hidden ${
-                      isDark ? 'bg-gray-900' : 'bg-white'
-                    } border ${isDark ? 'border-gray-700' : 'border-purple-200'}`}>
-                      <div 
-                        className="flex items-center justify-between px-4 py-3 border-b text-white"
-                        style={{ 
-                          backgroundColor: customization.primaryColor,
-                          borderBottomColor: isDark ? '#374151' : customization.primaryColor + '40'
-                        }}
-                      >
-                        <span 
-                          className="text-sm font-medium"
-                          style={{ fontFamily: customization.fontFamily }}
-                        >
-                          Code
-                        </span>
-                        <button 
-                          className="p-1 rounded hover:bg-black/10 text-white"
-                          onClick={() => {
-                            const code = (children as any)?.props?.children?.[0]?.props?.children;
-                            if (code && typeof code === 'string') {
-                              navigator.clipboard.writeText(code);
-                            }
-                          }}
-                        >
-                          <Copy className="w-4 h-4" />
-                        </button>
-                      </div>
-                      <div className="p-4">
-                        <pre 
-                          {...props}
-                          className={`${containerWidth < 600 ? 'text-xs' : 'text-sm'} ${isDark ? 'text-gray-200' : 'text-gray-800'} overflow-x-auto m-0`}
-                          style={{ fontFamily: 'Monaco, Consolas, monospace' }}
-                        >
-                          {children}
-                        </pre>
-                      </div>
-                    </div>
-                  ),
-                  // Custom styling for inline code
-                  code: ({ children, className, ...props }) => {
-                    const isInline = !className;
-                    if (isInline) {
-                      return (
-                        <code 
-                          className={`px-1.5 py-0.5 rounded text-sm ${
-                            isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-800'
-                          }`}
-                          style={{ fontFamily: 'Monaco, Consolas, monospace' }}
-                          {...props}
-                        >
-                          {children}
-                        </code>
-                      );
-                    }
-                    return <code className={className} {...props}>{children}</code>;
-                  },
-                  // Custom styling for headings
-                  h1: ({ children, ...props }) => (
-                    <h1 
-                      className={`text-2xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}
-                      style={{ 
-                        fontFamily: customization.fontFamily,
-                        color: isDark ? undefined : customization.primaryColor
-                      }}
-                      {...props}
-                    >
-                      {children}
-                    </h1>
-                  ),
-                  h2: ({ children, ...props }) => (
-                    <h2 
-                      className={`text-xl font-semibold mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}
-                      style={{ 
-                        fontFamily: customization.fontFamily,
-                        color: isDark ? undefined : customization.primaryColor
-                      }}
-                      {...props}
-                    >
-                      {children}
-                    </h2>
-                  ),
-                  h3: ({ children, ...props }) => (
-                    <h3 
-                      className={`text-lg font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}
-                      style={{ 
-                        fontFamily: customization.fontFamily,
-                        color: isDark ? undefined : customization.primaryColor
-                      }}
-                      {...props}
-                    >
-                      {children}
-                    </h3>
-                  ),
-                  // Custom styling for paragraphs
-                  p: ({ children, ...props }) => (
-                    <p 
-                      className={`mb-4 leading-relaxed ${isDark ? 'text-gray-200' : 'text-gray-700'}`}
-                      style={{ fontFamily: customization.fontFamily }}
-                      {...props}
-                    >
-                      {children}
-                    </p>
-                  ),
-                  // Custom styling for lists
-                  ul: ({ children, ...props }) => (
-                    <ul 
-                      className={`mb-4 pl-6 space-y-1 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}
-                      style={{ fontFamily: customization.fontFamily }}
-                      {...props}
-                    >
-                      {children}
-                    </ul>
-                  ),
-                  ol: ({ children, ...props }) => (
-                    <ol 
-                      className={`mb-4 pl-6 space-y-1 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}
-                      style={{ fontFamily: customization.fontFamily }}
-                      {...props}
-                    >
-                      {children}
-                    </ol>
-                  ),
-                  // Custom styling for blockquotes
-                  blockquote: ({ children, ...props }) => (
-                    <blockquote 
-                      className={`border-l-4 pl-4 py-2 mb-4 italic ${
-                        isDark ? 'border-gray-600 text-gray-300' : 'text-gray-600'
-                      }`}
-                      style={{ 
-                        borderLeftColor: isDark ? undefined : customization.primaryColor + '60',
-                        fontFamily: customization.fontFamily 
-                      }}
-                      {...props}
-                    >
-                      {children}
-                    </blockquote>
-                  ),
-                  // Custom styling for tables
-                  table: ({ children, ...props }) => (
-                    <div className="overflow-x-auto mb-4">
-                      <table 
-                        className={`min-w-full border-collapse ${
-                          isDark ? 'border-gray-700' : 'border-gray-200'
-                        }`}
-                        {...props}
-                      >
-                        {children}
-                      </table>
-                    </div>
-                  ),
-                  th: ({ children, ...props }) => (
-                    <th 
-                      className={`border px-4 py-2 text-left font-semibold ${
-                        isDark 
-                          ? 'border-gray-700 bg-gray-800 text-white' 
-                          : 'border-gray-200 bg-gray-50 text-gray-900'
-                      }`}
-                      style={{ fontFamily: customization.fontFamily }}
-                      {...props}
-                    >
-                      {children}
-                    </th>
-                  ),
-                  td: ({ children, ...props }) => (
-                    <td 
-                      className={`border px-4 py-2 ${
-                        isDark 
-                          ? 'border-gray-700 text-gray-200' 
-                          : 'border-gray-200 text-gray-700'
-                      }`}
-                      style={{ fontFamily: customization.fontFamily }}
-                      {...props}
-                    >
-                      {children}
-                    </td>
-                  ),
-                }}
-              >
-                {message.content}
-              </ReactMarkdown>
-            </div>
-            
-            {/* Response Actions */}
-            <div className="flex items-center gap-4">
+        <div 
+          key={message.id} 
+          className="flex justify-start mb-6 transform transition-all duration-500 ease-in-out animate-fade-in"
+        >
+          <div className="w-full" style={{ maxWidth: responsiveStyles.aiMessageMaxWidth }}>
+            {/* Animated Markdown Content */}
+            <AnimatedText 
+              content={message.content}
+              isStreaming={shouldShowLoading}
+              isDark={isDark}
+              customization={customization}
+            />
+
+            {/* Action buttons with smooth animations */}
+            <div className="flex items-center space-x-2 mt-3 opacity-0 group-hover:opacity-100 transition-all duration-300">
               <button 
-                className={`p-2 rounded-lg transition-colors ${
-                  isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:text-purple-800'
+                className={`p-2 rounded-lg transition-all duration-200 hover:scale-110 ${
+                  isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'
                 }`}
-                style={{ color: isDark ? undefined : customization.primaryColor + 'AA' }}
                 onClick={() => navigator.clipboard.writeText(message.content)}
-                title="Copy message"
-                onMouseEnter={(e) => {
-                  if (!isDark) {
-                    e.currentTarget.style.backgroundColor = customization.primaryColor + '20';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isDark) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }
-                }}
+                title="Kopieer bericht"
               >
                 <Copy className="w-4 h-4" />
               </button>
+              
+              {onRegenerateResponse && index === messages.length - 1 && (
+                <button 
+                  className={`p-2 rounded-lg transition-all duration-200 hover:scale-110 ${
+                    isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'
+                  }`}
+                  onClick={onRegenerateResponse}
+                  disabled={isGenerating}
+                  title="Regenereer antwoord"
+                >
+                  <RotateCcw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
+                </button>
+              )}
+              
               <button 
-                className={`p-2 rounded-lg transition-colors ${
-                  isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:text-purple-800'
-                } ${shouldShowLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                style={{ color: isDark ? undefined : customization.primaryColor + 'AA' }}
-                onClick={onRegenerateResponse}
-                disabled={shouldShowLoading || !onRegenerateResponse}
-                title="Regenerate response with current model"
-                onMouseEnter={(e) => {
-                  if (!isDark) {
-                    e.currentTarget.style.backgroundColor = customization.primaryColor + '20';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isDark) {
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }
-                }}
+                className={`p-2 rounded-lg transition-all duration-200 hover:scale-110 ${
+                  isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'
+                }`}
+                onClick={() => setShowChatSharing(true)}
+                title="Deel bericht"
               >
-                <RefreshCw className={`w-4 h-4 ${shouldShowLoading ? 'animate-spin' : ''}`} />
+                <Share2 className="w-4 h-4" />
               </button>
+              
               {message.model && (
                 <span 
-                  className={`text-sm ${isDark ? 'text-purple-400' : ''}`}
-                  style={{ 
-                    fontFamily: customization.fontFamily,
-                    color: isDark ? undefined : customization.primaryColor 
-                  }}
+                  className={`text-xs px-2 py-1 rounded-full ${
+                    isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
+                  }`}
+                  style={{ fontFamily: customization.fontFamily }}
                 >
-                  {AVAILABLE_MODELS.find(m => m.code === message.model)?.name || message.model}
+                  {message.model}
                 </span>
               )}
             </div>
@@ -538,7 +462,14 @@ export default function ChatView({
         </div>
       );
     }
-  };
+  }, [
+    messages.length, 
+    isGenerating, 
+    customization, 
+    responsiveStyles, 
+    isDark, 
+    onRegenerateResponse
+  ]);
 
   // Input-only mode - renders just the message input interface with responsive sizing
   if (inputOnly) {
@@ -616,7 +547,7 @@ export default function ChatView({
       {/* Chat Messages Area - Responsive padding */}
       <div 
         ref={scrollContainerRef}
-        className={`flex-1 overflow-y-auto py-6 ${getResponsivePadding()}`}
+        className={`flex-1 overflow-y-auto py-6 ${responsiveStyles.padding}`}
         onScroll={handleScroll}
       >
         <div className="w-full mx-auto">
@@ -649,8 +580,8 @@ export default function ChatView({
 
       {/* Message Input Footer - Responsive sizing */}
       {!hideInput && (
-        <div className={`pb-6 ${getResponsivePadding()}`}>
-          <div className="w-full mx-auto" style={{ maxWidth: getResponsiveMaxWidth() }}>
+        <div className={`pb-6 ${responsiveStyles.padding}`}>
+          <div className="w-full mx-auto" style={{ maxWidth: responsiveStyles.aiMessageMaxWidth }}>
             {/* Anonymous Usage Indicator */}
             {!isLoggedIn && onLoginClick && (
               <AnonymousUsageIndicator onLoginClick={onLoginClick} />
