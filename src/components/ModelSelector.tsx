@@ -205,7 +205,7 @@ export default function ModelSelector({
                           className="px-2 py-0.5 rounded-full text-xs font-medium text-white"
                           style={{ backgroundColor: providerColor }}
                         >
-                          Actief
+                          Active
                         </span>
                       )}
                     </div>

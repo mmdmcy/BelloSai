@@ -43,7 +43,7 @@ export function SubscriptionManager() {
   }
 
   const handleCancelSubscription = async () => {
-    const confirmed = window.confirm('Weet je zeker dat je je abonnement wilt annuleren?')
+    const confirmed = window.confirm('Are you sure you want to cancel your subscription?')
     if (!confirmed) return
 
     setActionLoading('cancel')
@@ -96,26 +96,26 @@ export function SubscriptionManager() {
   const getStatusText = (status: string | null) => {
     switch (status) {
       case 'active':
-        return 'Actief'
+        return 'Active'
       case 'trialing':
-        return 'Proefperiode'
+        return 'Trial Period'
       case 'past_due':
-        return 'Betaling Achterstallig'
+        return 'Payment Overdue'
       case 'canceled':
-        return 'Geannuleerd'
+        return 'Canceled'
       case 'incomplete':
-        return 'Incompleet'
+        return 'Incomplete'
       case 'unpaid':
-        return 'Onbetaald'
+        return 'Unpaid'
       default:
-        return 'Onbekend'
+        return 'Unknown'
     }
   }
 
   if (!user) {
     return (
       <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <p className="text-yellow-800">Je moet ingelogd zijn om je abonnement te beheren.</p>
+        <p className="text-yellow-800">You must be logged in to manage your subscription.</p>
       </div>
     )
   }
@@ -123,7 +123,7 @@ export function SubscriptionManager() {
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Abonnement Beheer</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Subscription Management</h2>
 
         {/* Error Display */}
         {error && (
@@ -135,26 +135,26 @@ export function SubscriptionManager() {
         {/* Loading State */}
         {loading && (
           <div className="text-center py-8">
-            <p className="text-gray-600">Abonnement gegevens laden...</p>
+            <p className="text-gray-600">Loading subscription data...</p>
           </div>
         )}
 
         {/* Current Subscription Status */}
         {!loading && (
           <div className="mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Huidige Status</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Current Status</h3>
             
             {hasActiveSubscription && subscription ? (
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <p className="text-lg font-medium text-gray-900">Premium Abonnement</p>
+                    <p className="text-lg font-medium text-gray-900">Premium Subscription</p>
                     <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(subscription.subscription_status)}`}>
                       {getStatusText(subscription.subscription_status)}
                     </span>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm text-gray-600">Volgende betaling</p>
+                    <p className="text-sm text-gray-600">Next payment</p>
                     <p className="font-medium">{formatDate(subscription.current_period_end)}</p>
                   </div>
                 </div>
@@ -162,7 +162,7 @@ export function SubscriptionManager() {
                 {subscription.payment_method_brand && subscription.payment_method_last4 && (
                   <div className="mb-4">
                     <p className="text-sm text-gray-600">
-                      Betaalmethode: {subscription.payment_method_brand.toUpperCase()} •••• {subscription.payment_method_last4}
+                      Payment method: {subscription.payment_method_brand.toUpperCase()} •••• {subscription.payment_method_last4}
                     </p>
                   </div>
                 )}
@@ -173,7 +173,7 @@ export function SubscriptionManager() {
                     disabled={actionLoading === 'manage'}
                     className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                   >
-                    {actionLoading === 'manage' ? 'Laden...' : 'Beheer Abonnement'}
+                    {actionLoading === 'manage' ? 'Loading...' : 'Manage Subscription'}
                   </button>
 
                   {subscription.subscription_status === 'active' && !subscription.cancel_at_period_end && (
@@ -182,7 +182,7 @@ export function SubscriptionManager() {
                       disabled={actionLoading === 'cancel'}
                       className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
                     >
-                      {actionLoading === 'cancel' ? 'Laden...' : 'Annuleren'}
+                      {actionLoading === 'cancel' ? 'Loading...' : 'Cancel'}
                     </button>
                   )}
 
@@ -192,7 +192,7 @@ export function SubscriptionManager() {
                       disabled={actionLoading === 'reactivate'}
                       className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
                     >
-                      {actionLoading === 'reactivate' ? 'Laden...' : 'Heractiveren'}
+                      {actionLoading === 'reactivate' ? 'Loading...' : 'Reactivate'}
                     </button>
                   )}
 
@@ -201,23 +201,23 @@ export function SubscriptionManager() {
                     disabled={loading}
                     className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50"
                   >
-                    Vernieuwen
+                    Refresh
                   </button>
                 </div>
 
                 {subscription.cancel_at_period_end && (
                   <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
                     <p className="text-yellow-800 text-sm">
-                      Je abonnement wordt geannuleerd op {formatDate(subscription.current_period_end)}. 
-                      Je kunt het nog heractiveren voor die datum.
+                      Your subscription will be canceled on {formatDate(subscription.current_period_end)}. 
+                      You can still reactivate it before that date.
                     </p>
                   </div>
                 )}
               </div>
             ) : (
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <p className="text-gray-800 mb-2">Je hebt momenteel geen actief abonnement.</p>
-                <p className="text-sm text-gray-600">Upgrade naar Premium voor onbeperkte toegang!</p>
+                <p className="text-gray-800 mb-2">You currently have no active subscription.</p>
+                <p className="text-sm text-gray-600">Upgrade to Premium for unlimited access!</p>
               </div>
             )}
           </div>
@@ -226,7 +226,7 @@ export function SubscriptionManager() {
         {/* Subscription Plans */}
         {!hasActiveSubscription && (
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Beschikbare Abonnementen</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Available Subscriptions</h3>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {Object.values(SUBSCRIPTION_PLANS).map((plan) => (
                 <div
@@ -240,7 +240,7 @@ export function SubscriptionManager() {
                   <div className="text-center mb-4">
                     <h4 className="text-xl font-bold text-gray-900">{plan.name}</h4>
                     <p className="text-3xl font-bold text-blue-600 mt-2">{plan.price}</p>
-                    <p className="text-sm text-gray-600">per {plan.interval === 'month' ? 'maand' : 'jaar'}</p>
+                    <p className="text-sm text-gray-600">per {plan.interval === 'month' ? 'month' : 'year'}</p>
                   </div>
 
                   <ul className="space-y-2 mb-6">
@@ -260,13 +260,13 @@ export function SubscriptionManager() {
                       disabled={actionLoading === `upgrade-${plan.id}` || !plan.priceId}
                       className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {actionLoading === `upgrade-${plan.id}` ? 'Laden...' : 'Kies Dit Plan'}
+                      {actionLoading === `upgrade-${plan.id}` ? 'Loading...' : 'Choose This Plan'}
                     </button>
                   )}
 
                   {plan.id === 'free' && (
                     <div className="w-full px-4 py-2 bg-gray-300 text-gray-600 rounded-md text-center">
-                      Huidige Plan
+                      Current Plan
                     </div>
                   )}
                 </div>
@@ -278,11 +278,11 @@ export function SubscriptionManager() {
         {/* Customer Info */}
         {customer && (
           <div className="mt-8 pt-6 border-t border-gray-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Account Informatie</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Account Information</h3>
             <div className="text-sm text-gray-600">
               <p><strong>Email:</strong> {user.email}</p>
               <p><strong>Customer ID:</strong> {customer.customer_id}</p>
-              <p><strong>Account aangemaakt:</strong> {new Date(customer.created_at).toLocaleDateString('nl-NL')}</p>
+              <p><strong>Account created:</strong> {new Date(customer.created_at).toLocaleDateString('en-US')}</p>
             </div>
           </div>
         )}

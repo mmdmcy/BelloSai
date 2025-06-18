@@ -86,10 +86,10 @@ export default function AuthDebug() {
           <div className="space-y-2 text-sm">
             <p><strong>Loading:</strong> {loading ? 'Ja' : 'Nee'}</p>
             <p><strong>Auth Ready:</strong> {isAuthReady ? 'Ja' : 'Nee'}</p>
-            <p><strong>User:</strong> {user ? user.email : 'Niet ingelogd'}</p>
+            <p><strong>User:</strong> {user ? user.email : 'Not logged in'}</p>
             <p><strong>User ID:</strong> {user?.id || 'N/A'}</p>
             <p><strong>Full Name:</strong> {user?.user_metadata?.full_name || 'N/A'}</p>
-            <p><strong>Session:</strong> {session ? 'Actief' : 'Geen sessie'}</p>
+            <p><strong>Session:</strong> {session ? 'Active' : 'No session'}</p>
           </div>
         </div>
 
@@ -176,8 +176,8 @@ export default function AuthDebug() {
         ) : (
           <div className="space-y-4">
             <div className="p-4 bg-green-50 rounded-lg">
-              <h3 className="text-lg font-semibold text-green-800">Welkom!</h3>
-              <p className="text-green-700">Je bent ingelogd als: {user.email}</p>
+                              <h3 className="text-lg font-semibold text-green-800">Welcome!</h3>
+                              <p className="text-green-700">You are logged in as: {user.email}</p>
               {user.user_metadata?.full_name && (
                 <p className="text-green-700">Naam: {user.user_metadata.full_name}</p>
               )}

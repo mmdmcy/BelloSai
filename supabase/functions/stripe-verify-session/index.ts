@@ -140,7 +140,7 @@ serve(async (req) => {
           return new Response(JSON.stringify({
       success: false,
       subscriptionActive: false,
-      message: 'Session niet gevonden'
+      message: 'Session not found'
     }), {
       headers: { 
         'Content-Type': 'application/json',
@@ -158,7 +158,7 @@ serve(async (req) => {
           return new Response(JSON.stringify({
       success: false,
       subscriptionActive: false,
-      message: 'Betaling nog niet voltooid'
+      message: 'Payment not yet completed'
     }), {
       headers: { 
         'Content-Type': 'application/json',
@@ -184,8 +184,8 @@ serve(async (req) => {
       success: true,
       subscriptionActive,
       message: subscriptionActive 
-        ? 'Abonnement is actief' 
-        : 'Betaling voltooid, abonnement wordt geactiveerd'
+        ? 'Subscription is active' 
+        : 'Payment completed, subscription being activated'
     }), {
       headers: { 
         'Content-Type': 'application/json',
@@ -200,7 +200,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: false,
         subscriptionActive: false,
-        message: 'Er ging iets mis bij het verifiëren van de betaling'
+        message: 'Something went wrong verifying the payment'
       }),
       {
         status: 500,
