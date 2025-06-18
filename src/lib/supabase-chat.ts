@@ -206,18 +206,29 @@ export async function sendChatMessage(
             return sendChatMessage(messages, modelCode, onChunk, conversationId, retryCount + 1);
           }
         } catch (refreshError) {
-          console.error('❌ Failed to refresh session after 401:', refreshError);
+          console.warn('⚠️ Session refresh failed');
         }
       }
       
-      // Network errors - fast retry once
-      if ((response.status >= 500 && response.status < 600) && retryCount === 0) {
-        console.log('🔄 Got server error, retrying once...');
-        return sendChatMessage(messages, modelCode, onChunk, conversationId, retryCount + 1);
+      // Handle specific error types with English messages
+      if (response.status === 429) {
+        throw new Error('Rate limit exceeded. Please wait a moment and try again.');
       }
       
-      // Other errors
-      throw new Error(errorData.error || `Er is een fout opgetreden bij het verwerken van je bericht. Probeer opnieuw of neem contact op met support. (HTTP ${response.status})`);
+      if (response.status === 401) {
+        throw new Error('Authentication failed. Please login again.');
+      }
+      
+      if (response.status === 403) {
+        throw new Error('Access denied. Please check your permissions.');
+      }
+      
+      if (response.status >= 500) {
+        throw new Error('Server error. Please try again later.');
+      }
+      
+      // Generic error for other status codes
+      throw new Error(`Request failed with status ${response.status}. Please try again.`);
     }
 
     // Optimized streaming for DeepSeek, regular response for Gemini
@@ -349,7 +360,7 @@ export async function sendChatMessage(
         throw new Error('Verzoek timeout - AI service duurde te lang. Probeer opnieuw.');
       }
       if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
-        throw new Error('Netwerkfout. Controleer je internetverbinding en probeer opnieuw.');
+        throw new Error('Network error. Please check your internet connection and try again.');
       }
     }
     
@@ -409,3 +420,4 @@ export async function canSendMessage(): Promise<boolean> {
   const usage = await getMessageUsage();
   return usage ? usage.messageCount < usage.messageLimit : false;
 } 
+
