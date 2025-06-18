@@ -32,12 +32,13 @@ export type DeepSeekModel = 'DeepSeek-V3' | 'DeepSeek-R1';
 
 type ModelProvider = 'DeepSeek' | 'Gemini';
 
-// Optimized streaming chunk size for better performance
-const OPTIMAL_CHUNK_SIZE = 16; // Process chunks of 16 characters for smoother streaming
+// Optimized timeout settings for better UX
+const REQUEST_TIMEOUT = 35000; // 35 seconds instead of 15 - gives more time for AI response
+const STREAM_TIMEOUT = 45000; // 45 seconds for streaming
+const OPTIMAL_CHUNK_SIZE = 12; // Optimal chunk size for smooth streaming
 
 // Performance optimization: Reduce timeouts for faster feedback
 const FAST_TIMEOUT = 15000; // 15 seconds instead of 30-60
-const STREAM_TIMEOUT = 20000; // 20 seconds for streaming timeout
 
 /**
  * Get model provider based on model code
@@ -69,11 +70,11 @@ export async function sendChatMessage(
     // Create abort controller for timeout handling
     abortController = new AbortController();
     
-    // Optimized timeout - faster feedback (15 seconds instead of 60)
+    // Optimized timeout - longer for better AI response completion
     timeoutId = setTimeout(() => {
-      console.error('⏰ Request timeout after 15 seconds - aborting for faster UX');
+      console.error('⏰ Request timeout after 35 seconds - aborting for faster UX');
       abortController?.abort();
-    }, FAST_TIMEOUT);
+    }, REQUEST_TIMEOUT);
     
     // Get current session (optional for anonymous users)
     let { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -142,9 +143,9 @@ export async function sendChatMessage(
     // Reset abort controller with optimized timeout
     abortController = new AbortController();
     timeoutId = setTimeout(() => {
-      console.error('⏰ Request timeout after 15 seconds - aborting for faster feedback');
+      console.error('⏰ Request timeout after 35 seconds - aborting for faster feedback');
       abortController?.abort();
-    }, FAST_TIMEOUT);
+    }, REQUEST_TIMEOUT);
     
     const response = await fetch(url, {
       method: 'POST',

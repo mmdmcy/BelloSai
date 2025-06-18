@@ -951,39 +951,59 @@ function App() {
         if (user && currentConvoId) {
           const savePromise = (async () => {
             try {
-                             // Save user message (if not regenerating)
-               if (!regenerate && userMessageId) {
-                 await chatFeaturesService.saveMessage(
-                   currentConvoId,
-                   'user',
-                   content.trim()
-                 );
-                 console.log('✅ User message saved to database');
-               }
+              // First ensure conversation exists in database
+              console.log('🔄 Ensuring conversation exists in database...');
+              try {
+                const userConversations = await chatFeaturesService.getUserConversations(user.id);
+                const existingConvo = userConversations.find(conv => conv.id === currentConvoId);
+                if (!existingConvo) {
+                  console.log('📝 Creating new conversation in database...');
+                  await chatFeaturesService.createConversationWithId(currentConvoId, user.id, conversationTitle || 'Nieuwe Conversatie', modelToUse);
+                  console.log('✅ Conversation created in database');
+                }
+              } catch (convoError) {
+                console.log('📝 Creating conversation (error checking):', convoError);
+                try {
+                  await chatFeaturesService.createConversationWithId(currentConvoId, user.id, conversationTitle || 'Nieuwe Conversatie', modelToUse);
+                  console.log('✅ Conversation created in database');
+                } catch (createError) {
+                  console.error('❌ Failed to create conversation:', createError);
+                }
+              }
 
-               // Save AI response
-               await chatFeaturesService.saveMessage(
-                 currentConvoId,
-                 'assistant',
-                 fullResponse,
-                 modelToUse
-               );
-               console.log('✅ AI response saved to database');
+              // Save user message (if not regenerating)
+              if (!regenerate && userMessageId) {
+                await chatFeaturesService.saveMessage(
+                  currentConvoId,
+                  'user',
+                  content.trim()
+                );
+                console.log('✅ User message saved to database');
+              }
 
-               // Update conversation title if needed (background task)
-               if (conversationTitle === 'Untitled Conversation' || !conversationTitle) {
-                 const title = await chatFeaturesService.generateConversationTitle(
-                   chatMessages.concat([{ type: 'ai', content: fullResponse }])
-                     .map(msg => ({ role: msg.type === 'user' ? 'user' : 'assistant', content: msg.content }))
-                 );
-                 if (title && title !== 'Nieuwe Conversatie') {
-                   setConversationTitle(title);
-                   console.log('✅ Updated conversation title:', title);
-                 }
-               }
+              // Save AI response
+              await chatFeaturesService.saveMessage(
+                currentConvoId,
+                'assistant',
+                fullResponse,
+                modelToUse
+              );
+              console.log('✅ AI response saved to database');
 
-               // Refresh conversations list
-               await loadConversations();
+              // Update conversation title if needed (background task)
+              if (conversationTitle === 'Untitled Conversation' || !conversationTitle) {
+                const title = await chatFeaturesService.generateConversationTitle(
+                  chatMessages.concat([{ type: 'ai', content: fullResponse }])
+                    .map(msg => ({ role: msg.type === 'user' ? 'user' : 'assistant', content: msg.content }))
+                );
+                if (title && title !== 'Nieuwe Conversatie') {
+                  setConversationTitle(title);
+                  console.log('✅ Updated conversation title:', title);
+                }
+              }
+
+              // Refresh conversations list
+              await loadConversations();
               console.log('✅ Conversations list refreshed');
             } catch (saveError) {
               console.error('❌ Error saving messages:', saveError);

@@ -549,6 +549,25 @@ class ChatFeaturesService {
   }
 
   /**
+   * Create new conversation with specific ID
+   */
+  async createConversationWithId(conversationId: string, userId: string, title: string, model: string) {
+    const { data, error } = await supabase
+      .from('conversations')
+      .insert({
+        id: conversationId,
+        user_id: userId,
+        title: title,
+        model: model
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  /**
    * Get user's conversations with metadata
    */
   async getUserConversations(userId: string) {

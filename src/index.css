@@ -247,10 +247,10 @@
   animation: smoothBounce 2s ease-in-out infinite;
 }
 
-/* Streaming text animations */
+/* Streaming text animations - Enhanced for better UX */
 .streaming-text {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .streaming-text::after {
@@ -260,8 +260,183 @@
   top: 0;
   width: 2px;
   height: 100%;
-  background: currentColor;
-  animation: pulse 1s infinite;
+  background: linear-gradient(45deg, #8b5cf6, #3b82f6);
+  animation: streamingCursor 1.2s ease-in-out infinite;
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.6);
+  border-radius: 1px;
+}
+
+@keyframes streamingCursor {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scaleY(1);
+  }
+  50% { 
+    opacity: 0.3; 
+    transform: scaleY(0.8);
+  }
+}
+
+/* Enhanced container voor streaming animaties */
+.streaming-container {
+  position: relative;
+  min-height: 1.5rem;
+  transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.streaming-container .streaming-indicator {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 1.2rem;
+  background: linear-gradient(to bottom, #8b5cf6, #3b82f6);
+  animation: gracefulPulse 1.5s ease-in-out infinite;
+  border-radius: 1px;
+  box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
+}
+
+@keyframes gracefulPulse {
+  0%, 100% { 
+    opacity: 1; 
+    transform: translateY(-50%) scaleY(1);
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
+  }
+  50% { 
+    opacity: 0.4; 
+    transform: translateY(-50%) scaleY(0.9);
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.6);
+  }
+}
+
+/* Enhanced fade-in animations with stagger effect */
+.animate-fade-in {
+  animation: enhancedFadeIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes enhancedFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px) scale(0.98);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+/* Smooth slide animations for better message entry */
+.animate-slide-in-right {
+  animation: smoothSlideInRight 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.animate-slide-in-left {
+  animation: smoothSlideInLeft 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+@keyframes smoothSlideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px) scale(0.95);
+    filter: blur(1px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes smoothSlideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px) scale(0.95);
+    filter: blur(1px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+/* Typewriter effect with character reveal */
+.animate-typewriter {
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typewriterReveal 2s steps(40, end) forwards;
+  border-right: 2px solid #8b5cf6;
+}
+
+@keyframes typewriterReveal {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+/* Enhanced message container animations */
+.message-container {
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transform: translateZ(0); /* GPU acceleration */
+  will-change: transform, opacity;
+}
+
+.message-container:hover {
+  transform: translateY(-2px) translateZ(0);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+/* Subtle glow effect for streaming content */
+.streaming-glow {
+  position: relative;
+}
+
+.streaming-glow::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1));
+  border-radius: inherit;
+  z-index: -1;
+  animation: gentleGlow 3s ease-in-out infinite;
+}
+
+@keyframes gentleGlow {
+  0%, 100% { 
+    opacity: 0.3; 
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.6; 
+    transform: scale(1.02);
+  }
+}
+
+/* Character reveal animation for smoother streaming */
+.char-reveal {
+  display: inline-block;
+  animation: charFadeIn 0.3s ease-out forwards;
+  opacity: 0;
+}
+
+@keyframes charFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* Smooth transitions voor alle interactieve elementen */
@@ -356,34 +531,6 @@
   .animate-slide-in-left {
     animation-duration: 0.2s;
   }
-}
-
-/* Container voor streaming animaties */
-.streaming-container {
-  position: relative;
-  min-height: 1.5rem;
-}
-
-.streaming-container .streaming-indicator {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 2px;
-  height: 1rem;
-  background: currentColor;
-  animation: pulse 1s infinite;
-  border-radius: 1px;
-}
-
-/* Smooth transition voor message containers */
-.message-container {
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  transform: translateZ(0); /* GPU acceleration */
-}
-
-.message-container:hover {
-  transform: translateY(-1px) translateZ(0);
 }
 
 /* Performance optimalisatie voor markdown content */
