@@ -35,12 +35,12 @@ export default function Success(props: SuccessPageProps) {
       if (verifyResult.success) {
         // Session was succesvol geverifieerd
         if (verifyResult.subscriptionActive) {
-          // Subscription is al actief
+          // Subscription is already active
           await refreshSubscription();
           setProcessingComplete(true);
           return;
         } else {
-          // Betaling succesvol maar subscription nog niet actief
+          // Payment successful but subscription not yet active
           console.log('Payment successful, waiting for subscription activation...');
         }
       }
@@ -68,7 +68,7 @@ export default function Success(props: SuccessPageProps) {
         return;
       }
       
-      setError('Er was een probleem bij het verwerken van je betaling. Je betaling is waarschijnlijk succesvol, maar het kan even duren voordat je abonnement wordt geactiveerd.');
+      setError('There was a problem processing your payment. Your payment was likely successful, but it may take some time before your subscription is activated.');
     } finally {
       setIsProcessing(false);
     }
@@ -83,21 +83,21 @@ export default function Success(props: SuccessPageProps) {
     return <Navigate to="/" replace />;
   }
 
-  // Wacht tot auth en processing klaar zijn
+        // Wait until auth and processing are ready
   if (!isAuthReady || (isProcessing && !processingComplete)) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">
           <Loader2 className="w-12 h-12 text-purple-600 animate-spin mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            Bezig met verwerken van je betaling...
+            Processing your payment...
           </h2>
           <p className="text-gray-600 mb-4">
-            We bevestigen je abonnement. Dit kan 5-10 seconden duren.
+            We're confirming your subscription. This may take 5-10 seconds.
           </p>
           {retryCount > 0 && (
             <p className="text-sm text-purple-600">
-              Poging {retryCount + 1} van 3...
+              Attempt {retryCount + 1} of 3...
             </p>
           )}
         </div>
@@ -113,7 +113,7 @@ export default function Success(props: SuccessPageProps) {
             <RefreshCw className="w-8 h-8 text-yellow-600" />
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-4">
-            Bijna klaar...
+            Almost ready...
           </h1>
           <p className="text-gray-600 mb-8">
             {error}
@@ -129,14 +129,14 @@ export default function Success(props: SuccessPageProps) {
               className="w-full inline-flex items-center justify-center gap-2 bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors"
             >
               <RefreshCw className="w-5 h-5" />
-              Probeer opnieuw
+              Try again
             </button>
             <button
               onClick={() => window.location.href = '/'}
               className="w-full inline-flex items-center justify-center gap-2 border-2 border-gray-300 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors"
             >
               <Home className="w-5 h-5" />
-              Ga door naar de app
+              Continue to app
             </button>
           </div>
         </div>
@@ -152,36 +152,36 @@ export default function Success(props: SuccessPageProps) {
         </div>
         
         <h1 className="text-3xl font-bold text-gray-900 mb-4">
-          Betaling Geslaagd! 🎉
+          Payment Successful! 🎉
         </h1>
         
         <p className="text-gray-600 mb-2">
-          Welkom bij BelloSai Pro!
+          Welcome to BelloSai Pro!
         </p>
         
         {hasActiveSubscription ? (
           <p className="text-green-600 font-medium mb-8">
-            ✅ Je abonnement is actief en klaar voor gebruik.
+            ✅ Your subscription is active and ready to use.
           </p>
         ) : (
           <div className="mb-8">
             <p className="text-orange-600 font-medium mb-2">
-              ⏳ Je abonnement wordt binnenkort geactiveerd.
+              ⏳ Your subscription will be activated shortly.
             </p>
             <p className="text-sm text-gray-500">
-              Het kan 1-2 minuten duren voordat alle functies beschikbaar zijn.
+              It may take 1-2 minutes before all features are available.
             </p>
           </div>
         )}
 
         <div className="space-y-4">
           <div className="bg-white rounded-lg p-4 text-left">
-            <h3 className="font-semibold text-gray-900 mb-2">Wat krijg je nu?</h3>
+            <h3 className="font-semibold text-gray-900 mb-2">What do you get now?</h3>
             <ul className="text-sm text-gray-600 space-y-1">
-              <li>✅ Onbeperkte AI berichten</li>
-              <li>✅ Toegang tot alle AI modellen</li>
-              <li>✅ Prioriteit support</li>
-              <li>✅ Geavanceerde functies</li>
+              <li>✅ Unlimited AI messages</li>
+              <li>✅ Access to all AI models</li>
+              <li>✅ Priority support</li>
+              <li>✅ Advanced features</li>
             </ul>
           </div>
 
@@ -190,12 +190,12 @@ export default function Success(props: SuccessPageProps) {
             className="w-full inline-flex items-center justify-center gap-2 bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors"
           >
             <Home className="w-5 h-5" />
-            Start chatten
+            Start chatting
           </button>
         </div>
 
         <p className="text-xs text-gray-500 mt-6">
-          Je kunt je abonnement beheren via je account instellingen.
+          You can manage your subscription via your account settings.
         </p>
       </div>
     </div>

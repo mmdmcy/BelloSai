@@ -75,7 +75,7 @@ export function MessageTracker() {
   if (!user) {
     return (
       <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <p className="text-yellow-800">Je moet ingelogd zijn om berichten te kunnen tracken.</p>
+        <p className="text-yellow-800">You must be logged in to track messages.</p>
       </div>
     )
   }

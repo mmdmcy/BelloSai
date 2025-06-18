@@ -66,7 +66,7 @@ export class StripeService {
   }
 
   /**
-   * Maak een checkout sessie voor een abonnement
+   * Create a checkout session for a subscription
    */
   static async createCheckoutSession(priceId: string): Promise<void> {
     try {
@@ -149,7 +149,7 @@ export class StripeService {
   }
 
   /**
-   * Check of een user een actief abonnement heeft
+   * Check if a user has an active subscription
    */
   static async hasActiveSubscription(): Promise<boolean> {
     try {
@@ -252,7 +252,7 @@ export class StripeService {
   }
 
   /**
-   * Annuleer een abonnement
+   * Cancel a subscription
    */
   static async cancelSubscription(): Promise<boolean> {
     try {
@@ -285,7 +285,7 @@ export class StripeService {
   }
 
   /**
-   * Heractiveer een geannuleerd abonnement
+   * Reactivate a canceled subscription
    */
   static async reactivateSubscription(): Promise<boolean> {
     try {
@@ -318,7 +318,7 @@ export class StripeService {
   }
 
   /**
-   * Verifieer betaling via checkout session ID
+   * Verify payment via checkout session ID
    */
   static async verifyPaymentSession(sessionId: string): Promise<{
     success: boolean
@@ -358,7 +358,7 @@ export class StripeService {
       return {
         success: false,
         subscriptionActive: false,
-        message: 'Kon betaling niet verifiëren'
+        message: 'Could not verify payment'
       }
     }
   }

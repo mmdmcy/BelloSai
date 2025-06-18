@@ -76,7 +76,7 @@ export default function AttachmentUpload({
 
   const uploadFile = async (file: File): Promise<void> => {
     if (!user) {
-      onError('Je moet ingelogd zijn om bestanden te uploaden');
+      onError('You must be logged in to upload files');
       return;
     }
 

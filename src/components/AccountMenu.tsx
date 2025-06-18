@@ -148,7 +148,7 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
       console.error('❌ [AccountMenu] Failed to create checkout session:', error);
       
       // Show user-friendly error message
-      alert('Er ging iets mis bij het starten van de checkout. Probeer het opnieuw.');
+      alert('Something went wrong starting the checkout. Please try again.');
     } finally {
       setUpgradeLoading(false);
     }
@@ -161,10 +161,10 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
     
     try {
       await refreshSubscription();
-      alert('Abonnement status is bijgewerkt!');
+      alert('Subscription status has been updated!');
     } catch (error) {
       console.error('❌ [AccountMenu] Failed to sync subscription:', error);
-      alert('Er ging iets mis bij het synchroniseren. Probeer het opnieuw.');
+      alert('Something went wrong while syncing. Please try again.');
     } finally {
       setSyncLoading(false);
     }
@@ -320,7 +320,7 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
                 Subscription Status
               </h4>
               <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                Heb je net een abonnement gekocht? Synchroniseer je status.
+                Just purchased a subscription? Sync your status.
               </p>
             </div>
             <button
@@ -332,7 +332,7 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
                   : 'bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50'
               }`}
             >
-              {syncLoading ? 'Synchroniseren...' : 'Synchroniseer'}
+              {syncLoading ? 'Syncing...' : 'Sync Status'}
             </button>
           </div>
         </div>

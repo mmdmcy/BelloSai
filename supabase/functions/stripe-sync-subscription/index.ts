@@ -140,7 +140,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: false,
-        message: 'Er ging iets mis bij het synchroniseren van je abonnement'
+        message: 'Something went wrong synchronizing your subscription'
       }),
       {
         status: 500,
