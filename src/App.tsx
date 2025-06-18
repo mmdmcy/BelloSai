@@ -854,12 +854,16 @@ function App() {
         // Generate title in background without blocking the main request
         setTimeout(async () => {
           try {
-                         const title = await chatFeaturesService.generateConversationTitle(
-               chatMessages.map(msg => ({ role: msg.type === 'user' ? 'user' : 'assistant', content: msg.content }))
-             );
+            const title = await chatFeaturesService.generateConversationTitle(
+              chatMessages.map(msg => ({ role: msg.type === 'user' ? 'user' : 'assistant', content: msg.content }))
+            );
             if (title && title !== 'New Conversation') {
+              // Update both local state AND database
               setConversationTitle(title);
-              console.log('✅ Generated conversation title:', title);
+              if (currentConvoId) {
+                await chatFeaturesService.updateConversationTitle(currentConvoId, title);
+              }
+              console.log('✅ Generated conversation title in database:', title);
             }
           } catch (titleError) {
             console.warn('⚠️ Failed to generate title:', titleError);
@@ -997,8 +1001,10 @@ function App() {
                     .map(msg => ({ role: msg.type === 'user' ? 'user' : 'assistant', content: msg.content }))
                 );
                 if (title && title !== 'New Conversation') {
+                  // Update both local state AND database
                   setConversationTitle(title);
-                  console.log('✅ Updated conversation title:', title);
+                  await chatFeaturesService.updateConversationTitle(currentConvoId, title);
+                  console.log('✅ Updated conversation title in database:', title);
                 }
               }
 
