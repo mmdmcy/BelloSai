@@ -50,7 +50,7 @@ interface ChatViewProps {
   setError?: (err: string | null) => void;
 }
 
-// Custom component for animated text content
+// Custom component for animated text content with smooth fade-in
 const AnimatedText: React.FC<{ 
   content: string; 
   isStreaming?: boolean; 
@@ -58,79 +58,41 @@ const AnimatedText: React.FC<{
   customization: CustomizationSettings;
 }> = React.memo(({ content, isStreaming = false, isDark, customization }) => {
   const [displayContent, setDisplayContent] = useState('');
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isVisible, setIsVisible] = useState(false);
   const [wasStreaming, setWasStreaming] = useState(false);
-  const animationRef = useRef<number>();
-  const intervalRef = useRef<NodeJS.Timeout>();
   
   useEffect(() => {
-    // When streaming stops, make sure we show the full content
+    // When streaming stops, show the content with smooth fade-in
     if (wasStreaming && !isStreaming) {
       setDisplayContent(content);
-      setCurrentIndex(content.length);
+      setIsVisible(true);
       setWasStreaming(false);
       return;
     }
     
-    // If not streaming, just show the content immediately
-    if (!isStreaming) {
+    // When streaming starts or content changes during streaming
+    if (isStreaming) {
+      setWasStreaming(true);
       setDisplayContent(content);
-      setCurrentIndex(content.length);
-      return;
+      setIsVisible(true); // Show immediately during streaming
+    } else if (!wasStreaming) {
+      // Initial load - show with fade-in
+      setDisplayContent(content);
+      setTimeout(() => setIsVisible(true), 50); // Small delay for smooth transition
     }
-    
-    // Track that we are/were streaming
-    setWasStreaming(true);
-    
-    // Clear any existing animation
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-    }
-    if (intervalRef.current) {
-      clearTimeout(intervalRef.current);
-    }
-    
-    // Smooth character-by-character animation for streaming
-    if (currentIndex < content.length) {
-      // Use slower, more natural timing for character reveal
-      intervalRef.current = setTimeout(() => {
-        setDisplayContent(content.slice(0, currentIndex + 1));
-        setCurrentIndex(prev => prev + 1);
-      }, 25 + Math.random() * 15); // Variable timing between 25-40ms for natural effect
-    }
-    
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-      if (intervalRef.current) {
-        clearTimeout(intervalRef.current);
-      }
-    };
-  }, [content, currentIndex, isStreaming, wasStreaming]);
-  
-  // Only reset when content actually changes (not just streaming state)
-  const prevContentRef = useRef(content);
-  useEffect(() => {
-    if (prevContentRef.current !== content && content !== displayContent) {
-      // Only reset if it's a completely new message, not an update to existing content
-      if (!content.startsWith(prevContentRef.current)) {
-        setCurrentIndex(0);
-        setDisplayContent('');
-        setWasStreaming(false);
-      }
-      prevContentRef.current = content;
-    }
-  }, [content, displayContent]);
-  
+  }, [content, isStreaming, wasStreaming]);
+
+  const textStyle = {
+    fontFamily: customization.fontFamily,
+    transition: 'opacity 0.3s ease-in-out, transform 0.3s ease-in-out',
+    opacity: isVisible ? 1 : 0,
+    transform: isVisible ? 'translateY(0)' : 'translateY(10px)',
+  };
+
   return (
     <div 
-      className={`prose ${isDark ? 'prose-invert' : 'prose-gray'} max-w-none mb-4 transition-all duration-500 ease-out streaming-container`}
-      style={{ 
-        fontFamily: customization.fontFamily,
-        opacity: isStreaming ? 0.95 : 1,
-        transform: isStreaming ? 'translateY(2px)' : 'translateY(0)',
-      }}
+      className={`prose ${isDark ? 'prose-invert' : 'prose-gray'} max-w-none mb-4 transition-all duration-300 ease-out streaming-container`}
+      style={textStyle}
     >
       <div className="relative">
         <ReactMarkdown
@@ -178,13 +140,12 @@ const AnimatedText: React.FC<{
                 </div>
               </div>
             ),
-            // Animated paragraphs with fade effect
+            // Smooth paragraphs with fade effect
             p: ({ children, ...props }) => (
               <p 
-                className={`mb-4 leading-relaxed ${isDark ? 'text-gray-200' : 'text-gray-700'} transition-all duration-500 ease-out`}
+                className={`mb-4 leading-relaxed ${isDark ? 'text-gray-200' : 'text-gray-700'} transition-all duration-300 ease-out`}
                 style={{ 
                   fontFamily: customization.fontFamily,
-                  textShadow: isStreaming ? '0 0 8px rgba(139, 92, 246, 0.3)' : 'none'
                 }}
                 {...props}
               >
@@ -196,16 +157,11 @@ const AnimatedText: React.FC<{
           {displayContent}
         </ReactMarkdown>
         
-        {/* Enhanced streaming cursor with glow effect */}
+        {/* Smooth streaming indicator */}
         {isStreaming && (
-          <span 
-            className="inline-block w-0.5 h-5 ml-1 animate-pulse"
-            style={{
-              background: `linear-gradient(to bottom, ${customization.primaryColor}, ${customization.secondaryColor})`,
-              boxShadow: `0 0 8px ${customization.primaryColor}60`,
-              borderRadius: '1px'
-            }}
-          />
+          <div className="streaming-indicator animate-pulse ml-1 inline-block">
+            <div className="w-2 h-4 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full opacity-80"></div>
+          </div>
         )}
       </div>
     </div>

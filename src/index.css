@@ -247,16 +247,17 @@
   animation: smoothBounce 2s ease-in-out infinite;
 }
 
-/* Streaming text animations - Enhanced for better UX */
+/* Smooth streaming text animations - Enhanced for better UX */
 .streaming-text {
   position: relative;
   overflow: visible;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .streaming-text::after {
   content: '';
   position: absolute;
-  right: 0;
+  right: -8px;
   top: 0;
   width: 2px;
   height: 100%;
@@ -274,6 +275,35 @@
   50% { 
     opacity: 0.3; 
     transform: scaleY(0.8);
+  }
+}
+
+/* Enhanced container for smooth streaming animations */
+.streaming-container {
+  position: relative;
+  min-height: 1.5rem;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.streaming-indicator {
+  display: inline-flex;
+  align-items: center;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Smooth fade-in animation for text content */
+.text-fade-in {
+  animation: smoothFadeIn 0.4s ease-out forwards;
+}
+
+@keyframes smoothFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
