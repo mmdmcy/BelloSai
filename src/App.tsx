@@ -180,6 +180,22 @@ export const AVAILABLE_THEMES: Theme[] = [
     retroMode: false
   },
   {
+    id: 'glassmorphism',
+    name: 'Glassmorphism',
+    description: 'Elegant glass effects with modern translucent design',
+    primaryColor: '#06b6d4',
+    secondaryColor: '#0891b2',
+    backgroundColor: 'linear-gradient(135deg, #a7f3d0 0%, #7dd3fc 35%, #93c5fd 100%)',
+    textColor: '#0f172a',
+    accentColors: ['#06b6d4', '#0891b2', '#0e7490', '#67e8f9'],
+    gradientEnabled: true,
+    fontFamily: 'SF Pro Display, -apple-system, system-ui',
+    borderRadius: '1.25rem',
+    shadows: true,
+    glassEffect: true,
+    retroMode: false
+  },
+  {
     id: 'frutiger-aero',
     name: 'Cloud Nine',
     description: 'Airy and translucent with soft blues and nature vibes',
@@ -1238,6 +1254,18 @@ function App() {
   };
 
   /**
+   * Check if current theme has glass effects enabled
+   */
+  const getCurrentTheme = () => {
+    return AVAILABLE_THEMES.find(t => t.id === customization.selectedTheme);
+  };
+
+  const hasGlassEffect = () => {
+    const currentTheme = getCurrentTheme();
+    return currentTheme?.glassEffect || false;
+  };
+
+  /**
    * Navigate back to chat view from game section
    */
   const handleBackToChat = () => {
@@ -1335,8 +1363,19 @@ function App() {
 
   return (
     <div 
-      className={`h-screen overflow-hidden ${isDark ? 'dark bg-gray-900' : 'bg-purple-50'}`}
-      style={{ fontFamily: customization.fontFamily }}
+      className={`h-screen overflow-hidden ${
+        isDark 
+          ? 'dark bg-gray-900' 
+          : hasGlassEffect() 
+            ? 'glass-bg' 
+            : 'bg-purple-50'
+      }`}
+      style={{ 
+        fontFamily: customization.fontFamily,
+        background: hasGlassEffect() && !isDark 
+          ? getCurrentTheme()?.backgroundColor || 'linear-gradient(135deg, #a7f3d0 0%, #7dd3fc 35%, #93c5fd 100%)'
+          : undefined
+      }}
     >
       {/* Mobile Layout - Dynamic Grid Based */}
       {isMobile ? (
@@ -1875,15 +1914,22 @@ function App() {
                   currentConversationId={currentConversationId}
                   onConversationSelect={handleConversationSelect}
                   onConversationDelete={handleConversationDelete}
+                  hasGlassEffect={hasGlassEffect()}
                 />
               )}
 
               {/* App Logo - Detached from sidebar */}
               {elementKey === 'appLogo' && (
                 <div 
-                  className={`h-full w-full ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-purple-50 border-purple-100'} border-r flex items-center justify-center`}
+                  className={`h-full w-full ${
+                    hasGlassEffect() && !isDark 
+                      ? 'glass-element' 
+                      : isDark 
+                        ? 'bg-gray-900 border-gray-700' 
+                        : 'bg-purple-50 border-purple-100'
+                  } ${!hasGlassEffect() ? 'border-r' : ''} flex items-center justify-center`}
                   style={{
-                    background: customization.gradientEnabled && !isDark 
+                    background: !hasGlassEffect() && customization.gradientEnabled && !isDark 
                       ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
                       : undefined
                   }}
@@ -1910,20 +1956,32 @@ function App() {
               {/* New Game Button - Detached with proper styling */}
               {elementKey === 'newGameButton' && (
                 <div 
-                  className={`h-full w-full ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-purple-50 border-purple-100'} border-r flex items-center justify-center p-2`}
+                  className={`h-full w-full ${
+                    hasGlassEffect() && !isDark 
+                      ? 'glass-element' 
+                      : isDark 
+                        ? 'bg-gray-900 border-gray-700' 
+                        : 'bg-purple-50 border-purple-100'
+                  } ${!hasGlassEffect() ? 'border-r' : ''} flex items-center justify-center p-2`}
                   style={{
-                    background: customization.gradientEnabled && !isDark 
+                    background: !hasGlassEffect() && customization.gradientEnabled && !isDark 
                       ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
                       : undefined
                   }}
                 >
                   <button 
                     onClick={handleNewGame}
-                    className="w-full py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors text-white hover:opacity-90"
+                    className={`w-full py-3 px-4 ${
+                      hasGlassEffect() ? 'glass-button-modern text-gray-800' : 'rounded-lg'
+                    } font-medium flex items-center justify-center gap-2 transition-colors ${
+                      hasGlassEffect() ? 'hover:text-gray-900' : 'text-white hover:opacity-90'
+                    }`}
                     style={{ 
-                      background: customization.gradientEnabled 
-                        ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                        : customization.primaryColor,
+                      background: !hasGlassEffect() 
+                        ? (customization.gradientEnabled 
+                            ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                            : customization.primaryColor)
+                        : undefined,
                       fontFamily: customization.fontFamily
                     }}
                     title="New Game"
@@ -1939,20 +1997,32 @@ function App() {
               {/* New Chat Button - Detached with proper styling */}
               {elementKey === 'newChatButton' && (
                 <div 
-                  className={`h-full w-full ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-purple-50 border-purple-100'} border-r flex items-center justify-center p-2`}
+                  className={`h-full w-full ${
+                    hasGlassEffect() && !isDark 
+                      ? 'glass-element' 
+                      : isDark 
+                        ? 'bg-gray-900 border-gray-700' 
+                        : 'bg-purple-50 border-purple-100'
+                  } ${!hasGlassEffect() ? 'border-r' : ''} flex items-center justify-center p-2`}
                   style={{
-                    background: customization.gradientEnabled && !isDark 
+                    background: !hasGlassEffect() && customization.gradientEnabled && !isDark 
                       ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
                       : undefined
                   }}
                 >
                   <button 
                     onClick={handleNewChat}
-                    className="w-full py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors text-white hover:opacity-90"
+                    className={`w-full py-3 px-4 ${
+                      hasGlassEffect() ? 'glass-button-modern text-gray-800' : 'rounded-lg'
+                    } font-medium flex items-center justify-center gap-2 transition-colors ${
+                      hasGlassEffect() ? 'hover:text-gray-900' : 'text-white hover:opacity-90'
+                    }`}
                     style={{ 
-                      background: customization.gradientEnabled 
-                        ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                        : customization.primaryColor,
+                      background: !hasGlassEffect() 
+                        ? (customization.gradientEnabled 
+                            ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                            : customization.primaryColor)
+                        : undefined,
                       fontFamily: customization.fontFamily
                     }}
                     title="New Chat"
@@ -2065,7 +2135,13 @@ function App() {
 
               {/* Input Box - Only shows input controls on desktop */}
               {elementKey === 'inputBox' && !isMobile && (
-                <div className={`h-full w-full ${isDark ? 'bg-gray-900' : 'bg-purple-50'} p-4`}>
+                <div className={`h-full w-full ${
+                  hasGlassEffect() && !isDark 
+                    ? 'glass-element' 
+                    : isDark 
+                      ? 'bg-gray-900' 
+                      : 'bg-purple-50'
+                } p-4`}>
                   <div className="h-full flex items-end">
                     <div className="w-full">
                       {/* Anonymous Usage Indicator */}
@@ -2089,15 +2165,19 @@ function App() {
                         }
                       }}>
                         {/* Message Input Container */}
-                        <div className={`relative rounded-2xl border ${
-                          isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-purple-200'
-                        } shadow-sm`}>
+                        <div className={`relative rounded-2xl ${
+                          hasGlassEffect() && !isDark 
+                            ? 'glass-input' 
+                            : `border ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-purple-200'} shadow-sm`
+                        }`}>
                           <textarea
                             placeholder="Type your message here..."
                             className={`w-full px-6 py-4 pr-32 rounded-2xl resize-none focus:outline-none min-h-[60px] max-h-32 ${
-                              isDark 
-                                ? 'bg-gray-700 text-white placeholder-gray-400' 
-                                : 'bg-white text-gray-900 placeholder-gray-500'
+                              hasGlassEffect() && !isDark 
+                                ? 'bg-transparent text-gray-800 placeholder-gray-600' 
+                                : isDark 
+                                  ? 'bg-gray-700 text-white placeholder-gray-400' 
+                                  : 'bg-white text-gray-900 placeholder-gray-500'
                             }`}
                             style={{ fontFamily: customization.fontFamily }}
                             rows={1}
@@ -2140,11 +2220,17 @@ function App() {
                             {/* Send Button */}
                             <button 
                               type="submit"
-                              className="text-white p-2.5 rounded-xl transition-colors hover:opacity-90"
+                              className={`${
+                                hasGlassEffect() && !isDark 
+                                  ? 'glass-button-modern text-gray-800' 
+                                  : 'text-white'
+                              } p-2.5 rounded-xl transition-colors hover:opacity-90`}
                               style={{ 
-                                background: customization.gradientEnabled 
-                                  ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                                  : customization.primaryColor 
+                                background: !hasGlassEffect() 
+                                  ? (customization.gradientEnabled 
+                                      ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                                      : customization.primaryColor)
+                                  : undefined
                               }}
                             >
                               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
