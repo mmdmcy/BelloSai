@@ -2008,8 +2008,8 @@ function App() {
                 </div>
               )}
 
-              {/* Input Box - Only shows input controls */}
-              {elementKey === 'inputBox' && (
+              {/* Input Box - Only shows input controls on desktop */}
+              {elementKey === 'inputBox' && !isMobile && (
                 <div className={`h-full w-full ${isDark ? 'bg-gray-900' : 'bg-purple-50'} p-4`}>
                   <div className="h-full flex items-end">
                     <div className="w-full">
