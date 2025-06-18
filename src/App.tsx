@@ -314,7 +314,16 @@ function App() {
   const { user, loading: authLoading, signOut } = useAuth();
   
   // Theme state - controls light/dark mode
-  const [isDark, setIsDark] = useState(false);
+  // Dark mode state with localStorage persistence
+  const [isDark, setIsDark] = useState(() => {
+    try {
+      const savedTheme = localStorage.getItem('bellosai-dark-mode');
+      return savedTheme ? JSON.parse(savedTheme) : false;
+    } catch (error) {
+      console.log('Failed to load theme from localStorage:', error);
+      return false;
+    }
+  });
   
   // Designer mode state - enables/disables layout editing
   const [isDesignerMode, setIsDesignerMode] = useState(false);
@@ -322,8 +331,16 @@ function App() {
   // Account menu visibility state
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   
-  // Sidebar collapse state
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  // Sidebar collapse state with localStorage persistence
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    try {
+      const savedSidebarState = localStorage.getItem('bellosai-sidebar-collapsed');
+      return savedSidebarState ? JSON.parse(savedSidebarState) : false;
+    } catch (error) {
+      console.log('Failed to load sidebar state from localStorage:', error);
+      return false;
+    }
+  });
   
   // Mobile navigation state
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -334,8 +351,16 @@ function App() {
   // Chat messages array
   const [messages, setMessages] = useState<Message[]>([]);
   
-  // AI model selection
-  const [selectedModel, setSelectedModel] = useState('DeepSeek-V3');
+  // AI model selection with localStorage persistence
+  const [selectedModel, setSelectedModel] = useState(() => {
+    try {
+      const savedModel = localStorage.getItem('bellosai-selected-model');
+      return savedModel || 'DeepSeek-V3';
+    } catch (error) {
+      console.log('Failed to load selected model from localStorage:', error);
+      return 'DeepSeek-V3';
+    }
+  });
   
   // Message counter for AI response logic
   const [messageCount, setMessageCount] = useState(0);
@@ -363,15 +388,39 @@ function App() {
   const [isMobile, setIsMobile] = useState(false);
   const [screenWidth, setScreenWidth] = useState(0);
 
-  // User customization settings with default values
-  const [customization, setCustomization] = useState<CustomizationSettings>({
-    showQuestions: true,
-    primaryColor: '#7c3aed',
-    secondaryColor: '#a855f7',
-    fontFamily: 'Inter',
-    gradientEnabled: false,
-    gradientColors: ['#7c3aed', '#a855f7'],
-    selectedTheme: 'default'
+  // User customization settings with localStorage persistence
+  const [customization, setCustomization] = useState<CustomizationSettings>(() => {
+    try {
+      const savedCustomization = localStorage.getItem('bellosai-customization');
+      if (savedCustomization) {
+        const parsed = JSON.parse(savedCustomization);
+        console.log('🔄 Loaded customization from localStorage:', parsed);
+        // Ensure all required properties exist with fallbacks
+        return {
+          showQuestions: parsed.showQuestions ?? true,
+          primaryColor: parsed.primaryColor ?? '#7c3aed',
+          secondaryColor: parsed.secondaryColor ?? '#a855f7',
+          fontFamily: parsed.fontFamily ?? 'Inter',
+          gradientEnabled: parsed.gradientEnabled ?? false,
+          gradientColors: parsed.gradientColors ?? ['#7c3aed', '#a855f7'],
+          selectedTheme: parsed.selectedTheme ?? 'default'
+        };
+      }
+    } catch (error) {
+      console.log('Failed to load customization from localStorage:', error);
+    }
+    
+    // Default values if nothing in localStorage
+    console.log('🎨 Using default customization settings');
+    return {
+      showQuestions: true,
+      primaryColor: '#7c3aed',
+      secondaryColor: '#a855f7',
+      fontFamily: 'Inter',
+      gradientEnabled: false,
+      gradientColors: ['#7c3aed', '#a855f7'],
+      selectedTheme: 'default'
+    };
   });
 
   // Authentication modals and forms
@@ -398,6 +447,43 @@ function App() {
 
   // Available models for AI
   const availableModels: ModelInfo[] = AVAILABLE_MODELS;
+
+  // Save customization to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('bellosai-customization', JSON.stringify(customization));
+      console.log('💾 Customization saved to localStorage:', customization);
+    } catch (error) {
+      console.error('Failed to save customization to localStorage:', error);
+    }
+  }, [customization]);
+
+  // Save dark mode preference to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('bellosai-dark-mode', JSON.stringify(isDark));
+    } catch (error) {
+      console.error('Failed to save dark mode to localStorage:', error);
+    }
+  }, [isDark]);
+
+  // Save selected model to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('bellosai-selected-model', selectedModel);
+    } catch (error) {
+      console.error('Failed to save selected model to localStorage:', error);
+    }
+  }, [selectedModel]);
+
+  // Save sidebar state to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem('bellosai-sidebar-collapsed', JSON.stringify(isSidebarCollapsed));
+    } catch (error) {
+      console.error('Failed to save sidebar state to localStorage:', error);
+    }
+  }, [isSidebarCollapsed]);
 
   // Mobile responsive detection
   useEffect(() => {
@@ -1233,7 +1319,11 @@ function App() {
    * Update customization settings
    */
   const updateCustomization = (newSettings: Partial<CustomizationSettings>) => {
-    setCustomization(prev => ({ ...prev, ...newSettings }));
+    setCustomization(prev => {
+      const updated = { ...prev, ...newSettings };
+      // localStorage save will be handled by the useEffect
+      return updated;
+    });
   };
 
   /**
@@ -1242,14 +1332,18 @@ function App() {
   const applyTheme = (themeId: string) => {
     const theme = AVAILABLE_THEMES.find(t => t.id === themeId);
     if (theme) {
-      setCustomization(prev => ({
-        ...prev,
-        selectedTheme: themeId,
-        primaryColor: theme.primaryColor,
-        secondaryColor: theme.secondaryColor,
-        fontFamily: theme.fontFamily,
-        gradientEnabled: theme.gradientEnabled
-      }));
+      setCustomization(prev => {
+        const updated = {
+          ...prev,
+          selectedTheme: themeId,
+          primaryColor: theme.primaryColor,
+          secondaryColor: theme.secondaryColor,
+          fontFamily: theme.fontFamily,
+          gradientEnabled: theme.gradientEnabled
+        };
+        // localStorage save will be handled by the useEffect
+        return updated;
+      });
     }
   };
 
