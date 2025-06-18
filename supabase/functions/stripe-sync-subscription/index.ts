@@ -15,60 +15,63 @@ async function syncUserSubscription(userId: string) {
   console.log('Syncing subscription for user:', userId)
 
   try {
-    // Get customer from our database
+    // Get user's Stripe customer
     const { data: customer, error: customerError } = await supabaseClient
       .from('stripe_customers')
-      .select('*')
+      .select('customer_id')
       .eq('user_id', userId)
       .is('deleted_at', null)
       .single()
 
-    if (customerError) {
-      console.error('Customer not found:', customerError)
-      return { success: false, message: 'Customer not found' }
+    if (customerError || !customer) {
+      console.log('No Stripe customer found for user')
+      return { success: true, message: 'No customer found - user probably not subscribed yet' }
     }
 
-    console.log('Found customer:', customer.customer_id)
-
-    // Get subscriptions from Stripe for this customer
+    // Get all subscriptions for this customer from Stripe
     const subscriptions = await stripe.subscriptions.list({
       customer: customer.customer_id,
-      status: 'all'
+      limit: 10
     })
 
-    console.log('Found subscriptions:', subscriptions.data.length)
+    console.log(`Found ${subscriptions.data.length} subscriptions for customer ${customer.customer_id}`)
 
     if (subscriptions.data.length === 0) {
-      return { success: true, message: 'No subscriptions found', hasActiveSubscription: false }
+      console.log('No subscriptions found in Stripe')
+      return { success: true, message: 'No subscriptions found' }
     }
 
     // Get the most recent subscription
-    const subscription = subscriptions.data[0]
-    console.log('Syncing subscription:', subscription.id, 'status:', subscription.status)
+    const latestSubscription = subscriptions.data[0]
+    console.log('Latest subscription status:', latestSubscription.status)
 
     // Get payment method details
     let paymentMethodBrand = null
     let paymentMethodLast4 = null
 
-    if (subscription.default_payment_method) {
-      const paymentMethod = await stripe.paymentMethods.retrieve(
-        subscription.default_payment_method as string
-      )
-      paymentMethodBrand = paymentMethod.card?.brand || null
-      paymentMethodLast4 = paymentMethod.card?.last4 || null
+    if (latestSubscription.default_payment_method) {
+      try {
+        const paymentMethod = await stripe.paymentMethods.retrieve(
+          latestSubscription.default_payment_method as string
+        )
+        paymentMethodBrand = paymentMethod.card?.brand || null
+        paymentMethodLast4 = paymentMethod.card?.last4 || null
+      } catch (err) {
+        console.warn('Could not retrieve payment method:', err)
+      }
     }
 
     // Upsert subscription in database
     const { error } = await supabaseClient
       .from('stripe_subscriptions')
       .upsert({
-        customer_id: subscription.customer as string,
-        subscription_id: subscription.id,
-        price_id: subscription.items.data[0]?.price.id || null,
-        status: subscription.status as any,
-        current_period_start: subscription.current_period_start,
-        current_period_end: subscription.current_period_end,
-        cancel_at_period_end: subscription.cancel_at_period_end,
+        customer_id: customer.customer_id,
+        subscription_id: latestSubscription.id,
+        price_id: latestSubscription.items.data[0]?.price.id || null,
+        status: latestSubscription.status as any,
+        current_period_start: latestSubscription.current_period_start,
+        current_period_end: latestSubscription.current_period_end,
+        cancel_at_period_end: latestSubscription.cancel_at_period_end,
         payment_method_brand: paymentMethodBrand,
         payment_method_last4: paymentMethodLast4,
       }, {
@@ -77,19 +80,18 @@ async function syncUserSubscription(userId: string) {
 
     if (error) {
       console.error('Error upserting subscription:', error)
-      return { success: false, message: 'Failed to update subscription' }
+      throw error
     }
 
-    console.log('Subscription synced successfully')
+    console.log('Subscription synced successfully, status:', latestSubscription.status)
     return { 
       success: true, 
-      message: 'Subscription synced',
-      hasActiveSubscription: subscription.status === 'active',
-      subscriptionStatus: subscription.status
+      status: latestSubscription.status,
+      message: `Subscription synced with status: ${latestSubscription.status}` 
     }
   } catch (error) {
     console.error('Error syncing subscription:', error)
-    return { success: false, message: 'Sync failed' }
+    throw error
   }
 }
 
@@ -126,6 +128,7 @@ serve(async (req) => {
     }
 
     console.log('Syncing subscription for user:', user.id)
+
     const result = await syncUserSubscription(user.id)
 
     return new Response(JSON.stringify(result), {

@@ -155,10 +155,22 @@ export class StripeService {
     try {
       console.log('🔄 [StripeService] Checking for active subscription...')
       const subscription = await this.getUserSubscription()
-      const isActive = subscription?.subscription_status === 'active' || false
+      
+      // Check multiple conditions for active subscription:
+      // 1. Status is explicitly 'active'
+      // 2. We have a subscription_id (indicates successful payment) but status is null (webhook delay)
+      // 3. We have a subscription with current_period_end in the future
+      const now = Math.floor(Date.now() / 1000)
+      const isActive = subscription?.subscription_status === 'active' || 
+                      (!!subscription?.subscription_id && subscription.subscription_status === null) ||
+                      (!!subscription?.subscription_id && !!subscription.current_period_end && subscription.current_period_end > now)
+      
       console.log('✅ [StripeService] Active subscription check result:', { 
         hasSubscription: !!subscription, 
+        hasSubscriptionId: !!subscription?.subscription_id,
         status: subscription?.subscription_status,
+        currentPeriodEnd: subscription?.current_period_end,
+        currentTime: now,
         isActive 
       })
       return isActive
@@ -352,50 +364,11 @@ export class StripeService {
   }
 
   /**
-   * Debug: Manually sync subscription from Stripe (for troubleshooting)
+   * Forceer synchronisatie van subscription status via backend
    */
-  static async debugSyncSubscription(): Promise<void> {
+  static async forceSyncSubscription(): Promise<boolean> {
     try {
-      console.log('🔧 [StripeService] Starting manual subscription sync...')
-      const { data: { session } } = await supabase.auth.getSession()
-      
-      if (!session?.access_token) {
-        throw new Error('User not authenticated')
-      }
-
-      // Call the verify session function to force a sync
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-verify-session`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            // We'll use a dummy session ID to trigger a manual sync
-            session_id: 'manual_sync'
-          })
-        }
-      )
-
-      const result = await response.json()
-      console.log('🔧 [StripeService] Manual sync result:', result)
-    } catch (error) {
-      console.error('❌ [StripeService] Manual sync failed:', error)
-    }
-  }
-
-  /**
-   * Force refresh subscription data from Stripe
-   */
-  static async forceRefreshSubscription(): Promise<{
-    success: boolean
-    hasActiveSubscription: boolean
-    message: string
-  }> {
-    try {
-      console.log('🔧 [StripeService] Force refreshing subscription from Stripe...')
+      console.log('🔄 [StripeService] Force syncing subscription...')
       const { data: { session } } = await supabase.auth.getSession()
       
       if (!session?.access_token) {
@@ -415,25 +388,16 @@ export class StripeService {
 
       if (!response.ok) {
         const errorText = await response.text()
-        console.error('❌ [StripeService] Sync failed:', errorText)
-        throw new Error(`Sync failed: ${response.status}`)
+        console.error('❌ [StripeService] Force sync failed:', errorText)
+        return false
       }
 
       const result = await response.json()
-      console.log('✅ [StripeService] Sync result:', result)
-      
-      return {
-        success: result.success,
-        hasActiveSubscription: result.hasActiveSubscription || false,
-        message: result.message || 'Subscription synced'
-      }
+      console.log('✅ [StripeService] Force sync result:', result)
+      return result.success || false
     } catch (error) {
-      console.error('❌ [StripeService] Force refresh failed:', error)
-      return {
-        success: false,
-        hasActiveSubscription: false,
-        message: 'Failed to sync subscription'
-      }
+      console.error('❌ [StripeService] Error force syncing subscription:', error)
+      return false
     }
   }
 } 
