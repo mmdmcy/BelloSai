@@ -50,7 +50,7 @@ interface ChatViewProps {
   setError?: (err: string | null) => void;
 }
 
-// Custom component for smooth fade-in text animation
+// Custom component for beautiful wave text animation
 const AnimatedText: React.FC<{ 
   content: string; 
   isStreaming?: boolean; 
@@ -61,30 +61,23 @@ const AnimatedText: React.FC<{
   const [isVisible, setIsVisible] = useState(false);
   
   useEffect(() => {
-    // Always update content immediately
+    // Update content immediately
     setDisplayContent(content);
     
-    // Start invisible, then fade in after a tiny delay
+    // Start wave animation
     setIsVisible(false);
     const timer = setTimeout(() => {
       setIsVisible(true);
-    }, 10); // Very short delay for smooth fade-in
+    }, 50); // Small delay for wave to start
     
     return () => clearTimeout(timer);
   }, [content]);
 
-  const containerStyle = {
-    opacity: isVisible ? 1 : 0,
-    transform: isVisible ? 'translateY(0px)' : 'translateY(5px)',
-    transition: 'opacity 0.6s ease-out, transform 0.6s ease-out',
-  };
-
   return (
     <div 
-      className={`prose ${isDark ? 'prose-invert' : 'prose-gray'} max-w-none mb-6 streaming-container`}
-      style={containerStyle}
+      className={`prose ${isDark ? 'prose-invert' : 'prose-gray'} max-w-none mb-6 wave-reveal ${isVisible ? 'wave-visible' : ''}`}
     >
-      <div className="relative">
+      <div className="relative overflow-hidden">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           rehypePlugins={[rehypeHighlight]}
