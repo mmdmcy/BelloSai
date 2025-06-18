@@ -59,22 +59,35 @@ const AnimatedText: React.FC<{
 }> = React.memo(({ content, isStreaming = false, isDark, customization }) => {
   const [displayContent, setDisplayContent] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [wasStreaming, setWasStreaming] = useState(false);
   const animationRef = useRef<number>();
   const intervalRef = useRef<NodeJS.Timeout>();
   
   useEffect(() => {
+    // When streaming stops, make sure we show the full content
+    if (wasStreaming && !isStreaming) {
+      setDisplayContent(content);
+      setCurrentIndex(content.length);
+      setWasStreaming(false);
+      return;
+    }
+    
+    // If not streaming, just show the content immediately
     if (!isStreaming) {
       setDisplayContent(content);
       setCurrentIndex(content.length);
       return;
     }
     
+    // Track that we are/were streaming
+    setWasStreaming(true);
+    
     // Clear any existing animation
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
     }
     if (intervalRef.current) {
-      clearInterval(intervalRef.current);
+      clearTimeout(intervalRef.current);
     }
     
     // Smooth character-by-character animation for streaming
@@ -94,12 +107,21 @@ const AnimatedText: React.FC<{
         clearTimeout(intervalRef.current);
       }
     };
-  }, [content, currentIndex, isStreaming]);
+  }, [content, currentIndex, isStreaming, wasStreaming]);
   
+  // Only reset when content actually changes (not just streaming state)
+  const prevContentRef = useRef(content);
   useEffect(() => {
-    setCurrentIndex(0);
-    setDisplayContent('');
-  }, [content]);
+    if (prevContentRef.current !== content && content !== displayContent) {
+      // Only reset if it's a completely new message, not an update to existing content
+      if (!content.startsWith(prevContentRef.current)) {
+        setCurrentIndex(0);
+        setDisplayContent('');
+        setWasStreaming(false);
+      }
+      prevContentRef.current = content;
+    }
+  }, [content, displayContent]);
   
   return (
     <div 
