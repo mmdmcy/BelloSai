@@ -70,6 +70,28 @@ export interface CustomizationSettings {
   fontFamily: string;
   gradientEnabled: boolean;
   gradientColors: string[];
+  selectedTheme: string;
+}
+
+/**
+ * Theme Interface
+ * Defines the structure of aesthetic themes
+ */
+export interface Theme {
+  id: string;
+  name: string;
+  description: string;
+  primaryColor: string;
+  secondaryColor: string;
+  backgroundColor: string;
+  textColor: string;
+  accentColors: string[];
+  gradientEnabled: boolean;
+  fontFamily: string;
+  borderRadius: string;
+  shadows: boolean;
+  glassEffect: boolean;
+  retroMode: boolean;
 }
 
 export interface ModelCapability {
@@ -138,6 +160,137 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
   },
 ];
 
+export const AVAILABLE_THEMES: Theme[] = [
+  {
+    id: 'default',
+    name: 'Modern Purple',
+    description: 'The classic BelloSai look with purple gradients',
+    primaryColor: '#7c3aed',
+    secondaryColor: '#a855f7',
+    backgroundColor: '#f9fafb',
+    textColor: '#1f2937',
+    accentColors: ['#8b5cf6', '#d946ef'],
+    gradientEnabled: false,
+    fontFamily: 'Inter',
+    borderRadius: '0.75rem',
+    shadows: true,
+    glassEffect: false,
+    retroMode: false
+  },
+  {
+    id: 'frutiger-aero',
+    name: 'Cloud Nine',
+    description: 'Airy and translucent with soft blues and nature vibes',
+    primaryColor: '#0ea5e9',
+    secondaryColor: '#06b6d4',
+    backgroundColor: '#f0f9ff',
+    textColor: '#0f172a',
+    accentColors: ['#38bdf8', '#22d3ee', '#67e8f9'],
+    gradientEnabled: true,
+    fontFamily: 'SF Pro Display, system-ui',
+    borderRadius: '1rem',
+    shadows: true,
+    glassEffect: true,
+    retroMode: false
+  },
+  {
+    id: 'vista-glass',
+    name: 'Vista Elegance',
+    description: 'Sophisticated glass effects with subtle animations',
+    primaryColor: '#1e40af',
+    secondaryColor: '#3b82f6',
+    backgroundColor: '#f8fafc',
+    textColor: '#1e293b',
+    accentColors: ['#2563eb', '#60a5fa', '#93c5fd'],
+    gradientEnabled: true,
+    fontFamily: 'Segoe UI, system-ui',
+    borderRadius: '0.5rem',
+    shadows: true,
+    glassEffect: true,
+    retroMode: false
+  },
+  {
+    id: 'retro-computing',
+    name: 'Terminal Classic',
+    description: 'Nostalgic computing with monospace fonts and sharp edges',
+    primaryColor: '#22c55e',
+    secondaryColor: '#16a34a',
+    backgroundColor: '#0a0a0a',
+    textColor: '#00ff00',
+    accentColors: ['#00ff00', '#ffff00', '#00ffff'],
+    gradientEnabled: false,
+    fontFamily: 'Courier New, monospace',
+    borderRadius: '0',
+    shadows: false,
+    glassEffect: false,
+    retroMode: true
+  },
+  {
+    id: 'cupertino',
+    name: 'Cupertino Style',
+    description: 'Clean and minimal with system-inspired design',
+    primaryColor: '#007aff',
+    secondaryColor: '#5ac8fa',
+    backgroundColor: '#ffffff',
+    textColor: '#000000',
+    accentColors: ['#007aff', '#5ac8fa', '#ff3b30'],
+    gradientEnabled: false,
+    fontFamily: 'SF Pro Display, -apple-system, system-ui',
+    borderRadius: '0.875rem',
+    shadows: true,
+    glassEffect: false,
+    retroMode: false
+  },
+  {
+    id: 'synthwave',
+    name: 'Neon Dreams',
+    description: 'Retro-futuristic with vibrant neons and dark backgrounds',
+    primaryColor: '#ff0080',
+    secondaryColor: '#00ffff',
+    backgroundColor: '#0d1117',
+    textColor: '#ffffff',
+    accentColors: ['#ff0080', '#00ffff', '#ff6b00', '#8000ff'],
+    gradientEnabled: true,
+    fontFamily: 'Orbitron, monospace',
+    borderRadius: '0.25rem',
+    shadows: true,
+    glassEffect: false,
+    retroMode: true
+  },
+  {
+    id: 'nature-green',
+    name: 'Forest Zen',
+    description: 'Calming greens inspired by nature and sustainability',
+    primaryColor: '#059669',
+    secondaryColor: '#10b981',
+    backgroundColor: '#f0fdf4',
+    textColor: '#064e3b',
+    accentColors: ['#059669', '#10b981', '#34d399'],
+    gradientEnabled: true,
+    fontFamily: 'Inter, system-ui',
+    borderRadius: '1rem',
+    shadows: true,
+    glassEffect: false,
+    retroMode: false
+  },
+  {
+    id: 'warm-sunset',
+    name: 'Golden Hour',
+    description: 'Warm oranges and reds like a beautiful sunset',
+    primaryColor: '#ea580c',
+    secondaryColor: '#f97316',
+    backgroundColor: '#fff7ed',
+    textColor: '#9a3412',
+    accentColors: ['#ea580c', '#f97316', '#fb923c'],
+    gradientEnabled: true,
+    fontFamily: 'Inter, system-ui',
+    borderRadius: '0.75rem',
+    shadows: true,
+    glassEffect: false,
+    retroMode: false
+  }
+];
+
 function App() {
   // Use Supabase auth context
   const { user, loading: authLoading, signOut } = useAuth();
@@ -197,7 +350,8 @@ function App() {
     secondaryColor: '#a855f7',
     fontFamily: 'Inter',
     gradientEnabled: false,
-    gradientColors: ['#7c3aed', '#a855f7']
+    gradientColors: ['#7c3aed', '#a855f7'],
+    selectedTheme: 'default'
   });
 
   // Authentication modals and forms
@@ -976,6 +1130,23 @@ function App() {
   };
 
   /**
+   * Apply a theme to the customization settings
+   */
+  const applyTheme = (themeId: string) => {
+    const theme = AVAILABLE_THEMES.find(t => t.id === themeId);
+    if (theme) {
+      setCustomization(prev => ({
+        ...prev,
+        selectedTheme: themeId,
+        primaryColor: theme.primaryColor,
+        secondaryColor: theme.secondaryColor,
+        fontFamily: theme.fontFamily,
+        gradientEnabled: theme.gradientEnabled
+      }));
+    }
+  };
+
+  /**
    * Navigate back to chat view from game section
    */
   const handleBackToChat = () => {
@@ -1016,6 +1187,7 @@ function App() {
           customization={customization}
           onCustomizationChange={updateCustomization}
           isAuthenticated={!!user}
+          onApplyTheme={applyTheme}
         />
       );
     } else {
@@ -1031,6 +1203,7 @@ function App() {
           onToggleTheme={toggleTheme}
           customization={customization}
           onCustomizationChange={updateCustomization}
+          onApplyTheme={applyTheme}
         />
       );
     }
@@ -1346,6 +1519,7 @@ function App() {
                 customization={customization}
                 isLoggedIn={!!user}
                 onLoginClick={() => setShowLoginModal(true)}
+                hideInput={true}
               />
             ) : (
               <ChatView 
@@ -1361,6 +1535,7 @@ function App() {
                 error={chatError}
                 setError={setChatError}
                 onRegenerateResponse={regenerateResponse}
+                hideInput={true}
               />
             )}
           </div>
