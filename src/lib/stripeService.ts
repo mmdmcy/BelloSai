@@ -29,15 +29,15 @@ export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
     name: 'BelloSai Pro Monthly',
     price: '€6.99',
     features: ['Unlimited AI messages', 'All AI models', 'Priority support', 'Advanced features'],
-    priceId: import.meta.env.VITE_STRIPE_PRICE_ID_MONTHLY || 'price_1RZtB0BzQy7WGhPxMJcDPPTK',
+    priceId: 'price_1RZtB0BzQy7WGhPxMJcDPPTK',
     interval: 'month'
   },
   YEARLY: {
     id: 'yearly',
     name: 'BelloSai Pro Yearly',
     price: '€69.99',
-    features: ['Everything in monthly', 'Save over 15%', '18000 standard credits', '1200 premium credits'],
-    priceId: import.meta.env.VITE_STRIPE_PRICE_ID_YEARLY || '',
+    features: ['Everything in monthly', 'Save over 15%', 'Annual discount'],
+    priceId: '', // Add this when you create a yearly price
     interval: 'year'
   }
 }
