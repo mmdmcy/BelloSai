@@ -77,7 +77,7 @@ const AnimatedText: React.FC<{
     <div 
       className={`prose ${isDark ? 'prose-invert' : 'prose-gray'} max-w-none mb-6 wave-reveal ${isVisible ? 'wave-visible' : ''}`}
     >
-      <div className="relative overflow-hidden">
+      <div className="relative">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           rehypePlugins={[rehypeHighlight]}

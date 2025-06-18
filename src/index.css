@@ -564,78 +564,19 @@
   contain-intrinsic-size: 0 500px;
 }
 
-/* Beautiful wave text reveal animation - like water washing over shore */
+/* Beautiful smooth text reveal animation - no overlay, just smooth appearance */
 .wave-reveal {
   position: relative;
-  overflow: hidden;
-}
-
-.wave-reveal::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.8) 30%,
-    rgba(255, 255, 255, 0.9) 50%,
-    rgba(255, 255, 255, 0.8) 70%,
-    transparent 100%
-  );
-  z-index: 10;
-  animation: none;
-  pointer-events: none;
-}
-
-.wave-reveal.wave-visible::before {
-  animation: wave-wash 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
 .wave-reveal .relative {
   opacity: 0;
   transform: translateY(8px);
-  transition: opacity 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
-              transform 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transition: opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+              transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .wave-reveal.wave-visible .relative {
   opacity: 1;
   transform: translateY(0);
-  transition-delay: 0.2s;
-}
-
-@keyframes wave-wash {
-  0% {
-    left: -100%;
-    transform: scaleY(1) skewX(0deg);
-  }
-  15% {
-    transform: scaleY(1.1) skewX(-5deg);
-  }
-  50% {
-    left: 50%;
-    transform: scaleY(0.9) skewX(2deg);
-  }
-  70% {
-    transform: scaleY(1.05) skewX(-1deg);
-  }
-  100% {
-    left: 100%;
-    transform: scaleY(1) skewX(0deg);
-  }
-}
-
-/* Dark mode wave overlay */
-.dark .wave-reveal::before {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(0, 0, 0, 0.3) 30%,
-    rgba(0, 0, 0, 0.4) 50%,
-    rgba(0, 0, 0, 0.3) 70%,
-    transparent 100%
-  );
 }

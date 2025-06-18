@@ -32,10 +32,10 @@ export type DeepSeekModel = 'DeepSeek-V3' | 'DeepSeek-R1';
 
 type ModelProvider = 'DeepSeek' | 'Gemini';
 
-// BALANCED timeout settings - Fast but reliable!
-const REQUEST_TIMEOUT = 25000; // 25 seconds - balanced for reliability
-const STREAM_TIMEOUT = 30000; // 30 seconds for streaming
-const OPTIMAL_CHUNK_SIZE = 12; // Optimal chunk size for smooth streaming
+// Configuration constants for reliable performance
+const REQUEST_TIMEOUT = Infinity; // No timeout - let AI work!
+const STREAM_TIMEOUT = Infinity; // No stream timeout
+const OPTIMAL_CHUNK_SIZE = 12; // Characters per chunk for smooth streaming
 
 // Performance optimization: Balanced timeouts for reliable responses
 const FAST_TIMEOUT = 20000; // 20 seconds for reliable response
@@ -67,13 +67,8 @@ export async function sendChatMessage(
   try {
     console.log('🚀 Starting chat message request:', { messages, model: modelCode, conversationId });
     
-    // Reset abort controller with reliable timeout
+    // No timeouts - let AI work without interruption!
     abortController = new AbortController();
-    
-    timeoutId = setTimeout(() => {
-      console.error('⏰ Request timeout after 35 seconds - aborting for better UX');
-      abortController?.abort();
-    }, 35000); // Increased to 35 seconds for reliability
     
     // Get current session with error recovery
     let { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -221,37 +216,26 @@ export async function sendChatMessage(
       const decoder = new TextDecoder();
       let fullResponse = '';
       let hasStartedStreaming = false;
-      let streamTimeout: NodeJS.Timeout | null = null;
+      // No stream timeout needed
       let lastChunkTime = Date.now();
       let chunkBuffer = ''; // Buffer for smoother chunk processing
       
-      const resetStreamTimeout = () => {
-        if (streamTimeout) {
-          clearTimeout(streamTimeout);
-        }
-        streamTimeout = setTimeout(() => {
-          const timeSinceLastChunk = Date.now() - lastChunkTime;
-          console.error(`⏰ Stream timeout - no data received for ${STREAM_TIMEOUT/1000} seconds (last chunk: ${timeSinceLastChunk}ms ago)`);
-          reader.cancel();
-        }, STREAM_TIMEOUT);
-      };
+      // No stream timeouts - let AI stream without interruption!
       
-      try {
-        resetStreamTimeout();
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) {
-            console.log('✅ Streaming completed');
-            // Process any remaining buffer
-            if (chunkBuffer.trim()) {
-              onChunk?.(chunkBuffer);
-              fullResponse += chunkBuffer;
+              try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+              console.log('✅ Streaming completed');
+              // Process any remaining buffer
+              if (chunkBuffer.trim()) {
+                onChunk?.(chunkBuffer);
+                fullResponse += chunkBuffer;
+              }
+              break;
             }
-            break;
-          }
-          
-          lastChunkTime = Date.now();
-          resetStreamTimeout();
+            
+            lastChunkTime = Date.now();
           
           const chunk = decoder.decode(value, { stream: true });
           const lines = chunk.split('\n');
@@ -298,9 +282,7 @@ export async function sendChatMessage(
           }
         }
         
-        if (streamTimeout) {
-          clearTimeout(streamTimeout);
-        }
+        // No timeout to clear
         
         if (!hasStartedStreaming) {
           throw new Error('Geen streaming data ontvangen van AI service');
@@ -318,9 +300,7 @@ export async function sendChatMessage(
         
         return fullResponse;
       } finally {
-        if (streamTimeout) {
-          clearTimeout(streamTimeout);
-        }
+        // No timeout to clear
         reader.releaseLock();
       }
     } else {

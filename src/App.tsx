@@ -768,7 +768,6 @@ function App() {
       return;
     }
 
-    let requestTimeoutId: NodeJS.Timeout | null = null;
     let aiMessageId: string | null = null;
 
     try {
@@ -830,24 +829,7 @@ function App() {
       setIsGenerating(true);
       console.log('🔄 Set isGenerating to true');
 
-      // Optimized request timeout (30 seconds instead of 45 for faster feedback)
-      requestTimeoutId = setTimeout(() => {
-        console.error('⏰ Request timeout after 30 seconds');
-        setChatError('Request took too long. Please try again or try a shorter question.');
-        setIsGenerating(false);
-        
-        // Update AI message with timeout error
-        if (aiMessageId) {
-          setMessages(prev => prev.map(msg => 
-            msg.id === aiMessageId 
-              ? { 
-                  ...msg, 
-                  content: 'Request took too long. Please try again or try a shorter question.' 
-                }
-              : msg
-          ));
-        }
-      }, 30000); // Reduced from 45 seconds to 30 seconds
+      // No timeouts - AI can take as long as it needs!
 
       // Early conversation title generation for better UX
       if (!regenerate && currentMessages.length <= 2 && conversationTitle === 'Untitled Conversation') {
@@ -881,50 +863,49 @@ function App() {
       }
       
       console.log('✅ Pre-flight checks passed, calling sendChatMessage...');
-
-      // Optimized streaming with better chunk handling
       console.log('📡 Calling sendChatMessage with parameters:');
       console.log('  - Messages count:', chatMessages.length);
       console.log('  - Model:', modelToUse);
       console.log('  - AI Message ID:', aiMessageId);
       console.log('  - Conversation ID:', currentConvoId);
-      
+      console.log('🚀 Starting sendChatMessage call...');
+
+      // No timeouts - AI can take as long as it needs!
       let fullResponse = '';
       let streamBuffer = '';
       let lastUpdateTime = Date.now();
       const UPDATE_THROTTLE = 50; // Update UI every 50ms for smoother streaming
 
       try {
-        console.log('🚀 Starting sendChatMessage call...');
         fullResponse = await sendChatMessage(
-            chatMessages,
-            modelToUse as DeepSeekModel,
-            async (chunk: string) => {
-              if (!chunk) return;
+          chatMessages,
+          modelToUse,
+          async (chunk: string) => {
+            if (!chunk) return;
+            
+            // Add chunk to buffer
+            streamBuffer += chunk;
+            
+            // Throttled UI updates for better performance
+            const now = Date.now();
+            if (now - lastUpdateTime >= UPDATE_THROTTLE || streamBuffer.length > 100) {
+              console.log('📦 Processing buffered chunks:', streamBuffer.length, 'chars');
               
-              // Add chunk to buffer
-              streamBuffer += chunk;
-              
-              // Throttled UI updates for better performance
-              const now = Date.now();
-              if (now - lastUpdateTime >= UPDATE_THROTTLE || streamBuffer.length > 100) {
-                console.log('📦 Processing buffered chunks:', streamBuffer.length, 'chars');
-                
-                // Update the AI message with buffered content
-                setMessages(prev => prev.map(msg => 
-                  msg.id === aiMessageId 
-                    ? { ...msg, content: msg.content + streamBuffer }
-                    : msg
-                ));
+              // Update the AI message with buffered content
+              setMessages(prev => prev.map(msg => 
+                msg.id === aiMessageId 
+                  ? { ...msg, content: msg.content + streamBuffer }
+                  : msg
+              ));
 
-                fullResponse += streamBuffer;
-                streamBuffer = ''; // Clear buffer
-                lastUpdateTime = now;
-              }
-            },
-            currentConvoId || undefined
-          );
-        
+              fullResponse += streamBuffer;
+              streamBuffer = ''; // Clear buffer
+              lastUpdateTime = now;
+            }
+          },
+          currentConvoId || undefined
+        );
+
         // Process any remaining buffer
         if (streamBuffer) {
           setMessages(prev => prev.map(msg => 
@@ -938,12 +919,9 @@ function App() {
         console.log('✅ sendChatMessage completed successfully');
         console.log('📝 Full response length:', fullResponse?.length || 0);
 
-        // Clear timeout since request completed successfully
-        if (requestTimeoutId) {
-          clearTimeout(requestTimeoutId);
-          requestTimeoutId = null;
-        }
-        
+        // Set generating to false since request completed successfully
+        setIsGenerating(false);
+
         // Validate response
         if (!fullResponse || fullResponse.trim() === '') {
           throw new Error('Lege response ontvangen van AI service');
@@ -1033,14 +1011,8 @@ function App() {
         throw streamError; // Re-throw to be handled by outer catch
       }
 
-    } catch (error) {
-      console.error('❌ Message sending failed:', error);
-      
-      // Clear timeout if still active
-      if (requestTimeoutId) {
-        clearTimeout(requestTimeoutId);
-        requestTimeoutId = null;
-      }
+      } catch (error) {
+    console.error('❌ Message sending failed:', error);
       
       // Enhanced error handling with better user messages
       let errorMessage = 'Er is een fout opgetreden bij het verwerken van je bericht.';
@@ -1072,14 +1044,9 @@ function App() {
             : msg
         ));
       }
-    } finally {
-      setIsGenerating(false);
-      
-      // Ensure timeout is cleared
-      if (requestTimeoutId) {
-        clearTimeout(requestTimeoutId);
-      }
-    }
+      } finally {
+    setIsGenerating(false);
+  }
   };
 
   /**
