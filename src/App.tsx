@@ -40,6 +40,7 @@ import { sendChatMessage, DeepSeekModel, ChatMessage } from './lib/supabase-chat
 import { chatFeaturesService } from './lib/chat-features';
 import { anonymousUsageService } from './lib/anonymous-usage';
 import { layoutManager, ExtendedLayoutConfig, MobileLayoutConfig, defaultMobileLayout } from './lib/auth-integration'
+import { StripeService } from './lib/stripeService';
 import { LogIn, UserPlus, User, Loader2, Menu, X } from 'lucide-react'
 
 /**
@@ -465,6 +466,43 @@ function App() {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [user]);
+
+  // Check for successful checkout session in URL parameters
+  useEffect(() => {
+    const checkForCheckoutSuccess = async () => {
+      if (!user) return;
+      
+      const urlParams = new URLSearchParams(window.location.search);
+      const sessionId = urlParams.get('session_id');
+      
+      if (sessionId) {
+        console.log('🔄 [App] Detected Stripe session_id in URL, syncing subscription...');
+        
+        try {
+          // Force sync subscription from Stripe
+          const syncSuccess = await StripeService.forceSyncSubscription();
+          
+          if (syncSuccess) {
+            console.log('✅ [App] Subscription synced successfully');
+            
+            // Optional: Show success message
+            // You could add a toast notification here
+          } else {
+            console.warn('⚠️ [App] Subscription sync failed, but checkout may still be processing');
+          }
+        } catch (error) {
+          console.error('❌ [App] Error syncing subscription:', error);
+        }
+        
+        // Clean URL to remove session_id parameter
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete('session_id');
+        window.history.replaceState({}, '', newUrl.toString());
+      }
+    };
+    
+    checkForCheckoutSuccess();
   }, [user]);
 
   const loadConversations = async () => {

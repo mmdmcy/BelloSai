@@ -82,13 +82,25 @@ serve(async (req) => {
     }
 
     if (req.method !== 'POST') {
-      return new Response('Method not allowed', { status: 405 })
+      return new Response('Method not allowed', { 
+        status: 405,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+        }
+      })
     }
 
     // Get the authorization header
     const authHeader = req.headers.get('authorization')
     if (!authHeader) {
-      return new Response('Missing authorization header', { status: 401 })
+      return new Response('Missing authorization header', { 
+        status: 401,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+        }
+      })
     }
 
     // Get user from auth token
@@ -97,14 +109,26 @@ serve(async (req) => {
 
     if (authError || !user) {
       console.error('Auth error:', authError)
-      return new Response('Unauthorized', { status: 401 })
+      return new Response('Unauthorized', { 
+        status: 401,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+        }
+      })
     }
 
     // Parse request body
     const { session_id }: VerifySessionRequest = await req.json()
 
     if (!session_id) {
-      return new Response('Missing session_id', { status: 400 })
+      return new Response('Missing session_id', { 
+        status: 400,
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+        }
+      })
     }
 
     console.log('Verifying session:', session_id)
@@ -113,27 +137,35 @@ serve(async (req) => {
     const session = await stripe.checkout.sessions.retrieve(session_id)
 
     if (!session) {
-      return new Response(JSON.stringify({
-        success: false,
-        subscriptionActive: false,
-        message: 'Session niet gevonden'
-      }), {
-        headers: { 'Content-Type': 'application/json' },
-        status: 404
-      })
+          return new Response(JSON.stringify({
+      success: false,
+      subscriptionActive: false,
+      message: 'Session niet gevonden'
+    }), {
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+      },
+      status: 404
+    })
     }
 
     console.log('Session found:', session.payment_status, session.status)
 
     // Check if payment was successful
     if (session.payment_status !== 'paid') {
-      return new Response(JSON.stringify({
-        success: false,
-        subscriptionActive: false,
-        message: 'Betaling nog niet voltooid'
-      }), {
-        headers: { 'Content-Type': 'application/json' },
-      })
+          return new Response(JSON.stringify({
+      success: false,
+      subscriptionActive: false,
+      message: 'Betaling nog niet voltooid'
+    }), {
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+      },
+    })
     }
 
     // If session has a subscription, sync it to our database
@@ -155,7 +187,11 @@ serve(async (req) => {
         ? 'Abonnement is actief' 
         : 'Betaling voltooid, abonnement wordt geactiveerd'
     }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+      },
     })
 
   } catch (error) {
@@ -168,7 +204,11 @@ serve(async (req) => {
       }),
       {
         status: 500,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+        },
       }
     )
   }
