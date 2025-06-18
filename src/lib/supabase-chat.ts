@@ -67,19 +67,13 @@ export async function sendChatMessage(
   try {
     console.log('🚀 Starting chat message request:', { messages, model: modelCode, conversationId });
     
-    // Reset abort controller with optimized timeout and connection cleanup
+    // Reset abort controller with reliable timeout
     abortController = new AbortController();
     
-    // Add connection reset for preventing hangs on second requests
-    const connectionHeaders = {
-      'Connection': 'close', // Force connection close to prevent hanging
-      'Cache-Control': 'no-cache', // Prevent caching issues
-    };
-    
     timeoutId = setTimeout(() => {
-      console.error('⏰ Request timeout after 25 seconds - aborting for better UX');
+      console.error('⏰ Request timeout after 35 seconds - aborting for better UX');
       abortController?.abort();
-    }, REQUEST_TIMEOUT);
+    }, 35000); // Increased to 35 seconds for reliability
     
     // Get current session with error recovery
     let { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -150,7 +144,7 @@ export async function sendChatMessage(
     console.log('🚀 About to make fetch request...');
     const response = await fetch(url, {
       method: 'POST',
-      headers: { ...authHeaders, ...connectionHeaders },
+      headers: { ...authHeaders },
       body: JSON.stringify({
         messages,
         model: modelCode,

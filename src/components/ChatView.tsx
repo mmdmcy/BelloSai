@@ -50,7 +50,7 @@ interface ChatViewProps {
   setError?: (err: string | null) => void;
 }
 
-// Custom component for animated text content with smooth fade-in
+// Custom component for smooth fade-in text animation
 const AnimatedText: React.FC<{ 
   content: string; 
   isStreaming?: boolean; 
@@ -59,47 +59,37 @@ const AnimatedText: React.FC<{
 }> = React.memo(({ content, isStreaming = false, isDark, customization }) => {
   const [displayContent, setDisplayContent] = useState('');
   const [isVisible, setIsVisible] = useState(false);
-  const [wasStreaming, setWasStreaming] = useState(false);
   
   useEffect(() => {
-    // When streaming stops, show the content with smooth fade-in
-    if (wasStreaming && !isStreaming) {
-      setDisplayContent(content);
-      setIsVisible(true);
-      setWasStreaming(false);
-      return;
-    }
+    // Always update content immediately
+    setDisplayContent(content);
     
-    // When streaming starts or content changes during streaming
-    if (isStreaming) {
-      setWasStreaming(true);
-      setDisplayContent(content);
-      setIsVisible(true); // Show immediately during streaming
-    } else if (!wasStreaming) {
-      // Initial load - show with fade-in
-      setDisplayContent(content);
-      setTimeout(() => setIsVisible(true), 50); // Small delay for smooth transition
-    }
-  }, [content, isStreaming, wasStreaming]);
+    // Start invisible, then fade in after a tiny delay
+    setIsVisible(false);
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, 10); // Very short delay for smooth fade-in
+    
+    return () => clearTimeout(timer);
+  }, [content]);
 
-  const textStyle = {
-    fontFamily: customization.fontFamily,
-    transition: 'opacity 0.3s ease-in-out, transform 0.3s ease-in-out',
+  const containerStyle = {
     opacity: isVisible ? 1 : 0,
-    transform: isVisible ? 'translateY(0)' : 'translateY(10px)',
+    transform: isVisible ? 'translateY(0px)' : 'translateY(5px)',
+    transition: 'opacity 0.6s ease-out, transform 0.6s ease-out',
   };
 
   return (
     <div 
-      className={`prose ${isDark ? 'prose-invert' : 'prose-gray'} max-w-none mb-4 transition-all duration-300 ease-out streaming-container`}
-      style={textStyle}
+      className={`prose ${isDark ? 'prose-invert' : 'prose-gray'} max-w-none mb-4 streaming-container`}
+      style={containerStyle}
     >
       <div className="relative">
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           rehypePlugins={[rehypeHighlight]}
           components={{
-            // Custom styling for code blocks with fade animation
+            // Custom styling for code blocks
             pre: ({ children, ...props }) => (
               <div className={`rounded-xl overflow-hidden ${
                 isDark ? 'bg-gray-900' : 'bg-white'
@@ -140,10 +130,10 @@ const AnimatedText: React.FC<{
                 </div>
               </div>
             ),
-            // Smooth paragraphs with fade effect
+            // Smooth paragraphs
             p: ({ children, ...props }) => (
               <p 
-                className={`mb-4 leading-relaxed ${isDark ? 'text-gray-200' : 'text-gray-700'} transition-all duration-300 ease-out`}
+                className={`mb-4 leading-relaxed ${isDark ? 'text-gray-200' : 'text-gray-700'}`}
                 style={{ 
                   fontFamily: customization.fontFamily,
                 }}
@@ -157,7 +147,7 @@ const AnimatedText: React.FC<{
           {displayContent}
         </ReactMarkdown>
         
-        {/* Smooth streaming indicator */}
+        {/* Streaming indicator */}
         {isStreaming && (
           <div className="streaming-indicator animate-pulse ml-1 inline-block">
             <div className="w-2 h-4 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full opacity-80"></div>

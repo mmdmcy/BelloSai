@@ -18,8 +18,8 @@ interface ChatRequest {
   stream?: boolean;
 }
 
-// BALANCED timeouts for reliable performance!
-const DEEPSEEK_API_TIMEOUT = 20000; // 20 seconds - balanced for reliability
+// RELIABLE timeouts for stable performance!
+const DEEPSEEK_API_TIMEOUT = 30000; // 30 seconds - reliable for longer conversations
 const STREAM_START_TIMEOUT = 5000; // 5 seconds - reasonable response time
 
 const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY') || '';
@@ -179,10 +179,10 @@ serve(async (req) => {
       hasApiKey: !!DEEPSEEK_API_KEY
     });
     
-    // Balanced timeout for DeepSeek API call - reliable performance
+    // Reliable timeout for DeepSeek API call - stable performance
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      console.log('⏰ DeepSeek API timeout after 20 seconds - ensuring reliability');
+      console.log('⏰ DeepSeek API timeout after 30 seconds - ensuring reliability');
       controller.abort();
     }, DEEPSEEK_API_TIMEOUT);
     
