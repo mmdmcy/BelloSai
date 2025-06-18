@@ -2,7 +2,7 @@
  * GameSection Component
  * 
  * This component renders the gaming section of the application with two main panels:
- * - Gameshow: Interactive AI-powered game show experience (Family Feud style)
+ * - Gameshow: Interactive AI-powered game show experience (AI Feud style)
  * - Quiz: Fun quiz games with various topics
  * 
  * Features:
@@ -11,19 +11,19 @@
  * - Theme-aware styling
  * - Navigation back to main chat
  * - Attractive hover effects and animations
- * - AI-powered Family Feud with DeepSeek-V3 and DeepSeek-R1
+ * - AI-powered AI Feud with DeepSeek-V3 and DeepSeek-R1
  */
 
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Trophy, Brain, Users, Zap, Sun, Moon, Play, Clock, Target, CheckCircle, XCircle, Star, Loader2 } from 'lucide-react';
 import { CustomizationSettings } from '../App';
 import { 
-  generateFamilyFeudQuestion, 
+  generateAIFeudQuestion, 
   getAIGuess, 
   checkPlayerGuess,
-  FamilyFeudQuestion,
+  AIFeudQuestion,
   AIGuessResult 
-} from '../lib/family-feud-ai';
+} from '../lib/ai-feud';
 
 interface GameSectionProps {
   isDark: boolean;
@@ -87,7 +87,7 @@ export default function GameSection({
     playerGuess: '',
     lastGuessResult: null as 'correct' | 'incorrect' | null,
     round: 1,
-    question: null as FamilyFeudQuestion | null,
+    question: null as AIFeudQuestion | null,
     aiThinking: false,
     aiGuess: '',
     aiGuessResult: null as AIGuessResult | null,
@@ -123,7 +123,7 @@ export default function GameSection({
 
   /**
    * Handle gameshow selection
-   * Generates a new AI-powered Family Feud question
+   * Generates a new AI-powered AI Feud question
    */
   const handleGameshowClick = async () => {
     setSelectedGame('gameshow');
@@ -150,7 +150,7 @@ export default function GameSection({
 
     try {
       // Generate new question using AI
-      const question = await generateFamilyFeudQuestion();
+      const question = await generateAIFeudQuestion();
       
       setGameshowState(prev => ({
         ...prev,
@@ -424,7 +424,7 @@ export default function GameSection({
     }, 3000);
   };
 
-  // AI-Powered Family Feud Interface
+      // AI-Powered AI Feud Interface
   if (selectedGame === 'gameshow') {
     const currentQ = gameshowState.question;
     
@@ -455,7 +455,7 @@ export default function GameSection({
               <ArrowLeft className="w-4 h-4" />
               Back to Games
             </button>
-            <h1 className="text-xl font-semibold">AI Family Feud</h1>
+            <h1 className="text-xl font-semibold">AI Feud</h1>
           </div>
           
           <button onClick={onToggleTheme} className="p-2 rounded-lg transition-colors bg-white/10 hover:bg-white/20 text-white">
@@ -473,7 +473,7 @@ export default function GameSection({
                   Generating Question...
                 </h2>
                 <p className={`text-lg ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                  DeepSeek-V3 is creating a fun Family Feud question for you!
+                  DeepSeek-V3 is creating a fun AI Feud question for you!
                 </p>
               </div>
             </div>
@@ -962,7 +962,7 @@ export default function GameSection({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Family Feud Card */}
+            {/* AI Feud Card */}
             <div 
               className={`p-8 rounded-2xl shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer ${
                 isDark ? 'bg-gray-800 hover:bg-gray-700' : 'bg-white hover:bg-gray-50'
@@ -976,7 +976,7 @@ export default function GameSection({
                   <Users className={`w-8 h-8 ${isDark ? 'text-white' : 'text-purple-600'}`} />
                 </div>
                 <h3 className={`text-2xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  AI Family Feud
+                  AI Feud
                 </h3>
                 <p className={`text-lg mb-6 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                   Play the classic survey game against DeepSeek-R1! 

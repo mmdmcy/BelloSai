@@ -9,7 +9,7 @@ interface GameProps {
   onBackToHome?: () => void;
 }
 
-interface FamilyFeudQuestion {
+interface AIFeudQuestion {
   question: string;
   answers: Array<{
     text: string;
@@ -25,7 +25,7 @@ interface GuessResult {
 }
 
 function GameComponent({ isDark, customization, onToggleTheme, onBackToHome }: GameProps) {
-  const [question, setQuestion] = useState<FamilyFeudQuestion | null>(null);
+  const [question, setQuestion] = useState<AIFeudQuestion | null>(null);
   const [revealedAnswers, setRevealedAnswers] = useState<number[]>([]);
   const [playerScore, setPlayerScore] = useState(0);
   const [aiScore, setAiScore] = useState(0);
@@ -56,12 +56,12 @@ function GameComponent({ isDark, customization, onToggleTheme, onBackToHome }: G
     }
   }, [revealedAnswers, question, playerStrikes, aiStrikes, maxStrikes]);
 
-  // Clear last guesses after 4 seconds
+  // Clear last guesses feedback after 6 seconds (only the temporary feedback, not the board)
   useEffect(() => {
     if (lastPlayerGuess) {
       const timer = setTimeout(() => {
         setLastPlayerGuess(null);
-      }, 4000);
+      }, 6000); // Increased to 6 seconds for better readability
       return () => clearTimeout(timer);
     }
   }, [lastPlayerGuess]);
@@ -70,7 +70,7 @@ function GameComponent({ isDark, customization, onToggleTheme, onBackToHome }: G
     if (lastAiGuess) {
       const timer = setTimeout(() => {
         setLastAiGuess(null);
-      }, 4000);
+      }, 6000); // Increased to 6 seconds for better readability
       return () => clearTimeout(timer);
     }
   }, [lastAiGuess]);
@@ -93,7 +93,7 @@ function GameComponent({ isDark, customization, onToggleTheme, onBackToHome }: G
     
     try {
       const prompts = [
-        `Generate a Family Feud question about daily morning routines. Format:
+        `Generate an AI Feud question about daily morning routines. Format:
 Question: We asked 100 people: [question]
 Answers:
 1. [answer] - [points]
@@ -103,7 +103,7 @@ Answers:
 5. [answer] - [points]
 
 Make it fun and modern. No markdown formatting.`,
-        `Generate a Family Feud question about workplace habits. Format:
+        `Generate an AI Feud question about workplace habits. Format:
 Question: We asked 100 people: [question]
 Answers:
 1. [answer] - [points]
@@ -113,7 +113,7 @@ Answers:
 5. [answer] - [points]
 
 Make it fun and modern. No markdown formatting.`,
-        `Generate a Family Feud question about food and eating habits. Format:
+        `Generate an AI Feud question about food and eating habits. Format:
 Question: We asked 100 people: [question]
 Answers:
 1. [answer] - [points]
@@ -123,7 +123,7 @@ Answers:
 5. [answer] - [points]
 
 Make it fun and modern. No markdown formatting.`,
-        `Generate a Family Feud question about technology and social media. Format:
+        `Generate an AI Feud question about technology and social media. Format:
 Question: We asked 100 people: [question]
 Answers:
 1. [answer] - [points]
@@ -133,7 +133,7 @@ Answers:
 5. [answer] - [points]
 
 Make it fun and modern. No markdown formatting.`,
-        `Generate a Family Feud question about daily routines and habits. Format:
+        `Generate an AI Feud question about daily routines and habits. Format:
 Question: We asked 100 people: [question]
 Answers:
 1. [answer] - [points]
@@ -265,7 +265,7 @@ Make it fun and modern. No markdown formatting.`
     }
   };
 
-  const parseQuestion = (response: string): FamilyFeudQuestion => {
+  const parseQuestion = (response: string): AIFeudQuestion => {
     const lines = response.split('\n').map(line => line.trim()).filter(line => line.length > 0);
     let question = '';
     const answers = [];
@@ -300,7 +300,7 @@ Make it fun and modern. No markdown formatting.`
     return { question, answers: answers.slice(0, 5) };
   };
 
-  // Improved answer matching function
+  // Improved answer matching function with more flexible matching
   const checkAnswerMatch = (guess: string, answers: Array<{ text: string; points: number }>, excludeIndices: number[] = []): { answerIndex: number; matchedText: string } | null => {
     const guessLower = guess.toLowerCase().trim();
     
@@ -314,28 +314,54 @@ Make it fun and modern. No markdown formatting.`
         return { answerIndex: i, matchedText: answers[i].text };
       }
       
-      // Simplified word matching - extract key words
-      const answerWords = answerLower.split(/\s+/).filter(word => word.length > 2);
-      const guessWords = guessLower.split(/\s+/).filter(word => word.length > 2);
+      // Check if the guess is contained within the answer or vice versa
+      if (answerLower.includes(guessLower) || guessLower.includes(answerLower)) {
+        return { answerIndex: i, matchedText: answers[i].text };
+      }
       
-      // Check if key words match (ignore common words like "the", "your", "my")
-      const commonWords = ['the', 'a', 'an', 'your', 'my', 'our', 'their', 'his', 'her', 'its'];
+      // Word-based matching - more flexible
+      const answerWords = answerLower.split(/[\s,\/\-\&\+]+/).filter(word => word.length > 1);
+      const guessWords = guessLower.split(/[\s,\/\-\&\+]+/).filter(word => word.length > 1);
+      
+      // Skip common filler words
+      const commonWords = ['the', 'a', 'an', 'your', 'my', 'our', 'their', 'his', 'her', 'its', 'or', 'and', 'to', 'of', 'in', 'on', 'at', 'for', 'with'];
       const meaningfulAnswerWords = answerWords.filter(word => !commonWords.includes(word));
       const meaningfulGuessWords = guessWords.filter(word => !commonWords.includes(word));
       
-      // If most meaningful words match, it's a match
-      const matches = meaningfulAnswerWords.filter(word => 
-        meaningfulGuessWords.some(guessWord => 
-          word.includes(guessWord) || guessWord.includes(word) || 
-          // Handle common synonyms
-          (word === 'phone' && guessWord === 'mobile') ||
-          (word === 'mobile' && guessWord === 'phone') ||
-          (word === 'brush' && guessWord === 'clean') ||
-          (word === 'clean' && guessWord === 'brush')
-        )
-      );
+      // Check for word matches with partial matching
+      let matchCount = 0;
+      for (const guessWord of meaningfulGuessWords) {
+        for (const answerWord of meaningfulAnswerWords) {
+          // Direct word match or partial match
+          if (answerWord === guessWord || 
+              answerWord.includes(guessWord) || 
+              guessWord.includes(answerWord) ||
+              // Handle common synonyms and variations
+              (answerWord === 'phone' && (guessWord === 'mobile' || guessWord === 'cell')) ||
+              (answerWord === 'mobile' && (guessWord === 'phone' || guessWord === 'cell')) ||
+              (answerWord === 'cell' && (guessWord === 'phone' || guessWord === 'mobile')) ||
+              (answerWord === 'brush' && (guessWord === 'clean' || guessWord === 'wash')) ||
+              (answerWord === 'clean' && (guessWord === 'brush' || guessWord === 'wash')) ||
+              (answerWord === 'stretch' && (guessWord === 'yawn' || guessWord === 'wake')) ||
+              (answerWord === 'yawn' && (guessWord === 'stretch' || guessWord === 'wake')) ||
+              (answerWord === 'snooze' && (guessWord === 'sleep' || guessWord === 'alarm')) ||
+              (answerWord === 'coffee' && (guessWord === 'drink' || guessWord === 'caffeine')) ||
+              (answerWord === 'drink' && guessWord === 'coffee') ||
+              (answerWord === 'check' && (guessWord === 'look' || guessWord === 'see')) ||
+              (answerWord === 'emails' && (guessWord === 'email' || guessWord === 'mail')) ||
+              (answerWord === 'email' && (guessWord === 'emails' || guessWord === 'mail')) ||
+              // Handle plurals better
+              (answerWord.endsWith('s') && answerWord.slice(0, -1) === guessWord) ||
+              (guessWord.endsWith('s') && guessWord.slice(0, -1) === answerWord)
+             ) {
+            matchCount++;
+            break; // Found a match for this guess word, move to next
+          }
+        }
+      }
       
-      if (matches.length > 0 && matches.length >= Math.min(2, meaningfulAnswerWords.length)) {
+      // If we matched at least one meaningful word, or if there are no meaningful words but we have any word match
+      if (matchCount > 0 || (meaningfulGuessWords.length === 0 && guessWords.some(gw => answerWords.some(aw => aw.includes(gw) || gw.includes(aw))))) {
         return { answerIndex: i, matchedText: answers[i].text };
       }
     }
@@ -468,7 +494,7 @@ Make it fun and modern. No markdown formatting.`
         const previousGuessText = allPreviousGuesses.length > 0 ? 
           `\n\nALREADY GUESSED (do NOT repeat): ${allPreviousGuesses.join(', ')}` : '';
         
-        const prompt = `You are playing Family Feud. The question is: "${question.question}"
+        const prompt = `You are playing AI Feud. The question is: "${question.question}"
 
 Correctly guessed answers (on the board): ${revealedAnswerTexts.length > 0 ? revealedAnswerTexts.join(', ') : 'None'}${previousGuessText}
 
@@ -671,7 +697,7 @@ Reply with ONLY your answer. No explanations.`;
         <div className="flex items-center justify-center h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
-            <p>Generating Family Feud question...</p>
+            <p>Generating AI Feud question...</p>
           </div>
         </div>
       </div>
@@ -716,7 +742,7 @@ Reply with ONLY your answer. No explanations.`;
                 <span>Back to Home</span>
               </button>
             )}
-            <h1 className="text-2xl font-bold">🎮 Family Feud Game</h1>
+            <h1 className="text-2xl font-bold">🎮 AI Feud Game</h1>
           </div>
           <button
             onClick={onToggleTheme}
