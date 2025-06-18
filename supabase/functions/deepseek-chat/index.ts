@@ -33,7 +33,9 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🚀 Edge Function called');
+    console.log('🚀 DeepSeek Edge Function called at:', new Date().toISOString());
+    console.log('📝 Request method:', req.method);
+    console.log('📝 Request headers:', Object.fromEntries(req.headers.entries()));
     
     // Get authorization header or apikey for anonymous users
     const authHeader = req.headers.get('Authorization')
@@ -70,7 +72,19 @@ serve(async (req) => {
       user = authUser;
       console.log('✅ User authenticated:', user.email);
 
+      // First, sync user subscription tier from Stripe data
+      console.log('🔄 Syncing user subscription tier...');
+      try {
+        const { data: syncResult, error: syncError } = await supabaseAdmin
+          .rpc('sync_all_user_subscription_tiers');
+        console.log('✅ Subscription sync result:', syncResult);
+      } catch (syncError) {
+        console.warn('⚠️ Failed to sync subscription tiers:', syncError);
+        // Continue anyway - don't block the chat if sync fails
+      }
+
       // Check user's message limit using admin client
+      console.log('📊 Fetching user data for:', user.id);
       const { data: userDataResult, error: userDataError } = await supabaseAdmin
         .from('users')
         .select('message_count, message_limit, subscription_tier')
@@ -78,6 +92,7 @@ serve(async (req) => {
         .single()
 
       if (userDataError) {
+        console.error('❌ Failed to fetch user data:', userDataError);
         return new Response(
           JSON.stringify({ error: 'Failed to fetch user data' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -85,6 +100,11 @@ serve(async (req) => {
       }
 
       userData = userDataResult;
+      console.log('📊 User data:', { 
+        messageCount: userData.message_count, 
+        messageLimit: userData.message_limit, 
+        subscriptionTier: userData.subscription_tier 
+      });
 
       // Check if user has exceeded message limit
       if (userData.message_count >= userData.message_limit) {
@@ -120,7 +140,9 @@ serve(async (req) => {
     }
 
     // Parse request body
+    console.log('📥 Parsing request body...');
     const { messages, model, conversationId, stream: enableStreaming = true }: ChatRequest = await req.json()
+    console.log('📥 Parsed request:', { messageCount: messages?.length, model, conversationId, enableStreaming });
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(
@@ -174,6 +196,7 @@ serve(async (req) => {
     
     let deepSeekResponse;
     try {
+      console.log('📡 Sending request to DeepSeek API...');
       deepSeekResponse = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
         method: 'POST',
         headers: {
@@ -190,6 +213,7 @@ serve(async (req) => {
         signal: controller.signal
       });
       clearTimeout(timeoutId);
+      console.log('📡 DeepSeek API request completed');
     } catch (fetchError) {
       clearTimeout(timeoutId);
       console.error('❌ DeepSeek API fetch error:', fetchError);
@@ -224,6 +248,7 @@ serve(async (req) => {
 
     // Increment user's message count using admin client (only for authenticated users)
     if (!isAnonymous && user && userData) {
+      console.log('📊 Incrementing user message count...');
       const { error: incrementError } = await supabaseAdmin
         .from('users')
         .update({ 
@@ -234,6 +259,8 @@ serve(async (req) => {
 
       if (incrementError) {
         console.error('Failed to increment message count:', incrementError)
+      } else {
+        console.log('✅ Message count incremented successfully');
       }
     }
 
@@ -265,8 +292,10 @@ serve(async (req) => {
     }
 
     // Set up streaming response
+    console.log('🌊 Setting up streaming response...');
     const stream = new ReadableStream({
       async start(controller) {
+        console.log('🌊 Stream controller started');
         const reader = deepSeekResponse.body?.getReader()
         const decoder = new TextDecoder()
         let fullResponse = ''
@@ -274,12 +303,21 @@ serve(async (req) => {
         let streamStartTimeout = setTimeout(() => {
           if (!hasStartedStreaming) {
             console.error('❌ DeepSeek streaming did not start within 10s');
-            controller.error(new Error('DeepSeek streaming did not start binnen 10 seconden. Probeer het opnieuw.'));
+            try {
+              controller.error(new Error('DeepSeek streaming did not start binnen 10 seconden. Probeer het opnieuw.'));
+            } catch (e) {
+              console.warn('Controller already closed or errored');
+            }
           }
         }, 10000);
 
         if (!reader) {
-          controller.error(new Error('No reader available'))
+          console.error('❌ No reader available from DeepSeek response');
+          try {
+            controller.error(new Error('No reader available'))
+          } catch (e) {
+            console.warn('Controller already closed or errored');
+          }
           return
         }
 
@@ -316,7 +354,12 @@ serve(async (req) => {
                   
                   // Send the chunk to client
                   const sseData = `data: ${JSON.stringify({ content, type: 'chunk' })}\n\n`
-                  controller.enqueue(new TextEncoder().encode(sseData))
+                  try {
+                    controller.enqueue(new TextEncoder().encode(sseData))
+                  } catch (e) {
+                    console.warn('Failed to enqueue chunk:', e);
+                    break;
+                  }
                 }
               } catch (parseError) {
                 console.warn('Failed to parse streaming chunk:', parseError)
@@ -325,17 +368,27 @@ serve(async (req) => {
             }
           }
 
+          // Clear timeout since we're done
+          clearTimeout(streamStartTimeout);
+
           // Validate the response
           if (!hasStartedStreaming) {
-            clearTimeout(streamStartTimeout);
             console.error('No streaming data received from DeepSeek API');
-            controller.error(new Error('No streaming data received from AI service'));
+            try {
+              controller.error(new Error('No streaming data received from AI service'));
+            } catch (e) {
+              console.warn('Controller already closed or errored');
+            }
             return;
           }
 
           if (!fullResponse || fullResponse.trim() === '') {
             console.error('Empty response received from DeepSeek API');
-            controller.error(new Error('Empty response received from AI service'));
+            try {
+              controller.error(new Error('Empty response received from AI service'));
+            } catch (e) {
+              console.warn('Controller already closed or errored');
+            }
             return;
           }
 
@@ -355,18 +408,33 @@ serve(async (req) => {
           }
           
           const completionData = `data: ${JSON.stringify(completionPayload)}\n\n`
-          controller.enqueue(new TextEncoder().encode(completionData))
-          controller.close()
+          try {
+            controller.enqueue(new TextEncoder().encode(completionData))
+            controller.close()
+            console.log('✅ Stream completed successfully');
+          } catch (e) {
+            console.warn('Failed to send completion or close controller:', e);
+          }
 
         } catch (error) {
           console.error('Streaming error:', error)
-          controller.error(error)
+          clearTimeout(streamStartTimeout);
+          try {
+            controller.error(error)
+          } catch (e) {
+            console.warn('Controller already closed or errored');
+          }
         } finally {
-          reader.releaseLock()
+          try {
+            reader.releaseLock()
+          } catch (e) {
+            console.warn('Failed to release reader lock:', e);
+          }
         }
       }
     })
 
+    console.log('🌊 Returning streaming response');
     return new Response(stream, {
       headers: {
         ...corsHeaders,
@@ -379,7 +447,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Edge function error:', error)
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: 'Internal server error', details: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
