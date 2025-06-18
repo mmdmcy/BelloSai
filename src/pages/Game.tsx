@@ -41,7 +41,7 @@ function GameComponent({ isDark, customization, onToggleTheme, onBackToHome }: G
   const [maxStrikes] = useState(3);
   const [aiPreviousGuesses, setAiPreviousGuesses] = useState<string[]>([]);
   const [gameLog, setGameLog] = useState<string[]>([]);
-  const [rateLimitMode, setRateLimitMode] = useState(false);
+
 
   // Generate question on load
   useEffect(() => {
@@ -55,6 +55,8 @@ function GameComponent({ isDark, customization, onToggleTheme, onBackToHome }: G
       setGameStatus('finished');
     }
   }, [revealedAnswers, question, playerStrikes, aiStrikes, maxStrikes]);
+
+
 
   // Clear last guesses feedback after 6 seconds (only the temporary feedback, not the board)
   useEffect(() => {
@@ -88,7 +90,7 @@ function GameComponent({ isDark, customization, onToggleTheme, onBackToHome }: G
     setAiStrikes(0);
     setAiPreviousGuesses([]);
     setGameLog([]);
-    setRateLimitMode(false);
+
     setTurn('player');
     
     try {
@@ -375,10 +377,22 @@ Make it fun and modern. No markdown formatting.`
     const guess = playerGuess.trim();
     const matchResult = checkAnswerMatch(guess, question.answers, revealedAnswers);
 
-          if (matchResult) {
+
+
+    if (matchResult) {
         // Correct guess
-        const newRevealed = [...revealedAnswers, matchResult.answerIndex];
-        setRevealedAnswers(newRevealed);
+        setRevealedAnswers(prevRevealed => {
+          const newRevealed = [...prevRevealed, matchResult.answerIndex];
+          
+          // Check if all answers revealed
+          if (newRevealed.length === question.answers.length) {
+            setGameEnded(true);
+            setGameStatus('finished');
+          }
+          
+          return newRevealed;
+        });
+        
         setPlayerScore(prev => prev + question.answers[matchResult.answerIndex].points);
         setLastPlayerGuess({
           text: guess,
@@ -388,13 +402,6 @@ Make it fun and modern. No markdown formatting.`
         });
         setGameLog(prev => [...prev, `Player: "${guess}" → ✅ "${matchResult.matchedText}" (${question.answers[matchResult.answerIndex].points} pts)`]);
         setPlayerGuess('');
-        
-        // Check if all answers revealed
-        if (newRevealed.length === question.answers.length) {
-          setGameEnded(true);
-          setGameStatus('finished');
-          return;
-        }
         
         // Always switch to AI turn after player guess (correct or wrong)
         setTurn('ai');
@@ -439,44 +446,7 @@ Make it fun and modern. No markdown formatting.`
 
     setAiThinking(true);
 
-    // If we're in rate limit mode, use simple offline AI
-    if (rateLimitMode) {
-      console.log('Using offline AI mode due to rate limits...');
-      
-      const availableAnswers = question.answers
-        .map((answer, index) => ({ answer, index }))
-        .filter(({ index }) => !revealedAnswers.includes(index));
-      
-      if (availableAnswers.length > 0) {
-        // Simple AI: pick a random answer (they're all correct)
-        const randomChoice = availableAnswers[Math.floor(Math.random() * availableAnswers.length)];
-        const guess = randomChoice.answer.text;
-        
-        setLastAiGuess({
-          text: guess,
-          correct: true,
-          points: randomChoice.answer.points,
-          matchedAnswer: guess
-        });
-        
-        const newRevealed = [...revealedAnswers, randomChoice.index];
-        setRevealedAnswers(newRevealed);
-        setAiScore(prev => prev + randomChoice.answer.points);
-        setGameLog(prev => [...prev, `AI (offline): "${guess}" → ✅ (${randomChoice.answer.points} pts)`]);
-        
-        if (newRevealed.length === question.answers.length) {
-          setGameEnded(true);
-          setGameStatus('finished');
-        } else {
-          setTurn('player');
-        }
-      } else {
-        setTurn('player');
-      }
-      
-      setAiThinking(false);
-      return;
-    }
+
 
     try {
       const availableAnswers = question.answers
@@ -505,30 +475,18 @@ Reply with ONLY your answer. No explanations.`;
       console.log('Sending AI prompt:', prompt);
       
       let response;
-      let retries = 0;
-      const maxRetries = 2;
       
-              while (retries <= maxRetries) {
-          try {
-            // Use shorter timeout and add delay between requests to prevent rate limits
-            const timeoutPromise = new Promise<never>((_, reject) => {
-              setTimeout(() => reject(new Error('AI timeout')), 8000);
-            });
-            
-            const responsePromise = sendChatMessage([{ type: 'user', content: prompt }], 'DeepSeek-V3');
-            response = await Promise.race([responsePromise, timeoutPromise]);
-            break;
-          } catch (error) {
-            retries++;
-            console.log(`AI request failed, attempt ${retries}/${maxRetries + 1}:`, error);
-            
-            if (retries > maxRetries) {
-              throw error;
-            }
-            
-            // Longer delay between retries to prevent rate limiting
-            await new Promise(resolve => setTimeout(resolve, 5000));
-          }
+              // Just try once with a reasonable timeout - no complex retry logic
+        try {
+          const timeoutPromise = new Promise<never>((_, reject) => {
+            setTimeout(() => reject(new Error('AI timeout')), 30000); // 30 seconds
+          });
+          
+          const responsePromise = sendChatMessage([{ type: 'user', content: prompt }], 'DeepSeek-V3');
+          response = await Promise.race([responsePromise, timeoutPromise]);
+        } catch (error) {
+          console.log('AI request failed:', error);
+          throw error;
         }
       
       console.log('AI Response:', response);
@@ -583,8 +541,22 @@ Reply with ONLY your answer. No explanations.`;
 
               if (matchResult) {
           // AI correct
-          const newRevealed = [...revealedAnswers, matchResult.answerIndex];
-          setRevealedAnswers(newRevealed);
+          setRevealedAnswers(prevRevealed => {
+            const newRevealed = [...prevRevealed, matchResult.answerIndex];
+            
+            // Check if all answers revealed
+            if (newRevealed.length === question.answers.length) {
+              setGameEnded(true);
+              setGameStatus('finished');
+              setAiThinking(false);
+            } else {
+              // Always switch to player turn after AI guess (correct or wrong) - no more back-to-back AI turns
+              setTurn('player');
+            }
+            
+            return newRevealed;
+          });
+          
           setAiScore(prev => prev + question.answers[matchResult.answerIndex].points);
           setLastAiGuess({
             text: guess,
@@ -593,17 +565,6 @@ Reply with ONLY your answer. No explanations.`;
             matchedAnswer: matchResult.matchedText
           });
           setGameLog(prev => [...prev, `AI: "${guess}" → ✅ "${matchResult.matchedText}" (${question.answers[matchResult.answerIndex].points} pts)`]);
-          
-          // Check if all answers revealed
-          if (newRevealed.length === question.answers.length) {
-            setGameEnded(true);
-            setGameStatus('finished');
-            setAiThinking(false);
-            return;
-          }
-          
-          // Always switch to player turn after AI guess (correct or wrong) - no more back-to-back AI turns
-          setTurn('player');
       } else {
         // AI wrong
         const newStrikes = aiStrikes + 1;
@@ -627,64 +588,20 @@ Reply with ONLY your answer. No explanations.`;
     } catch (error) {
       console.error('AI turn failed:', error);
       
-      // Check if it's a rate limit error
-      const isRateLimit = error instanceof Error && (
-        error.message.includes('rate limit') || 
-        error.message.includes('429') ||
-        error.message.includes('maximum aantal verzoeken')
-      );
+      // Just give AI a strike and continue - no more fallback modes
+      const newStrikes = aiStrikes + 1;
+      setAiStrikes(newStrikes);
+      setLastAiGuess({
+        text: "AI couldn't respond in time",
+        correct: false
+      });
+      setGameLog(prev => [...prev, `AI: timeout → ❌ (Strike ${newStrikes}/${maxStrikes})`]);
       
-      if (isRateLimit) {
-        // Switch to rate limit mode - use simple AI without API calls
-        setRateLimitMode(true);
-        console.log('Rate limit detected, switching to offline AI mode...');
-        
-        // Use simple fallback AI that picks random unrevealed answers
-        const availableAnswers = question.answers
-          .map((answer, index) => ({ answer, index }))
-          .filter(({ index }) => !revealedAnswers.includes(index));
-        
-        if (availableAnswers.length > 0) {
-          const randomChoice = availableAnswers[Math.floor(Math.random() * availableAnswers.length)];
-          const guess = randomChoice.answer.text;
-          
-          setLastAiGuess({
-            text: guess,
-            correct: true,
-            points: randomChoice.answer.points,
-            matchedAnswer: guess
-          });
-          
-          const newRevealed = [...revealedAnswers, randomChoice.index];
-          setRevealedAnswers(newRevealed);
-          setAiScore(prev => prev + randomChoice.answer.points);
-          setGameLog(prev => [...prev, `AI (offline): "${guess}" → ✅ (${randomChoice.answer.points} pts)`]);
-          
-          if (newRevealed.length === question.answers.length) {
-            setGameEnded(true);
-            setGameStatus('finished');
-            setAiThinking(false);
-            return;
-          }
-        }
-        
-        setTurn('player');
+      if (newStrikes >= maxStrikes) {
+        setGameEnded(true);
+        setGameStatus('finished');
       } else {
-        // For other errors (timeout, etc.), give AI a strike
-        const newStrikes = aiStrikes + 1;
-        setAiStrikes(newStrikes);
-        setLastAiGuess({
-          text: "AI couldn't think of an answer",
-          correct: false
-        });
-        setGameLog(prev => [...prev, `AI: timed out → ❌ (Strike ${newStrikes}/${maxStrikes})`]);
-        
-        if (newStrikes >= maxStrikes) {
-          setGameEnded(true);
-          setGameStatus('finished');
-        } else {
-          setTurn('player');
-        }
+        setTurn('player');
       }
     } finally {
       setAiThinking(false);
@@ -791,28 +708,32 @@ Reply with ONLY your answer. No explanations.`;
           
           {/* Answer Board */}
           <div className="grid gap-3 max-w-2xl mx-auto">
-            {question.answers.map((answer, index) => (
-              <div 
-                key={index}
-                className={`flex justify-between items-center p-4 rounded-lg border-2 transition-all ${
-                  revealedAnswers.includes(index)
-                    ? 'bg-green-100 border-green-400 text-green-800 transform scale-105'
-                    : gameEnded
-                    ? 'bg-gray-100 border-gray-300 text-gray-600'
-                    : 'bg-gray-50 border-gray-200 text-gray-400'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-gray-500">#{index + 1}</span>
-                                  <span className="font-medium">
-                  {revealedAnswers.includes(index) ? answer.text : gameEnded ? answer.text : '???'}
-                </span>
-              </div>
-              <span className="font-bold text-lg">
-                {revealedAnswers.includes(index) ? answer.points : gameEnded ? answer.points : '??'}
-              </span>
-              </div>
-            ))}
+            {question.answers.map((answer, index) => {
+              const isRevealed = revealedAnswers.includes(index);
+              
+              return (
+                <div 
+                  key={index}
+                  className={`flex justify-between items-center p-4 rounded-lg border-2 transition-all ${
+                    isRevealed
+                      ? 'bg-green-100 border-green-400 text-green-800 transform scale-105'
+                      : gameEnded
+                      ? 'bg-gray-100 border-gray-300 text-gray-600'
+                      : 'bg-gray-50 border-gray-200 text-gray-400'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-bold text-gray-500">#{index + 1}</span>
+                    <span className="font-medium">
+                      {isRevealed ? answer.text : gameEnded ? answer.text : '???'}
+                    </span>
+                  </div>
+                  <span className="font-bold text-lg">
+                    {isRevealed ? answer.points : gameEnded ? answer.points : '??'}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
