@@ -350,4 +350,90 @@ export class StripeService {
       }
     }
   }
+
+  /**
+   * Debug: Manually sync subscription from Stripe (for troubleshooting)
+   */
+  static async debugSyncSubscription(): Promise<void> {
+    try {
+      console.log('🔧 [StripeService] Starting manual subscription sync...')
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.access_token) {
+        throw new Error('User not authenticated')
+      }
+
+      // Call the verify session function to force a sync
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-verify-session`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            // We'll use a dummy session ID to trigger a manual sync
+            session_id: 'manual_sync'
+          })
+        }
+      )
+
+      const result = await response.json()
+      console.log('🔧 [StripeService] Manual sync result:', result)
+    } catch (error) {
+      console.error('❌ [StripeService] Manual sync failed:', error)
+    }
+  }
+
+  /**
+   * Force refresh subscription data from Stripe
+   */
+  static async forceRefreshSubscription(): Promise<{
+    success: boolean
+    hasActiveSubscription: boolean
+    message: string
+  }> {
+    try {
+      console.log('🔧 [StripeService] Force refreshing subscription from Stripe...')
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.access_token) {
+        throw new Error('User not authenticated')
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-sync-subscription`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      )
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('❌ [StripeService] Sync failed:', errorText)
+        throw new Error(`Sync failed: ${response.status}`)
+      }
+
+      const result = await response.json()
+      console.log('✅ [StripeService] Sync result:', result)
+      
+      return {
+        success: result.success,
+        hasActiveSubscription: result.hasActiveSubscription || false,
+        message: result.message || 'Subscription synced'
+      }
+    } catch (error) {
+      console.error('❌ [StripeService] Force refresh failed:', error)
+      return {
+        success: false,
+        hasActiveSubscription: false,
+        message: 'Failed to sync subscription'
+      }
+    }
+  }
 } 
