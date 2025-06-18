@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { StripeService, type StripeUserSubscription, type StripeCustomer } from '../lib/stripeService'
 import { useAuth } from '../contexts/AuthContext'
+import React from 'react'
 
 interface UseSubscriptionReturn {
   subscription: StripeUserSubscription | null
@@ -23,30 +24,82 @@ export function useSubscription(): UseSubscriptionReturn {
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Check environment on mount
+  React.useEffect(() => {
+    StripeService.checkEnvironment()
+  }, [])
+
+  // Add a failsafe to prevent infinite loading
+  React.useEffect(() => {
+    const failsafeTimeout = setTimeout(() => {
+      if (loading) {
+        console.warn('⚠️ [useSubscription] Failsafe timeout triggered - forcing loading to false')
+        setLoading(false)
+        setError('Unable to load subscription data - please refresh the page')
+      }
+    }, 15000) // 15 second failsafe
+
+    return () => clearTimeout(failsafeTimeout)
+  }, [loading])
+
+  // Add timeout for auth readiness
+  React.useEffect(() => {
+    const authTimeout = setTimeout(() => {
+      if (!isAuthReady && loading) {
+        console.warn('⚠️ [useSubscription] Auth readiness timeout - proceeding without auth')
+        setLoading(false)
+        setError('Authentication timeout - please refresh the page')
+      }
+    }, 8000) // 8 second timeout for auth
+
+    return () => clearTimeout(authTimeout)
+  }, [isAuthReady, loading])
+
   // Fetch subscription data
   const fetchSubscriptionData = useCallback(async () => {
+    console.log('🔄 [useSubscription] Starting fetchSubscriptionData', { user: !!user, isAuthReady })
+    
     if (!user || !isAuthReady) {
+      console.log('🔄 [useSubscription] User not ready, setting loading to false', { user: !!user, isAuthReady })
       setLoading(false)
       return
     }
 
     try {
+      console.log('🔄 [useSubscription] Setting loading to true and fetching data...')
       setLoading(true)
       setError(null)
 
-      const [subscriptionData, customerData, hasActive] = await Promise.all([
+      // Add a timeout to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Subscription data fetch timeout')), 10000) // 10 second timeout
+      })
+
+      const dataPromise = Promise.all([
         StripeService.getUserSubscription(),
         StripeService.getStripeCustomer(),
         StripeService.hasActiveSubscription()
       ])
 
+      const [subscriptionData, customerData, hasActive] = await Promise.race([
+        dataPromise,
+        timeoutPromise
+      ]) as [any, any, boolean]
+
+      console.log('✅ [useSubscription] Data fetched successfully:', { 
+        hasSubscription: !!subscriptionData, 
+        hasCustomer: !!customerData, 
+        hasActive 
+      })
+
       setSubscription(subscriptionData)
       setCustomer(customerData)
       setHasActiveSubscription(hasActive)
     } catch (err) {
-      console.error('Error fetching subscription data:', err)
+      console.error('❌ [useSubscription] Error fetching subscription data:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch subscription data')
     } finally {
+      console.log('✅ [useSubscription] Setting loading to false')
       setLoading(false)
     }
   }, [user, isAuthReady])

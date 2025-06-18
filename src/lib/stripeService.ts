@@ -44,17 +44,45 @@ export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
 
 export class StripeService {
   /**
+   * Check environment configuration
+   */
+  static checkEnvironment(): void {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+    
+    console.log('🔍 [StripeService] Environment check:', {
+      hasSupabaseUrl: !!supabaseUrl,
+      hasSupabaseAnonKey: !!supabaseAnonKey,
+      supabaseUrlPreview: supabaseUrl ? supabaseUrl.substring(0, 30) + '...' : 'missing'
+    })
+    
+    if (!supabaseUrl) {
+      console.error('❌ [StripeService] VITE_SUPABASE_URL is not configured')
+    }
+    
+    if (!supabaseAnonKey) {
+      console.error('❌ [StripeService] VITE_SUPABASE_ANON_KEY is not configured')
+    }
+  }
+
+  /**
    * Maak een checkout sessie voor een abonnement
    */
   static async createCheckoutSession(priceId: string): Promise<void> {
     try {
+      console.log('🔄 [StripeService] Creating checkout session for price:', priceId)
       const { data: { session } } = await supabase.auth.getSession()
       
       if (!session?.access_token) {
         throw new Error('User not authenticated')
       }
 
-      const response = await fetch(
+      // Create timeout promise
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Checkout session creation timeout')), 10000) // 10 second timeout
+      })
+
+      const fetchPromise = fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`,
         {
           method: 'POST',
@@ -70,14 +98,19 @@ export class StripeService {
         }
       )
 
+      const response = await Promise.race([fetchPromise, timeoutPromise]) as Response
+
       if (!response.ok) {
-        throw new Error('Failed to create checkout session')
+        const errorText = await response.text()
+        console.error('❌ [StripeService] Checkout session creation failed:', errorText)
+        throw new Error(`Failed to create checkout session: ${response.status} ${errorText}`)
       }
 
       const { url } = await response.json()
+      console.log('✅ [StripeService] Checkout session created, redirecting to:', url)
       window.location.assign(url)
     } catch (error) {
-      console.error('Error creating checkout session:', error)
+      console.error('❌ [StripeService] Error creating checkout session:', error)
       throw error
     }
   }
@@ -87,29 +120,30 @@ export class StripeService {
    */
   static async getUserSubscription(): Promise<StripeUserSubscription | null> {
     try {
+      console.log('🔄 [StripeService] Getting user subscription...')
       const { data: { user } } = await supabase.auth.getUser()
       
       if (!user) {
+        console.warn('⚠️ [StripeService] No user found for subscription check')
         throw new Error('User not authenticated')
       }
 
+      console.log('🔄 [StripeService] Querying stripe_user_subscriptions for user:', user.id)
       const { data, error } = await supabase
         .from('stripe_user_subscriptions')
         .select('*')
-        .single()
+        .eq('user_id', user.id)
+        .maybeSingle()
 
       if (error) {
-        // Als er geen subscription is, is dat geen error
-        if (error.code === 'PGRST116') {
-          return null
-        }
-        console.error('Error fetching user subscription:', error)
+        console.error('❌ [StripeService] Error fetching user subscription:', error)
         throw error
       }
 
+      console.log('✅ [StripeService] Subscription data retrieved:', data ? 'Found subscription' : 'No subscription')
       return data
     } catch (error) {
-      console.error('Failed to fetch user subscription:', error)
+      console.error('❌ [StripeService] Failed to fetch user subscription:', error)
       return null
     }
   }
@@ -119,10 +153,17 @@ export class StripeService {
    */
   static async hasActiveSubscription(): Promise<boolean> {
     try {
+      console.log('🔄 [StripeService] Checking for active subscription...')
       const subscription = await this.getUserSubscription()
-      return subscription?.subscription_status === 'active' || false
+      const isActive = subscription?.subscription_status === 'active' || false
+      console.log('✅ [StripeService] Active subscription check result:', { 
+        hasSubscription: !!subscription, 
+        status: subscription?.subscription_status,
+        isActive 
+      })
+      return isActive
     } catch (error) {
-      console.error('Failed to check active subscription:', error)
+      console.error('❌ [StripeService] Failed to check active subscription:', error)
       return false
     }
   }
@@ -132,30 +173,31 @@ export class StripeService {
    */
   static async getStripeCustomer(): Promise<StripeCustomer | null> {
     try {
+      console.log('🔄 [StripeService] Getting stripe customer...')
       const { data: { user } } = await supabase.auth.getUser()
       
       if (!user) {
+        console.warn('⚠️ [StripeService] No user found for customer check')
         throw new Error('User not authenticated')
       }
 
+      console.log('🔄 [StripeService] Querying stripe_customers for user:', user.id)
       const { data, error } = await supabase
         .from('stripe_customers')
         .select('*')
         .eq('user_id', user.id)
         .is('deleted_at', null)
-        .single()
+        .maybeSingle()
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          return null
-        }
-        console.error('Error fetching stripe customer:', error)
+        console.error('❌ [StripeService] Error fetching stripe customer:', error)
         throw error
       }
 
+      console.log('✅ [StripeService] Customer data retrieved:', data ? 'Found customer' : 'No customer')
       return data
     } catch (error) {
-      console.error('Failed to fetch stripe customer:', error)
+      console.error('❌ [StripeService] Failed to fetch stripe customer:', error)
       return null
     }
   }
