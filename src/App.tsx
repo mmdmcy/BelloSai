@@ -2008,40 +2008,135 @@ function App() {
                 </div>
               )}
 
-              {/* Input Box */}
+              {/* Input Box - Only shows input controls */}
               {elementKey === 'inputBox' && (
                 <div className={`h-full w-full ${isDark ? 'bg-gray-900' : 'bg-purple-50'} p-4`}>
-                  {messages.length === 0 ? (
-                    <MainContent 
-                      isDark={isDark} 
-                      onSendMessage={sendMessage}
-                      selectedModel={selectedModel}
-                      onModelChange={setSelectedModel}
-                      availableModels={availableModels}
-                      customization={customization}
-                      isLoggedIn={!!user}
-                      onLoginClick={() => setShowLoginModal(true)}
-                    />
-                  ) : (
-                    <ChatView 
-                      isDark={isDark} 
-                      messages={messages}
-                      onSendMessage={sendMessage}
-                      selectedModel={selectedModel}
-                      onModelChange={setSelectedModel}
-                      availableModels={availableModels}
-                      inputOnly={true}
-                      customization={customization}
-                      isGenerating={isGenerating}
-                      conversationId={currentConversationId || undefined}
-                      conversationTitle={conversationTitle}
-                      isLoggedIn={!!user}
-                      onLoginClick={() => setShowLoginModal(true)}
-                      error={chatError}
-                      setError={setChatError}
-                      onRegenerateResponse={regenerateResponse}
-                    />
-                  )}
+                  <div className="h-full flex items-end">
+                    <div className="w-full">
+                      {/* Anonymous Usage Indicator */}
+                      {!user && (
+                        <div className={`mb-4 p-3 rounded-lg ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-orange-50 border-orange-200'} border`}>
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${isDark ? 'bg-orange-400' : 'bg-orange-500'}`}></div>
+                            <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-orange-700'}`}>
+                              Anonymous mode - limited messages
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Terms and Privacy Links */}
+                      <p 
+                        className={`text-xs text-center mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
+                        style={{ fontFamily: customization.fontFamily }}
+                      >
+                        Make sure you agree to our{' '}
+                        <a 
+                          href="#" 
+                          className={`underline hover:no-underline ${isDark ? 'text-gray-300' : ''}`}
+                          style={{ color: isDark ? undefined : customization.primaryColor }}
+                        >
+                          Terms
+                        </a>
+                        {' '}and our{' '}
+                        <a 
+                          href="#" 
+                          className={`underline hover:no-underline ${isDark ? 'text-gray-300' : ''}`}
+                          style={{ color: isDark ? undefined : customization.primaryColor }}
+                        >
+                          Privacy Policy
+                        </a>
+                      </p>
+
+                      <form onSubmit={(e) => {
+                        e.preventDefault();
+                        const input = e.currentTarget.querySelector('textarea') as HTMLTextAreaElement;
+                        if (input?.value.trim()) {
+                          sendMessage(input.value);
+                          input.value = '';
+                        }
+                      }}>
+                        {/* Message Input Container */}
+                        <div className={`relative rounded-2xl border ${
+                          isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-purple-200'
+                        } shadow-sm`}>
+                          <textarea
+                            placeholder="Type your message here..."
+                            className={`w-full px-6 py-4 pr-32 rounded-2xl resize-none focus:outline-none min-h-[60px] max-h-32 ${
+                              isDark 
+                                ? 'bg-gray-700 text-white placeholder-gray-400' 
+                                : 'bg-white text-gray-900 placeholder-gray-500'
+                            }`}
+                            style={{ fontFamily: customization.fontFamily }}
+                            rows={1}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && !e.shiftKey && e.currentTarget.value.trim()) {
+                                e.preventDefault();
+                                sendMessage(e.currentTarget.value);
+                                e.currentTarget.value = '';
+                              }
+                            }}
+                          />
+                          
+                          {/* Bottom Controls */}
+                          <div className="flex items-center justify-between px-6 pb-4">
+                            <div className="flex items-center gap-4">
+                              {/* Model Selector */}
+                              <select
+                                value={selectedModel}
+                                onChange={(e) => setSelectedModel(e.target.value)}
+                                className={`text-xs px-2 py-1 rounded-md border ${
+                                  isDark 
+                                    ? 'bg-gray-600 border-gray-500 text-gray-300' 
+                                    : 'bg-white border-gray-300 text-gray-700'
+                                }`}
+                                style={{ fontFamily: customization.fontFamily }}
+                              >
+                                {availableModels.map(model => (
+                                  <option key={model.code} value={model.code}>{model.name}</option>
+                                ))}
+                              </select>
+                              {/* Search Button */}
+                              <button 
+                                type="button"
+                                className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
+                                style={{ color: isDark ? undefined : customization.primaryColor }}
+                              >
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/>
+                                </svg>
+                              </button>
+                              {/* Attachment Button */}
+                              <button 
+                                type="button"
+                                className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
+                                style={{ color: isDark ? undefined : customization.primaryColor }}
+                              >
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M16.5,6V17.5A4,4 0 0,1 12.5,21.5A4,4 0 0,1 8.5,17.5V5A2.5,2.5 0 0,1 11,2.5A2.5,2.5 0 0,1 13.5,5V15.5A1,1 0 0,1 12.5,16.5A1,1 0 0,1 11.5,15.5V6H10V15.5A2.5,2.5 0 0,0 12.5,18A2.5,2.5 0 0,0 15,15.5V5A4,4 0 0,0 11,1A4,4 0 0,0 7,5V17.5A5.5,5.5 0 0,0 12.5,23A5.5,5.5 0 0,0 18,17.5V6H16.5Z"/>
+                                </svg>
+                              </button>
+                            </div>
+                            
+                            {/* Send Button */}
+                            <button 
+                              type="submit"
+                              className="text-white p-2.5 rounded-xl transition-colors hover:opacity-90"
+                              style={{ 
+                                background: customization.gradientEnabled 
+                                  ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                                  : customization.primaryColor 
+                              }}
+                            >
+                              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M4,12l1.41,1.41L11,7.83V20h2V7.83l5.58,5.59L20,12l-8-8L4,12z"/>
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
                 </div>
               )}
 
