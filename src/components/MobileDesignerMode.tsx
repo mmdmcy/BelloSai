@@ -174,24 +174,24 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
     <div className={`h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-100'}`}>
       {/* Header */}
       <div 
-        className="h-16 flex items-center justify-between px-4 text-white"
+        className="h-14 flex items-center justify-between px-2 text-white"
         style={{
           background: customization.gradientEnabled 
             ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
             : customization.primaryColor
         }}
       >
-        <div className="flex items-center gap-4">
-          <h1 className="text-xl font-bold">Mobile Designer</h1>
-          <span className="text-xs">Elements: {Object.keys(mobileLayout).length}</span>
-          {isResizing && <span className="text-xs bg-yellow-500 px-2 py-1 rounded">RESIZE MODE</span>}
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <h1 className="text-lg font-bold truncate">Mobile Designer</h1>
+          <span className="text-xs hidden sm:inline">Elements: {Object.keys(mobileLayout).length}</span>
+          {isResizing && <span className="text-xs bg-yellow-500 px-1 py-0.5 rounded">RESIZE</span>}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <select
             value={customization.selectedTheme}
             onChange={(e) => onApplyTheme?.(e.target.value)}
-            className="px-2 py-1 bg-white/20 text-white rounded text-sm border border-white/30"
+            className="px-1 py-1 bg-white/20 text-white rounded text-xs border border-white/30 max-w-20"
           >
             {AVAILABLE_THEMES.map((theme) => (
               <option key={theme.id} value={theme.id} className="text-black">
@@ -201,21 +201,23 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
           </select>
           <button
             onClick={resetLayout}
-            className="px-3 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg"
+            className="px-2 py-1 bg-white/20 hover:bg-white/30 text-white rounded text-xs"
+            title="Reset Layout"
           >
-            Reset
+            <RotateCcw className="w-4 h-4" />
           </button>
           <button
             onClick={onExitDesigner}
-            className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg"
+            className="px-2 py-1 bg-white/20 hover:bg-white/30 text-white rounded text-xs flex items-center gap-1"
           >
-            Exit
+            <Save className="w-4 h-4" />
+            <span className="hidden xs:inline">Save &</span> Exit
           </button>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div className="h-full bg-red-200 relative" style={{ height: 'calc(100vh - 64px)' }}>
+      <div className="h-full bg-red-200 relative" style={{ height: 'calc(100vh - 56px)' }}>
         
         {/* Instructions - moved to bottom left and made smaller */}
         <div className="absolute bottom-2 left-2 bg-black/80 text-white px-2 py-1 rounded text-xs z-50 max-w-40">
