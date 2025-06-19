@@ -34,6 +34,9 @@ type ModelProvider = 'DeepSeek' | 'Claude' | 'Mistral';
 
 // No timeouts - let AI work without any interruption!
 
+// Simple request lock to prevent concurrent requests
+let isRequestInProgress = false;
+
 /**
  * Get model provider based on model code
  */
@@ -57,16 +60,46 @@ export async function sendChatMessage(
   console.log('🎯 sendChatMessage function called');
   console.log('📥 Parameters:', { messages, model: modelCode, conversationId, onChunk: !!onChunk, retryCount });
   
-  let abortController: AbortController | null = null;
-
+  // Check for concurrent requests
+  if (isRequestInProgress) {
+    console.warn('⚠️ Another request is already in progress, waiting...');
+    // Wait a bit and retry
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    if (isRequestInProgress) {
+      console.error('❌ Request lock stuck, forcing reset');
+      isRequestInProgress = false; // Force reset the lock
+    }
+  }
+  
+  isRequestInProgress = true;
+  console.log('🔒 Request lock acquired');
+  
   try {
     console.log('🚀 Starting chat message request:', { messages, model: modelCode, conversationId });
     
-    // No timeouts - let AI work without interruption!
-    abortController = new AbortController();
+    // Get current session with error recovery and detailed logging
+    console.log('🔍 About to get session...');
+    let sessionResult;
+    try {
+      // Add a timeout only for auth operations (not AI requests)
+      console.log('⏱️ Starting session retrieval with 5s timeout...');
+      const authPromise = supabase.auth.getSession();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => {
+          console.error('⏰ Auth session timeout after 5 seconds');
+          reject(new Error('Auth timeout - session retrieval took too long'));
+        }, 5000)
+      );
+      
+      sessionResult = await Promise.race([authPromise, timeoutPromise]) as any;
+      console.log('✅ Session retrieval completed successfully');
+    } catch (sessionError) {
+      console.error('❌ Session retrieval failed:', sessionError);
+      // Continue with null session if auth fails - this ensures the request continues
+      sessionResult = { data: { session: null }, error: sessionError };
+    }
     
-    // Get current session with error recovery
-    let { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    let { data: { session }, error: sessionError } = sessionResult;
     
     console.log('🔍 Session check:', { session: !!session, error: sessionError });
 
@@ -147,8 +180,7 @@ export async function sendChatMessage(
         })),
         model: modelCode,
         conversationId
-      }),
-      signal: abortController.signal
+      })
     });
     console.log('✅ Fetch request completed, got response');
 
@@ -288,9 +320,8 @@ export async function sendChatMessage(
     
     throw error;
   } finally {
-    if (abortController) {
-      abortController.abort();
-    }
+    isRequestInProgress = false;
+    console.log('🔓 Request lock released');
   }
 }
 
