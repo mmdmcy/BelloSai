@@ -81,26 +81,40 @@ export default function Sidebar({
   // State for tracking if user has alt-tabbed and needs to refresh
   const [showRefreshPrompt, setShowRefreshPrompt] = useState(false);
   const [wasTabHidden, setWasTabHidden] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
 
   // Effect to track tab visibility changes (alt-tab detection)
   useEffect(() => {
+    // Mark that user has interacted after a short delay (prevents showing on initial load)
+    const interactionTimer = setTimeout(() => {
+      setHasInteracted(true);
+    }, 2000); // Wait 2 seconds after component mount
+
     const handleVisibilityChange = () => {
+      if (!hasInteracted) return; // Don't trigger during initial page load
+      
       if (document.hidden) {
         // User has switched away from the tab
         setWasTabHidden(true);
+        console.log('👁️ User switched away from tab');
       } else if (wasTabHidden) {
         // User has returned to the tab after being away
+        console.log('👁️ User returned to tab, showing refresh prompt');
         setShowRefreshPrompt(true);
       }
     };
 
     // Also listen for window focus/blur as backup
     const handleWindowBlur = () => {
+      if (!hasInteracted) return;
       setWasTabHidden(true);
+      console.log('👁️ Window lost focus');
     };
 
     const handleWindowFocus = () => {
+      if (!hasInteracted) return;
       if (wasTabHidden) {
+        console.log('👁️ Window gained focus after being hidden, showing refresh prompt');
         setShowRefreshPrompt(true);
       }
     };
@@ -110,11 +124,12 @@ export default function Sidebar({
     window.addEventListener('focus', handleWindowFocus);
 
     return () => {
+      clearTimeout(interactionTimer);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('blur', handleWindowBlur);
       window.removeEventListener('focus', handleWindowFocus);
     };
-  }, [wasTabHidden]);
+  }, [wasTabHidden, hasInteracted]);
 
 
   
@@ -211,16 +226,26 @@ export default function Sidebar({
       <div className="px-4 pb-4 flex-1 overflow-y-auto">
         {/* Refresh Prompt - shown when user returns after alt-tabbing (only for logged in users) */}
         {showRefreshPrompt && isLoggedIn && (
-          <div className={`mb-4 p-3 rounded-lg border ${
-            isDark 
-              ? 'bg-blue-900/30 border-blue-700 text-blue-200' 
-              : 'bg-blue-50 border-blue-200 text-blue-800'
-          }`}>
+          <div 
+            className={`mb-4 p-3 rounded-lg border cursor-pointer hover:opacity-80 transition-opacity ${
+              isDark 
+                ? 'bg-blue-900/30 border-blue-700 text-blue-200' 
+                : 'bg-blue-50 border-blue-200 text-blue-800'
+            }`}
+            onClick={() => {
+              setShowRefreshPrompt(false);
+              setWasTabHidden(false);
+            }}
+            title="Click to dismiss"
+          >
             <div className="flex items-start gap-2">
               <RefreshCw className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
                 <p className={`text-sm font-medium`} style={{ fontFamily: customization.fontFamily }}>
                   Please refresh the website to get up to date chat history conversations
+                </p>
+                <p className={`text-xs mt-1 opacity-70`} style={{ fontFamily: customization.fontFamily }}>
+                  Click to dismiss
                 </p>
               </div>
             </div>
