@@ -67,11 +67,11 @@ const AnimatedText: React.FC<{
     setAnimationStarted(false);
     setDisplayContent('');
     
-    // Start animation after a small delay
-    const startDelay = setTimeout(() => {
-      setAnimationStarted(true);
-      setDisplayContent(content);
-    }, 100);
+         // Start animation after a small delay
+     const startDelay = setTimeout(() => {
+       setAnimationStarted(true);
+       setDisplayContent(content);
+     }, 50);
     
     return () => clearTimeout(startDelay);
   }, [content]);
@@ -119,7 +119,7 @@ const AnimatedText: React.FC<{
                                      key={`${wordIndex}-${charIndexInWord}`}
                                      className="wave-char"
                                      style={{
-                                       animationDelay: `${currentCharIndex * 0.03}s`
+                                       animationDelay: `${currentCharIndex * 0.015}s`
                                      }}
                                    >
                                      {char}
@@ -129,9 +129,9 @@ const AnimatedText: React.FC<{
                                {wordIndex < words.length - 1 && (
                                  <span
                                    className="wave-char"
-                                   style={{
-                                     animationDelay: `${globalCharIndex++ * 0.03}s`
-                                   }}
+                                                                        style={{
+                                       animationDelay: `${globalCharIndex++ * 0.015}s`
+                                     }}
                                  >
                                    {' '}
                                  </span>
@@ -236,9 +236,9 @@ const AnimatedText: React.FC<{
           >
             {displayContent}
           </ReactMarkdown>
-        ) : (
-          <div className="min-h-[20px] animate-pulse bg-gray-200 dark:bg-gray-700 rounded" />
-        )}
+                 ) : (
+           <div className="invisible">Loading...</div>
+         )}
       </div>
     </div>
   );
