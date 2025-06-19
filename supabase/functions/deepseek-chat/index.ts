@@ -151,19 +151,40 @@ serve(async (req) => {
       }
     ];
 
-    // Optimized message conversion
+    // Safe message conversion with proper Unicode handling
     for (const msg of messages) {
+      let content = '';
+      
+      // Safely handle message content
+      try {
+        content = typeof msg.content === 'string' ? msg.content : String(msg.content || '');
+        
+        // Clean up problematic characters that can break JSON parsing
+        // Remove control characters but preserve Unicode emojis
+        content = content
+          .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control chars
+          .replace(/\uFEFF/g, '') // Remove BOM
+          .trim(); // Remove extra whitespace
+          
+        // Ensure we have valid UTF-8 by encoding and decoding
+        content = new TextDecoder().decode(new TextEncoder().encode(content));
+        
+      } catch (error) {
+        console.warn('⚠️ Failed to process message content:', error);
+        content = '[Message content could not be processed]';
+      }
+      
       if ('type' in msg) {
         // Old format for backward compatibility
         deepSeekMessages.push({
           role: msg.type === 'user' ? 'user' : 'assistant',
-          content: msg.content
+          content: content
         });
       } else {
         // New format with role directly
         deepSeekMessages.push({
           role: msg.role as 'user' | 'assistant',
-          content: msg.content
+          content: content
         });
       }
     }
@@ -207,7 +228,7 @@ serve(async (req) => {
           top_p: 0.95,
           frequency_penalty: 0.1,
           presence_penalty: 0.1
-        }),
+        }, null, 0), // Use proper JSON.stringify parameters to handle Unicode
         signal: controller.signal
       });
       clearTimeout(timeoutId);

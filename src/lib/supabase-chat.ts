@@ -141,7 +141,12 @@ export async function sendChatMessage(
       method: 'POST',
       headers: { ...authHeaders },
       body: JSON.stringify({
-        messages,
+        messages: messages.map(msg => ({
+          ...msg,
+          content: typeof msg.content === 'string' ? 
+            msg.content.replace(/[\u0000-\u001F\u007F-\u009F]/g, '').trim() : 
+            String(msg.content || '').replace(/[\u0000-\u001F\u007F-\u009F]/g, '').trim()
+        })),
         model: modelCode,
         conversationId
       }),
