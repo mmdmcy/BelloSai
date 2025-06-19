@@ -761,18 +761,39 @@ class ChatFeaturesService {
    * Get messages for a conversation
    */
   async getConversationMessages(conversationId: string) {
-    const maxRetries = 2;
+    const maxRetries = 3;
     let attempt = 0;
 
     while (attempt <= maxRetries) {
       try {
         console.log(`🔍 Getting messages for conversation: ${conversationId} (attempt ${attempt + 1})`);
         
-        const { data, error } = await supabase
+        // On retry attempts, force refresh the session to ensure clean auth state
+        if (attempt > 0) {
+          console.log(`🔄 Attempt ${attempt + 1}: Refreshing session before retry...`);
+          try {
+            await supabase.auth.refreshSession();
+            // Give a moment for the auth state to settle
+            await new Promise(resolve => setTimeout(resolve, 200));
+          } catch (refreshError) {
+            console.warn('⚠️ Session refresh failed, continuing with existing session:', refreshError);
+          }
+        }
+        
+        // Create a timeout promise to prevent hanging queries
+        const queryPromise = supabase
           .from('messages')
           .select('*')
           .eq('conversation_id', conversationId)
           .order('created_at', { ascending: true });
+          
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Query timeout after 8 seconds')), 8000)
+        );
+        
+        // Race the query against the timeout
+        const result = await Promise.race([queryPromise, timeoutPromise]) as any;
+        const { data, error } = result;
 
         if (error) {
           console.error('❌ Database error fetching messages:', error);
@@ -784,29 +805,31 @@ class ChatFeaturesService {
           });
           
           // If it's an auth error and we have retries left, try again
-          if ((error.message.includes('JWT') || error.message.includes('auth') || error.code === 'PGRST301') && attempt < maxRetries) {
-            console.warn(`⚠️ Auth error on attempt ${attempt + 1}, retrying...`);
+          if ((error.message.includes('JWT') || error.message.includes('auth') || error.code === 'PGRST301' || error.message.includes('permission')) && attempt < maxRetries) {
+            console.warn(`⚠️ Auth/permission error on attempt ${attempt + 1}, retrying...`);
             attempt++;
-            await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms before retry
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Longer wait for auth issues
             continue;
           }
           
+          console.error(`❌ Giving up after ${attempt + 1} attempts`);
           return []; // Return empty array instead of throwing
         }
         
         console.log('✅ Messages query successful:', data ? data.length : 0, 'messages');
         return data || [];
-      } catch (error) {
+      } catch (error: any) {
         console.error(`❌ ChatFeaturesService: Query failed on attempt ${attempt + 1}:`, error);
         
-        // If we have retries left and it might be a network/auth issue, try again
-        if (attempt < maxRetries) {
-          console.warn(`⚠️ Retrying query (attempt ${attempt + 2})...`);
+        // If it's a timeout error or auth issue and we have retries left, try again
+        if (attempt < maxRetries && (error.message?.includes('timeout') || error.message?.includes('JWT') || error.message?.includes('auth'))) {
+          console.warn(`⚠️ Retrying query (attempt ${attempt + 2}) after ${error.message?.includes('timeout') ? 'timeout' : 'error'}...`);
           attempt++;
-          await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms before retry
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
           continue;
         }
         
+        console.error(`❌ Final failure after ${attempt + 1} attempts`);
         return []; // Always return empty array on final failure
       }
     }
