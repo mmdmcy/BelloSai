@@ -138,6 +138,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
           console.log('✅ User signed out')
           // Clear any stored tokens on sign out
           localStorage.removeItem('bellosai-auth-token')
+          
+          // Also clear session cache
+          try {
+            const { clearSessionCache } = await import('../lib/supabase-chat')
+            clearSessionCache()
+          } catch (e) {
+            console.warn('⚠️ Could not clear session cache:', e)
+          }
         } else if (event === 'TOKEN_REFRESHED') {
           console.log('🔄 Token refreshed for user:', session?.user?.email)
         } else if (event === 'INITIAL_SESSION') {
@@ -240,6 +248,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signOut = async () => {
     try {
       console.log('🔄 Signing out...')
+      
+      // Clear session cache from supabase-chat service
+      const { clearSessionCache } = await import('../lib/supabase-chat')
+      clearSessionCache()
+      
       const { error } = await supabase.auth.signOut()
       if (error) {
         console.error('❌ Error signing out:', error)

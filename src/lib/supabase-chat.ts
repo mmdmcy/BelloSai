@@ -37,6 +37,11 @@ type ModelProvider = 'DeepSeek' | 'Claude' | 'Mistral';
 // Simple request lock to prevent concurrent requests
 let isRequestInProgress = false;
 
+// Session cache to avoid repeated auth calls
+let cachedSession: any = null;
+let sessionCacheTime = 0;
+const SESSION_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 /**
  * Get model provider based on model code
  */
@@ -77,17 +82,47 @@ export async function sendChatMessage(
   try {
     console.log('🚀 Starting chat message request:', { messages, model: modelCode, conversationId });
     
-    // Get current session with error recovery and detailed logging
+    // Get current session with caching to avoid repeated auth calls
     console.log('🔍 About to get session...');
     let sessionResult;
-    try {
-      console.log('⏱️ Getting session without any timeout...');
-      sessionResult = await supabase.auth.getSession();
-      console.log('✅ Session retrieval completed successfully');
-    } catch (sessionError) {
-      console.error('❌ Session retrieval failed:', sessionError);
-      // Continue with null session if auth fails - this ensures the request continues
-      sessionResult = { data: { session: null }, error: sessionError };
+    
+    // Check if we have a valid cached session
+    const now = Date.now();
+    if (cachedSession && (now - sessionCacheTime) < SESSION_CACHE_DURATION) {
+      console.log('✅ Using cached session');
+      sessionResult = { data: { session: cachedSession }, error: null };
+    } else {
+      try {
+        console.log('⏱️ Getting fresh session with 10s timeout...');
+        const authPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => {
+            console.warn('⏰ Session retrieval timeout after 10 seconds - continuing without auth');
+            reject(new Error('Session timeout'));
+          }, 10000) // 10 seconds is reasonable
+        );
+        
+        sessionResult = await Promise.race([authPromise, timeoutPromise]) as any;
+        
+        // Cache the session if successful
+        if (sessionResult && sessionResult.data && sessionResult.data.session) {
+          cachedSession = sessionResult.data.session;
+          sessionCacheTime = now;
+          console.log('✅ Session retrieved and cached');
+        } else {
+          // Clear cache if no session
+          cachedSession = null;
+          sessionCacheTime = 0;
+          console.log('✅ No session - cleared cache');
+        }
+      } catch (sessionError) {
+        console.error('❌ Session retrieval failed:', sessionError);
+        // Clear cache on error
+        cachedSession = null;
+        sessionCacheTime = 0;
+        // Continue with null session if auth fails - this ensures the request continues
+        sessionResult = { data: { session: null }, error: sessionError };
+      }
     }
     
     let { data: { session }, error: sessionError } = sessionResult;
@@ -300,7 +335,7 @@ export async function sendChatMessage(
     }
 
   } catch (error) {
-    console.error('Chat service error:', error);
+    console.error('❌ sendChatMessage error:', error);
     
     // Enhanced error handling for better UX
     if (error instanceof Error) {
@@ -311,6 +346,7 @@ export async function sendChatMessage(
     
     throw error;
   } finally {
+    // ALWAYS release the lock no matter what happens
     isRequestInProgress = false;
     console.log('🔓 Request lock released');
   }
@@ -360,5 +396,14 @@ export async function getMessageUsage(): Promise<{
 export async function canSendMessage(): Promise<boolean> {
   const usage = await getMessageUsage();
   return usage ? usage.messageCount < usage.messageLimit : false;
+}
+
+/**
+ * Clear session cache - useful when auth issues occur
+ */
+export function clearSessionCache(): void {
+  cachedSession = null;
+  sessionCacheTime = 0;
+  console.log('🧹 Session cache cleared');
 } 
 

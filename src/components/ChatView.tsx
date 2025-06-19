@@ -94,35 +94,62 @@ const MarkdownContent: React.FC<{
               {children}
             </li>
           ),
-          pre: ({ children, ...props }) => (
-            <div className={`rounded-lg overflow-hidden mb-4 ${
-              isDark ? 'bg-gray-900' : 'bg-gray-50'
-            } border ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-              <div className="flex items-center justify-between px-4 py-2 bg-gray-800 text-white">
-                <span className="text-sm font-medium">Code</span>
-                <button 
-                  className="p-1 rounded hover:bg-gray-700 transition-colors"
-                  onClick={() => {
-                    const code = (children as any)?.props?.children?.[0]?.props?.children;
-                    if (code && typeof code === 'string') {
-                      navigator.clipboard.writeText(code);
-                    }
-                  }}
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
+          pre: ({ children, ...props }) => {
+            // Extract language from className if available
+            const codeElement = children as any;
+            const className = codeElement?.props?.className || '';
+            const language = className.replace('language-', '') || 'text';
+            
+            // Extract the actual code content
+            let codeContent = '';
+            try {
+              if (codeElement?.props?.children) {
+                if (typeof codeElement.props.children === 'string') {
+                  codeContent = codeElement.props.children;
+                } else if (Array.isArray(codeElement.props.children)) {
+                  codeContent = codeElement.props.children.join('');
+                } else {
+                  codeContent = String(codeElement.props.children);
+                }
+              }
+            } catch (e) {
+              codeContent = 'Code content unavailable';
+            }
+
+            return (
+              <div className={`rounded-lg overflow-hidden mb-4 ${
+                isDark ? 'bg-gray-900' : 'bg-gray-50'
+              } border ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                <div className="flex items-center justify-between px-4 py-2 bg-gray-800 text-white">
+                  <span className="text-sm font-medium">
+                    {language !== 'text' ? language.toUpperCase() : 'Code'}
+                  </span>
+                  <button 
+                    className="p-1 rounded hover:bg-gray-700 transition-colors"
+                    onClick={() => {
+                      if (codeContent) {
+                        navigator.clipboard.writeText(codeContent);
+                      }
+                    }}
+                    title="Copy code"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="p-4">
+                  <pre 
+                    {...props}
+                    className={`text-sm overflow-x-auto m-0 ${
+                      isDark ? 'text-gray-200' : 'text-gray-800'
+                    }`}
+                    style={{ fontFamily: 'Monaco, Consolas, monospace' }}
+                  >
+                    {children}
+                  </pre>
+                </div>
               </div>
-              <div className="p-4">
-                <pre 
-                  {...props}
-                  className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'} overflow-x-auto m-0`}
-                  style={{ fontFamily: 'Monaco, Consolas, monospace' }}
-                >
-                  {children}
-                </pre>
-              </div>
-            </div>
-          ),
+            );
+          },
           code: ({ children, ...props }) => (
             <code 
               className={`px-1.5 py-0.5 rounded text-sm ${
@@ -275,6 +302,7 @@ export default function ChatView({
     const isLastAiMessage = message.type === 'ai' && index === messages.length - 1;
     const isReasoningModel = message.model === 'DeepSeek-R1' || message.model?.includes('gemini-1.5-pro');
     const shouldShowReasoning = isLastAiMessage && isGenerating && isReasoningModel && !message.content;
+    const shouldShowRegularLoading = isLastAiMessage && isGenerating && !isReasoningModel && !message.content;
     
     if (message.type === 'user') {
       return (
@@ -308,6 +336,38 @@ export default function ChatView({
                     style={{ fontFamily: customization.fontFamily }}
                   >
                     Reasoning...
+                  </span>
+                </div>
+              </div>
+            )}
+            
+            {/* Show pretty loading indicator for non-reasoning models when they haven't started generating content */}
+            {shouldShowRegularLoading && (
+              <div className="mb-3 flex items-center space-x-3">
+                <div className="flex items-center space-x-3">
+                  {/* Elegant pulsing circle loader */}
+                  <div className="relative">
+                    <div 
+                      className="w-8 h-8 rounded-full opacity-20 animate-ping"
+                      style={{ backgroundColor: customization.primaryColor }}
+                    ></div>
+                    <div 
+                      className="absolute inset-0 w-8 h-8 rounded-full opacity-40 animate-pulse"
+                      style={{ backgroundColor: customization.primaryColor }}
+                    ></div>
+                    <div 
+                      className="absolute inset-1 w-6 h-6 rounded-full opacity-60"
+                      style={{ backgroundColor: customization.primaryColor }}
+                    ></div>
+                  </div>
+                  <span 
+                    className="font-medium animate-pulse"
+                    style={{ 
+                      color: customization.primaryColor,
+                      fontFamily: customization.fontFamily 
+                    }}
+                  >
+                    Thinking...
                   </span>
                 </div>
               </div>
