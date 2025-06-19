@@ -772,6 +772,15 @@ function App() {
       return;
     }
 
+    // Check anonymous usage limit for non-logged-in users
+    if (!user && !regenerate) {
+      if (!anonymousUsageService.canSendMessage()) {
+        console.warn('⚠️ Anonymous user has reached daily limit');
+        setChatError('Daily message limit reached. Create an account to get more messages!');
+        return;
+      }
+    }
+
     // Clear any existing errors
     setChatError(null);
 
@@ -1024,6 +1033,12 @@ function App() {
         ));
         
         console.log('✅ Final message update completed with model:', modelToUse);
+
+        // Record anonymous usage for non-logged-in users (only for new messages, not regenerated ones)
+        if (!user && !regenerate) {
+          const recorded = anonymousUsageService.recordMessage();
+          console.log('📊 Anonymous usage recorded:', recorded);
+        }
 
       } catch (streamError) {
         console.error('❌ Streaming error:', streamError);

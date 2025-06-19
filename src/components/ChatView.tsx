@@ -43,21 +43,61 @@ const preprocessLegacyContent = (content: string): string => {
     return content;
   }
   
-  // Patterns that suggest code content
+  // Handle the specific pattern from legacy messages: "languagenameCodeHere###NextLanguage"
+  const legacyCodePattern = /([a-zA-Z+#]+)((?:(?!###).)+)(?:###|$)/g;
+  const matches = [...content.matchAll(legacyCodePattern)];
+  
+  if (matches.length > 1) {
+    // Multiple code blocks detected, format each one
+    let result = '';
+    matches.forEach((match, index) => {
+      const [, language, code] = match;
+      const cleanLanguage = language.toLowerCase();
+      const cleanCode = code.trim();
+      
+      if (index > 0) result += '\n\n';
+      result += `### ${language}\n\`\`\`${cleanLanguage}\n${cleanCode}\n\`\`\`\n`;
+    });
+    return result;
+  }
+  
+  // Single code block detection patterns
+  const singleCodePatterns = [
+    { pattern: /^(python|py)\s*([\s\S]+)$/i, lang: 'python' },
+    { pattern: /^(javascript|js)\s*([\s\S]+)$/i, lang: 'javascript' },
+    { pattern: /^(typescript|ts)\s*([\s\S]+)$/i, lang: 'typescript' },
+    { pattern: /^(html)\s*([\s\S]+)$/i, lang: 'html' },
+    { pattern: /^(css)\s*([\s\S]+)$/i, lang: 'css' },
+    { pattern: /^(java)\s*([\s\S]+)$/i, lang: 'java' },
+    { pattern: /^(c\+\+|cpp)\s*([\s\S]+)$/i, lang: 'cpp' },
+    { pattern: /^(c#|csharp)\s*([\s\S]+)$/i, lang: 'csharp' },
+    { pattern: /^(ruby|rb)\s*([\s\S]+)$/i, lang: 'ruby' },
+    { pattern: /^(php)\s*([\s\S]+)$/i, lang: 'php' },
+    { pattern: /^(swift)\s*([\s\S]+)$/i, lang: 'swift' },
+    { pattern: /^(go|golang)\s*([\s\S]+)$/i, lang: 'go' }
+  ];
+  
+  for (const { pattern, lang } of singleCodePatterns) {
+    const match = content.match(pattern);
+    if (match) {
+      const code = match[2].trim();
+      return `\`\`\`${lang}\n${code}\n\`\`\``;
+    }
+  }
+  
+  // General code detection patterns
   const codePatterns = [
-    // Python function definitions
     /def\s+\w+\([^)]*\):/g,
-    // JavaScript/TypeScript function definitions
     /function\s+\w+\([^)]*\)\s*{/g,
     /(const|let|var)\s+\w+\s*=\s*\([^)]*\)\s*=>/g,
-    // HTML tags
     /<[^>]+>/g,
-    // CSS rules
     /[.#]\w+\s*{[^}]*}/g,
-    // Import statements
     /(import|from|require)\s+/g,
-    // Common programming keywords in sequence
-    /(if|for|while|class|public|private|return)\s+/g
+    /(if|for|while|class|public|private|return)\s+/g,
+    /print\s*\(/g,
+    /console\.log\s*\(/g,
+    /System\.out\.println/g,
+    /std::cout/g
   ];
   
   let hasCode = false;
@@ -68,30 +108,24 @@ const preprocessLegacyContent = (content: string): string => {
     }
   }
   
-  // If we detect code patterns and no markdown formatting, wrap in code block
-  if (hasCode && !content.includes('\n\n') && content.length > 50) {
+  if (hasCode && content.length > 20) {
     // Try to detect language
     let language = '';
-    if (/def\s+\w+\([^)]*\):/.test(content) || /import\s+\w+/.test(content)) {
+    if (/def\s+\w+\([^)]*\):/.test(content) || /print\s*\(/.test(content)) {
       language = 'python';
-    } else if (/function\s+\w+\([^)]*\)\s*{/.test(content) || /(const|let|var)\s+/.test(content)) {
+    } else if (/function\s+\w+\([^)]*\)\s*{/.test(content) || /(const|let|var)\s+/.test(content) || /console\.log/.test(content)) {
       language = 'javascript';
     } else if (/<[^>]+>/.test(content)) {
       language = 'html';
     } else if (/[.#]\w+\s*{[^}]*}/.test(content)) {
       language = 'css';
+    } else if (/System\.out\.println/.test(content) || /public\s+class/.test(content)) {
+      language = 'java';
+    } else if (/std::cout/.test(content) || /#include\s*</.test(content)) {
+      language = 'cpp';
     }
     
     return `\`\`\`${language}\n${content}\n\`\`\``;
-  }
-  
-  // Look for inline code patterns (single words/short phrases with programming syntax)
-  const inlineCodePattern = /(\w+\(\)|[a-zA-Z_]\w*\.[a-zA-Z_]\w*|\w+\[\w*\])/g;
-  const matches = content.match(inlineCodePattern);
-  
-  if (matches && matches.length > 2 && content.length < 200) {
-    // Multiple code-like elements in short text, likely inline code
-    return content.replace(/(\w+\(\)|[a-zA-Z_]\w*\.[a-zA-Z_]\w*|\w+\[\w*\])/g, '`$1`');
   }
   
   return content;
