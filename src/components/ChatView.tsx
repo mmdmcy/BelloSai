@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { ChevronDown, ArrowUp, Copy, RotateCcw, Share2, Loader2 } from 'lucide-react';
+import { ChevronDown, ArrowUp, Copy, RotateCcw, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
@@ -144,6 +144,73 @@ const MarkdownContent: React.FC<{
   );
 });
 
+// Enhanced Model Selector with website theming
+const ThemedModelSelector: React.FC<{
+  selectedModel: string;
+  onModelChange: (model: string) => void;
+  availableModels: ModelInfo[];
+  isDark: boolean;
+  customization: CustomizationSettings;
+}> = ({ selectedModel, onModelChange, availableModels, isDark, customization }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  const selectedModelInfo = availableModels.find(m => m.code === selectedModel);
+  
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`flex items-center space-x-2 px-4 py-2 rounded-xl transition-all text-white font-medium`}
+        style={{ 
+          backgroundColor: customization.primaryColor,
+          fontFamily: customization.fontFamily 
+        }}
+      >
+        <span className="text-sm">{selectedModelInfo?.name || 'Model'}</span>
+        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      
+      {isOpen && (
+        <div className={`absolute top-full left-0 mt-2 w-64 rounded-xl border shadow-lg z-10 ${
+          isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'
+        }`}>
+          <div className="p-2">
+            {availableModels.map((model) => (
+              <button
+                key={model.code}
+                onClick={() => {
+                  onModelChange(model.code);
+                  setIsOpen(false);
+                }}
+                className={`w-full text-left p-3 rounded-lg transition-all ${
+                  selectedModel === model.code
+                    ? `text-white`
+                    : isDark 
+                      ? 'text-gray-300 hover:bg-gray-700' 
+                      : 'text-gray-700 hover:bg-gray-50'
+                }`}
+                style={{
+                  backgroundColor: selectedModel === model.code ? customization.primaryColor : 'transparent',
+                  fontFamily: customization.fontFamily
+                }}
+              >
+                <div className="font-medium text-sm">{model.name}</div>
+                <div className={`text-xs mt-1 ${
+                  selectedModel === model.code
+                    ? 'text-white/80'
+                    : isDark ? 'text-gray-400' : 'text-gray-500'
+                }`}>
+                  {model.description}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function ChatView({ 
   isDark, 
   messages, 
@@ -226,73 +293,92 @@ export default function ChatView({
       return (
         <div key={message.id} className="flex justify-start mb-6">
           <div className="max-w-[85%] w-full">
-            {/* Message content */}
+            {/* Single message box containing content and loading state */}
             <div className={`rounded-2xl p-4 ${
               isDark ? 'bg-gray-800/50' : 'bg-gray-50'
             }`}>
-              <MarkdownContent 
-                content={message.content}
-                isDark={isDark}
-                customization={customization}
-              />
+              {/* Show loading state if this is the last AI message and AI is generating */}
+              {isLastAiMessage && isGenerating && (
+                <div className="mb-4">
+                  {isReasoningModel ? (
+                    <div className="flex items-center space-x-3">
+                      <div className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                        <span className="font-medium">Reasoning</span>
+                      </div>
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-3">
+                      <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                      <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                        AI aan het typen...
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Message content (only show if there's content) */}
+              {message.content && (
+                <MarkdownContent 
+                  content={message.content}
+                  isDark={isDark}
+                  customization={customization}
+                />
+              )}
             </div>
             
-            {/* Message actions */}
+            {/* Message header with model name and actions */}
             <div className="flex items-center justify-between mt-3 px-2">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-3">
                 {message.model && (
                   <span 
-                    className={`text-xs px-2 py-1 rounded-full ${
-                      isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-600'
-                    }`}
+                    className={`text-xs px-3 py-1.5 rounded-full text-white font-medium`}
+                    style={{ 
+                      backgroundColor: customization.secondaryColor,
+                      fontFamily: customization.fontFamily 
+                    }}
                   >
-                    {message.model}
+                    {availableModels.find(m => m.code === message.model)?.name || message.model}
                   </span>
                 )}
-              </div>
-              
-              <div className="flex items-center space-x-1">
-                <button 
-                  className={`p-2 rounded-lg transition-colors ${
-                    isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'
-                  }`}
-                  onClick={() => navigator.clipboard.writeText(message.content)}
-                  title="Kopieer bericht"
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
                 
-                {onRegenerateResponse && isLastAiMessage && (
+                {/* Action buttons next to model name */}
+                <div className="flex items-center space-x-1">
                   <button 
-                    className={`p-2 rounded-lg transition-colors ${
+                    className={`p-1.5 rounded-lg transition-colors ${
                       isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'
                     }`}
-                    onClick={onRegenerateResponse}
-                    disabled={isGenerating}
-                    title="Regenereer antwoord"
+                    onClick={() => navigator.clipboard.writeText(message.content)}
+                    title="Kopieer bericht"
                   >
-                    <RotateCcw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
+                    <Copy className="w-3.5 h-3.5" />
                   </button>
-                )}
-                
-                {conversationId && (
-                  <button 
-                    className={`p-2 rounded-lg transition-colors ${
-                      isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'
-                    }`}
-                    onClick={() => setShowChatSharing(true)}
-                    title="Deel bericht"
-                  >
-                    <Share2 className="w-4 h-4" />
-                  </button>
-                )}
+                  
+                  {onRegenerateResponse && isLastAiMessage && (
+                    <button 
+                      className={`p-1.5 rounded-lg transition-colors ${
+                        isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'
+                      }`}
+                      onClick={onRegenerateResponse}
+                      disabled={isGenerating}
+                      title="Regenereer antwoord"
+                    >
+                      <RotateCcw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
       );
     }
-  }, [customization, isDark, isGenerating, onRegenerateResponse, conversationId]);
+  }, [customization, isDark, isGenerating, onRegenerateResponse, availableModels, isReasoningModel]);
 
   // Input-only mode
   if (inputOnly) {
@@ -323,7 +409,7 @@ export default function ChatView({
               />
               
               <div className="flex items-center justify-between px-4 pb-3">
-                <ModelSelector
+                <ThemedModelSelector
                   selectedModel={selectedModel}
                   onModelChange={onModelChange}
                   availableModels={availableModels}
@@ -364,8 +450,8 @@ export default function ChatView({
         <div className="max-w-4xl mx-auto">
           {messages.map((message, index) => renderMessage(message, index))}
           
-          {/* Loading indicator or reasoning display */}
-          {isGenerating && (
+          {/* Show loading state for completely new AI response */}
+          {isGenerating && (!messages.length || messages[messages.length - 1]?.type === 'user') && (
             <div className="flex justify-start mb-6">
               <div className="max-w-[85%] w-full">
                 <div className={`rounded-2xl p-4 ${
@@ -427,7 +513,7 @@ export default function ChatView({
                 />
                 
                 <div className="flex items-center justify-between px-4 pb-3">
-                  <ModelSelector
+                  <ThemedModelSelector
                     selectedModel={selectedModel}
                     onModelChange={onModelChange}
                     availableModels={availableModels}
