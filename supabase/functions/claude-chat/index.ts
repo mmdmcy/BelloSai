@@ -8,24 +8,32 @@ Deno.serve(async (req) => {
 
   try {
     console.log('🚀 Claude Edge Function called at:', new Date().toISOString());
+    console.log('📝 Request method:', req.method);
     
-    // Get authorization header or apikey for anonymous users
+    // Get authorization header or apikey for anonymous users - but allow all requests
     const authHeader = req.headers.get('Authorization')
     const apiKey = req.headers.get('apikey')
     console.log('🔑 Auth header present:', !!authHeader);
     console.log('🔑 API key present:', !!apiKey);
     
-    // Allow both authenticated and anonymous users
-    let isAnonymous = false;
-    if (!authHeader && !apiKey) {
-      console.log('⚠️ No auth headers provided - allowing as anonymous for debugging');
-      isAnonymous = true;
-    } else if (apiKey) {
-      console.log('🔓 Anonymous user request accepted');
-      isAnonymous = true;
-    }
+    // DEBUG: Log all headers (excluding sensitive data)
+    const headers = Object.fromEntries(req.headers.entries());
+    console.log('📋 All request headers:', {
+      ...headers,
+      'authorization': authHeader ? 'Bearer [REDACTED]' : undefined,
+      'apikey': apiKey ? '[API KEY PRESENT]' : undefined
+    });
     
-    const { messages, model } = await req.json()
+    // PRODUCTION: Allow all requests without authentication
+    console.log('🔓 PRODUCTION MODE: Allowing all requests (anonymous mode)');
+    let user = null;
+    let userData = null;
+    let isAnonymous = true; // Always treat as anonymous in production for now
+
+    // Parse request body
+    console.log('📥 Parsing request body...');
+    const { messages, model, conversationId }: ChatRequest = await req.json()
+    console.log('📥 Parsed request:', { messageCount: messages?.length, model, conversationId });
 
     if (!messages || !Array.isArray(messages)) {
       throw new Error('Messages array is required')
