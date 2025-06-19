@@ -1,32 +1,18 @@
 /**
  * ChatView Component
  * 
- * This component renders the chat interface when there are active conversations.
- * It displays the conversation history and provides input functionality for new messages.
- * 
- * Features:
- * - Message rendering with markdown support and smooth animations
- * - Syntax highlighting for code snippets
- * - Auto-scrolling to latest messages
- * - Copy and regenerate functionality for AI responses
- * - Responsive design with proper message alignment
- * - Auto-resizing textarea for input
- * - Model selection and additional controls
- * - Dynamic scaling based on container size
- * - Compact user message bubbles
- * - Smooth fade-in animations for streaming content
+ * Modern chat interface with clean design, loading indicators, and reasoning display
  */
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { ChevronDown, ArrowUp, Copy, RotateCcw, RefreshCw, Share2, Image, Globe, X } from 'lucide-react';
+import { ChevronDown, ArrowUp, Copy, RotateCcw, Share2, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github-dark.css';
 import { Message } from '../App';
-import { CustomizationSettings, AVAILABLE_MODELS, ModelInfo } from '../App';
+import { CustomizationSettings, ModelInfo } from '../App';
 import ModelSelector from './ModelSelector';
-import AttachmentUpload from './AttachmentUpload';
 import ChatSharing from './ChatSharing';
 import AnonymousUsageIndicator from './AnonymousUsageIndicator';
 
@@ -50,8 +36,8 @@ interface ChatViewProps {
   setError?: (err: string | null) => void;
 }
 
-// Vervang de AnimatedText component met eenvoudige versie zonder animaties
-const StaticMarkdownText: React.FC<{ 
+// Modern markdown component without complex styling
+const MarkdownContent: React.FC<{ 
   content: string; 
   isDark: boolean; 
   customization: CustomizationSettings;
@@ -62,24 +48,18 @@ const StaticMarkdownText: React.FC<{
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeHighlight]}
         components={{
-          // Paragraphs with proper spacing like the pink image
           p: ({ children, ...props }) => (
             <p 
-              className={`mb-6 text-lg leading-relaxed ${isDark ? 'text-gray-100' : 'text-gray-800'}`}
-              style={{ 
-                fontFamily: customization.fontFamily,
-                lineHeight: '1.8',
-                fontSize: '18px'
-              }}
+              className={`mb-4 leading-relaxed ${isDark ? 'text-gray-100' : 'text-gray-800'}`}
+              style={{ fontFamily: customization.fontFamily }}
               {...props}
             >
               {children}
             </p>
           ),
-          // Headings with proper spacing
           h1: ({ children, ...props }) => (
             <h1 
-              className={`mb-8 mt-10 text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}
+              className={`mb-4 text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}
               style={{ fontFamily: customization.fontFamily }}
               {...props}
             >
@@ -88,65 +68,40 @@ const StaticMarkdownText: React.FC<{
           ),
           h2: ({ children, ...props }) => (
             <h2 
-              className={`mb-6 mt-8 text-2xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}
+              className={`mb-3 text-xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}
               style={{ fontFamily: customization.fontFamily }}
               {...props}
             >
               {children}
             </h2>
           ),
-          h3: ({ children, ...props }) => (
-            <h3 
-              className={`mb-5 mt-7 text-xl font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}
-              style={{ fontFamily: customization.fontFamily }}
-              {...props}
-            >
-              {children}
-            </h3>
-          ),
-          // Lists with better spacing
           ul: ({ children, ...props }) => (
-            <ul className="mb-8 space-y-3 pl-6" {...props}>
+            <ul className="mb-4 space-y-1 pl-4" {...props}>
               {children}
             </ul>
           ),
           ol: ({ children, ...props }) => (
-            <ol className="mb-8 space-y-3 pl-6" {...props}>
+            <ol className="mb-4 space-y-1 pl-4" {...props}>
               {children}
             </ol>
           ),
           li: ({ children, ...props }) => (
             <li 
-              className={`mb-2 text-lg leading-relaxed ${isDark ? 'text-gray-100' : 'text-gray-800'}`}
-              style={{ 
-                fontFamily: customization.fontFamily,
-                lineHeight: '1.7'
-              }}
+              className={`leading-relaxed ${isDark ? 'text-gray-100' : 'text-gray-800'}`}
+              style={{ fontFamily: customization.fontFamily }}
               {...props}
             >
               {children}
             </li>
           ),
-          // Code blocks with better styling
           pre: ({ children, ...props }) => (
-            <div className={`rounded-2xl overflow-hidden mb-8 ${
+            <div className={`rounded-lg overflow-hidden mb-4 ${
               isDark ? 'bg-gray-900' : 'bg-gray-50'
-            } border ${isDark ? 'border-gray-700' : 'border-gray-200'} shadow-sm`}>
-              <div 
-                className="flex items-center justify-between px-6 py-4 border-b text-white"
-                style={{ 
-                  backgroundColor: customization.primaryColor,
-                  borderBottomColor: isDark ? '#374151' : '#e5e7eb'
-                }}
-              >
-                <span 
-                  className="text-sm font-medium"
-                  style={{ fontFamily: customization.fontFamily }}
-                >
-                  Code
-                </span>
+            } border ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+              <div className="flex items-center justify-between px-4 py-2 bg-gray-800 text-white">
+                <span className="text-sm font-medium">Code</span>
                 <button 
-                  className="p-1.5 rounded hover:bg-black/10 text-white transition-colors"
+                  className="p-1 rounded hover:bg-gray-700 transition-colors"
                   onClick={() => {
                     const code = (children as any)?.props?.children?.[0]?.props?.children;
                     if (code && typeof code === 'string') {
@@ -157,10 +112,10 @@ const StaticMarkdownText: React.FC<{
                   <Copy className="w-4 h-4" />
                 </button>
               </div>
-              <div className="p-6">
+              <div className="p-4">
                 <pre 
                   {...props}
-                  className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'} overflow-x-auto m-0 leading-relaxed`}
+                  className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'} overflow-x-auto m-0`}
                   style={{ fontFamily: 'Monaco, Consolas, monospace' }}
                 >
                   {children}
@@ -168,10 +123,9 @@ const StaticMarkdownText: React.FC<{
               </div>
             </div>
           ),
-          // Inline code
           code: ({ children, ...props }) => (
             <code 
-              className={`px-2 py-1 rounded text-sm ${
+              className={`px-1.5 py-0.5 rounded text-sm ${
                 isDark 
                   ? 'bg-gray-700 text-purple-300' 
                   : 'bg-purple-50 text-purple-700'
@@ -209,172 +163,26 @@ export default function ChatView({
   error,
   setError
 }: ChatViewProps) {
-  // Input state management
   const [inputValue, setInputValue] = useState('');
+  const [showChatSharing, setShowChatSharing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(0);
-  
-  // Scroll state management
-  const [showScrollButton, setShowScrollButton] = useState(false);
-  const [isNearBottom, setIsNearBottom] = useState(true);
-  
-  // Feature states
-  const [showAttachmentUpload, setShowAttachmentUpload] = useState(false);
-  const [showChatSharing, setShowChatSharing] = useState(false);
-  const [showWebSearch, setShowWebSearch] = useState(false);
-  const [showImageGeneration, setShowImageGeneration] = useState(false);
-  const [attachments, setAttachments] = useState<any[]>([]);
 
-  /**
-   * Monitor container size changes for responsive scaling with throttling
-   */
-  const updateContainerWidth = useCallback(() => {
-    if (containerRef.current) {
-      setContainerWidth(containerRef.current.offsetWidth);
-    }
-  }, []);
+  // Check if current model supports reasoning
+  const isReasoningModel = selectedModel === 'DeepSeek-R1' || selectedModel === 'gemini-2.5-pro-preview-06-05';
 
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    
-    const throttledUpdate = () => {
-      clearTimeout(timeoutId);
-      timeoutId = setTimeout(updateContainerWidth, 100); // Throttle to improve performance
-    };
-
-    throttledUpdate();
-    window.addEventListener('resize', throttledUpdate);
-    
-    // Use ResizeObserver for more accurate container size tracking
-    const resizeObserver = new ResizeObserver(throttledUpdate);
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
-    }
-
-    return () => {
-      clearTimeout(timeoutId);
-      window.removeEventListener('resize', throttledUpdate);
-      resizeObserver.disconnect();
-    };
-  }, [updateContainerWidth]);
-
-  /**
-   * Memoized responsive calculations for better performance
-   */
-  const responsiveStyles = useMemo(() => ({
-    aiMessageMaxWidth: (() => {
-      if (containerWidth < 600) return '90%';
-      if (containerWidth < 800) return '85%';
-      if (containerWidth < 1200) return '80%';
-      if (containerWidth < 1600) return '75%';
-      return '70%';
-    })(),
-    userMessageMaxWidth: (() => {
-      if (containerWidth < 600) return '75%';
-      if (containerWidth < 800) return '65%';
-      if (containerWidth < 1200) return '55%';
-      return '45%';
-    })(),
-    padding: (() => {
-      if (containerWidth < 600) return 'px-4';
-      if (containerWidth < 1200) return 'px-8';
-      return 'px-12';
-    })()
-  }), [containerWidth]);
-
-  /**
-   * Optimized scroll handling with throttling
-   */
-  const handleScroll = useCallback(() => {
-    if (!scrollContainerRef.current) return;
-    
-    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-    const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
-    
-    // Show button if user has scrolled up more than 100px from bottom
-    const shouldShowButton = distanceFromBottom > 100 && messages.length > 3;
-    setShowScrollButton(shouldShowButton);
-    
-    // Track if user is near bottom for auto-scroll behavior
-    setIsNearBottom(distanceFromBottom < 50);
-  }, [messages.length]);
-
-  /**
-   * Optimized scroll to bottom with smooth animation
-   */
-  const scrollToBottom = useCallback((force = false) => {
-    if (force || isNearBottom) {
-      messagesEndRef.current?.scrollIntoView({ 
-        behavior: 'smooth',
-        block: 'end'
-      });
-    }
-  }, [isNearBottom]);
-
-  /**
-   * Auto-scroll when new messages arrive, but only if user is near bottom
-   */
-  useEffect(() => {
-    if (isNearBottom && messages.length > 0) {
-      // Small delay to ensure content is rendered
-      const timeoutId = setTimeout(() => scrollToBottom(), 50);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [messages, scrollToBottom, isNearBottom]);
-
-  /**
-   * Handle attachment upload
-   */
-  const handleAttachmentUploaded = useCallback((attachment: any) => {
-    setAttachments(prev => [...prev, attachment]);
-    console.log('Attachment uploaded:', attachment);
-  }, []);
-
-  /**
-   * Handle attachment upload error
-   */
-  const handleAttachmentError = useCallback((error: string) => {
-    console.error('Attachment error:', error);
-    // You could show a toast notification here
-  }, []);
-
-  /**
-   * Handle web search
-   */
-  const handleWebSearch = useCallback((query: string) => {
-    console.log('Web search:', query);
-    // Implement web search functionality
-  }, []);
-
-  /**
-   * Handle image generation
-   */
-  const handleImageGeneration = useCallback((prompt: string) => {
-    console.log('Image generation:', prompt);
-    // Implement image generation functionality
-  }, []);
-
-  /**
-   * Optimized form submission
-   */
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (inputValue.trim() && !isGenerating) {
       onSendMessage(inputValue.trim());
       setInputValue('');
-      // Reset textarea height
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
       }
     }
   }, [inputValue, isGenerating, onSendMessage]);
 
-  /**
-   * Handle keyboard shortcuts
-   */
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -382,43 +190,32 @@ export default function ChatView({
     }
   }, [handleSubmit]);
 
-  /**
-   * Auto-resize textarea with performance optimization
-   */
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setInputValue(value);
     
-    // Auto-resize textarea
     const textarea = e.target;
     textarea.style.height = 'auto';
-    const newHeight = Math.min(textarea.scrollHeight, 200); // Max height of 200px
+    const newHeight = Math.min(textarea.scrollHeight, 200);
     textarea.style.height = newHeight + 'px';
   }, []);
 
-  /**
-   * Optimized message rendering with memoization
-   */
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
   const renderMessage = useCallback((message: Message, index: number) => {
-    // Check if this is the last AI message and if AI is currently generating
     const isLastAiMessage = message.type === 'ai' && index === messages.length - 1;
-    const shouldShowLoading = isGenerating && isLastAiMessage;
     
     if (message.type === 'user') {
-      // User message - right-aligned with custom color and compact sizing
       return (
-        <div 
-          key={message.id} 
-          className="flex justify-end mb-6 transform transition-all duration-300 ease-in-out hover:scale-[1.02]"
-        >
+        <div key={message.id} className="flex justify-end mb-6">
           <div 
-            className="px-4 py-2.5 rounded-2xl text-white break-words shadow-lg"
+            className="max-w-[80%] px-4 py-3 rounded-2xl text-white break-words"
             style={{ 
               backgroundColor: customization.primaryColor,
-              fontFamily: customization.fontFamily,
-              maxWidth: responsiveStyles.userMessageMaxWidth,
-              wordWrap: 'break-word',
-              overflowWrap: 'break-word'
+              fontFamily: customization.fontFamily
             }}
           >
             {message.content}
@@ -426,52 +223,37 @@ export default function ChatView({
         </div>
       );
     } else {
-      // AI message - left-aligned with markdown support and responsive sizing
       return (
-        <div 
-          key={message.id} 
-          className="flex justify-start mb-6"
-        >
-          <div className="w-full" style={{ maxWidth: responsiveStyles.aiMessageMaxWidth }}>
-            {/* Static Markdown Content */}
-            <StaticMarkdownText 
-              content={message.content}
-              isDark={isDark}
-              customization={customization}
-            />
-
-            {/* Always visible info section with copy button and model */}
-            <div className={`flex items-center justify-between mt-4 p-3 rounded-lg ${
+        <div key={message.id} className="flex justify-start mb-6">
+          <div className="max-w-[85%] w-full">
+            {/* Message content */}
+            <div className={`rounded-2xl p-4 ${
               isDark ? 'bg-gray-800/50' : 'bg-gray-50'
             }`}>
-              <div className="flex items-center space-x-3">
-                {/* Model info */}
+              <MarkdownContent 
+                content={message.content}
+                isDark={isDark}
+                customization={customization}
+              />
+            </div>
+            
+            {/* Message actions */}
+            <div className="flex items-center justify-between mt-3 px-2">
+              <div className="flex items-center space-x-2">
                 {message.model && (
                   <span 
                     className={`text-xs px-2 py-1 rounded-full ${
                       isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-600'
                     }`}
-                    style={{ fontFamily: customization.fontFamily }}
                   >
                     {message.model}
                   </span>
                 )}
-                
-                {/* Original prompt indicator */}
-                {index > 0 && messages[index - 1]?.type === 'user' && (
-                  <span 
-                    className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
-                    style={{ fontFamily: customization.fontFamily }}
-                  >
-                    Antwoord op: "{messages[index - 1].content.slice(0, 50)}{messages[index - 1].content.length > 50 ? '...' : ''}"
-                  </span>
-                )}
               </div>
               
-              <div className="flex items-center space-x-2">
-                {/* Copy button */}
+              <div className="flex items-center space-x-1">
                 <button 
-                  className={`p-2 rounded-lg ${
+                  className={`p-2 rounded-lg transition-colors ${
                     isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'
                   }`}
                   onClick={() => navigator.clipboard.writeText(message.content)}
@@ -480,10 +262,9 @@ export default function ChatView({
                   <Copy className="w-4 h-4" />
                 </button>
                 
-                {/* Regenerate button */}
-                {onRegenerateResponse && index === messages.length - 1 && (
+                {onRegenerateResponse && isLastAiMessage && (
                   <button 
-                    className={`p-2 rounded-lg ${
+                    className={`p-2 rounded-lg transition-colors ${
                       isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'
                     }`}
                     onClick={onRegenerateResponse}
@@ -494,84 +275,66 @@ export default function ChatView({
                   </button>
                 )}
                 
-                {/* Share button */}
-                <button 
-                  className={`p-2 rounded-lg ${
-                    isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'
-                  }`}
-                  onClick={() => setShowChatSharing(true)}
-                  title="Deel bericht"
-                >
-                  <Share2 className="w-4 h-4" />
-                </button>
+                {conversationId && (
+                  <button 
+                    className={`p-2 rounded-lg transition-colors ${
+                      isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'
+                    }`}
+                    onClick={() => setShowChatSharing(true)}
+                    title="Deel bericht"
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           </div>
         </div>
       );
     }
-  }, [
-    messages.length, 
-    isGenerating, 
-    customization, 
-    responsiveStyles, 
-    isDark, 
-    onRegenerateResponse
-  ]);
+  }, [customization, isDark, isGenerating, onRegenerateResponse, conversationId]);
 
-  // Input-only mode - renders just the message input interface with responsive sizing
+  // Input-only mode
   if (inputOnly) {
     return (
-      <div className="h-full flex items-end" ref={containerRef}>
+      <div className="h-full flex items-end">
         <div className="w-full">
+          {!isLoggedIn && onLoginClick && (
+            <AnonymousUsageIndicator onLoginClick={onLoginClick} />
+          )}
+          
           <form onSubmit={handleSubmit}>
-            {/* Message Input */}
             <div className={`relative rounded-2xl border ${
-              isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-purple-200'
+              isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'
             } shadow-sm`}>
               <textarea
                 ref={textareaRef}
                 value={inputValue}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
-                placeholder="Type your message here..."
-                className={`w-full px-6 py-4 pr-32 rounded-2xl resize-none focus:outline-none min-h-[60px] max-h-32 ${
+                placeholder="Typ je bericht hier..."
+                className={`w-full px-4 py-3 pr-32 rounded-2xl resize-none focus:outline-none min-h-[60px] max-h-32 ${
                   isDark 
-                    ? 'bg-gray-700 text-white placeholder-gray-400' 
+                    ? 'bg-gray-800 text-white placeholder-gray-400' 
                     : 'bg-white text-gray-900 placeholder-gray-500'
                 }`}
                 style={{ fontFamily: customization.fontFamily }}
                 rows={1}
               />
               
-              {/* Bottom Controls */}
-              <div className="flex items-center justify-between px-6 pb-4">
-                <div className="flex items-center gap-4">
-                  <ModelSelector
-                    selectedModel={selectedModel}
-                    onModelChange={onModelChange}
-                    availableModels={availableModels}
-                    isDark={isDark}
-                    customization={customization}
-                  />
-
-                  {conversationId && (
-                    <button 
-                      type="button"
-                      onClick={() => setShowChatSharing(true)}
-                      className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
-                      style={{ color: isDark ? undefined : customization.primaryColor }}
-                      title="Gesprek delen"
-                    >
-                      <Share2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
+              <div className="flex items-center justify-between px-4 pb-3">
+                <ModelSelector
+                  selectedModel={selectedModel}
+                  onModelChange={onModelChange}
+                  availableModels={availableModels}
+                  isDark={isDark}
+                  customization={customization}
+                />
                 
                 <button 
                   type="submit"
-                  disabled={!inputValue.trim()}
-                  className="text-white p-2.5 rounded-xl transition-colors hover:opacity-90 disabled:opacity-50"
+                  disabled={!inputValue.trim() || isGenerating}
+                  className="text-white p-2.5 rounded-xl transition-all hover:opacity-90 disabled:opacity-50"
                   style={{ backgroundColor: customization.primaryColor }}
                 >
                   <ArrowUp className="w-4 h-4" />
@@ -584,94 +347,98 @@ export default function ChatView({
     );
   }
 
-  // Full chat view layout with responsive scaling
+  // Full chat view
   return (
-    <div className="flex flex-col h-full" ref={containerRef}>
+    <div className="flex flex-col h-full">
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-4 max-w-xl mx-auto">
+        <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-4 mx-4">
           <span className="font-semibold">Fout:</span> {error}
         </div>
       )}
-      {/* Chat Messages Area - Responsive padding */}
+      
+      {/* Chat Messages Area */}
       <div 
         ref={scrollContainerRef}
-        className={`flex-1 overflow-y-auto py-6 ${responsiveStyles.padding}`}
-        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto px-4 py-6"
       >
-        <div className="w-full mx-auto">
+        <div className="max-w-4xl mx-auto">
           {messages.map((message, index) => renderMessage(message, index))}
-          <div ref={messagesEndRef} />
           
-          {/* Scroll to bottom indicator - only show when user has scrolled up */}
-          {showScrollButton && (
-            <div className="flex justify-center py-4">
-              <button 
-                onClick={() => scrollToBottom(true)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-colors ${
-                  isDark 
-                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-                    : 'text-white hover:opacity-90'
-                }`}
-                style={{ 
-                  fontFamily: customization.fontFamily,
-                  backgroundColor: isDark ? undefined : customization.primaryColor + '20',
-                  color: isDark ? undefined : customization.primaryColor
-                }}
-              >
-                Scroll to bottom
-                <ChevronDown className="w-4 h-4" />
-              </button>
+          {/* Loading indicator or reasoning display */}
+          {isGenerating && (
+            <div className="flex justify-start mb-6">
+              <div className="max-w-[85%] w-full">
+                <div className={`rounded-2xl p-4 ${
+                  isDark ? 'bg-gray-800/50' : 'bg-gray-50'
+                }`}>
+                  {isReasoningModel ? (
+                    <div className="flex items-center space-x-3">
+                      <div className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                        <span className="font-medium">Reasoning</span>
+                      </div>
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-3">
+                      <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
+                      <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                        AI aan het typen...
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
+          
+          <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* Message Input Footer - Responsive sizing */}
+      {/* Message Input */}
       {!hideInput && (
-        <div className={`pb-6 ${responsiveStyles.padding}`}>
-          <div className="w-full mx-auto" style={{ maxWidth: responsiveStyles.aiMessageMaxWidth }}>
-            {/* Anonymous Usage Indicator */}
+        <div className="px-4 pb-6">
+          <div className="max-w-4xl mx-auto">
             {!isLoggedIn && onLoginClick && (
               <AnonymousUsageIndicator onLoginClick={onLoginClick} />
             )}
             
             <form onSubmit={handleSubmit}>
-              {/* Message Input */}
               <div className={`relative rounded-2xl border ${
-                isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-purple-200'
+                isDark ? 'bg-gray-800 border-gray-600' : 'bg-white border-gray-200'
               } shadow-sm`}>
                 <textarea
                   ref={textareaRef}
                   value={inputValue}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
-                  placeholder="Type your message here..."
-                  className={`w-full px-6 py-4 pr-32 rounded-2xl resize-none focus:outline-none min-h-[60px] max-h-32 ${
+                  placeholder="Typ je bericht hier..."
+                  className={`w-full px-4 py-3 pr-32 rounded-2xl resize-none focus:outline-none min-h-[60px] max-h-32 ${
                     isDark 
-                      ? 'bg-gray-700 text-white placeholder-gray-400' 
+                      ? 'bg-gray-800 text-white placeholder-gray-400' 
                       : 'bg-white text-gray-900 placeholder-gray-500'
                   }`}
                   style={{ fontFamily: customization.fontFamily }}
                   rows={1}
                 />
                 
-                {/* Bottom Controls */}
-                <div className="flex items-center justify-between px-6 pb-4">
-                  <div className="flex items-center gap-4">
-                    <ModelSelector
-                      selectedModel={selectedModel}
-                      onModelChange={onModelChange}
-                      availableModels={availableModels}
-                      isDark={isDark}
-                      customization={customization}
-                    />
-
-                  </div>
+                <div className="flex items-center justify-between px-4 pb-3">
+                  <ModelSelector
+                    selectedModel={selectedModel}
+                    onModelChange={onModelChange}
+                    availableModels={availableModels}
+                    isDark={isDark}
+                    customization={customization}
+                  />
                   
                   <button 
                     type="submit"
-                    disabled={!inputValue.trim()}
-                    className="text-white p-2.5 rounded-xl transition-colors hover:opacity-90 disabled:opacity-50"
+                    disabled={!inputValue.trim() || isGenerating}
+                    className="text-white p-2.5 rounded-xl transition-all hover:opacity-90 disabled:opacity-50"
                     style={{ backgroundColor: customization.primaryColor }}
                   >
                     <ArrowUp className="w-4 h-4" />
@@ -679,133 +446,6 @@ export default function ChatView({
                 </div>
               </div>
             </form>
-          </div>
-        </div>
-      )}
-
-      {/* Attachment Upload Modal */}
-      {showAttachmentUpload && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className={`w-full max-w-md rounded-lg shadow-xl ${
-            isDark ? 'bg-gray-800' : 'bg-white'
-          }`}>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  Bestand Uploaden
-                </h3>
-                <button
-                  onClick={() => setShowAttachmentUpload(false)}
-                  className={`p-2 rounded-lg ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <AttachmentUpload
-                onAttachmentUploaded={handleAttachmentUploaded}
-                onError={handleAttachmentError}
-                isDark={isDark}
-                disabled={isGenerating}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Web Search Modal */}
-      {showWebSearch && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className={`w-full max-w-md rounded-lg shadow-xl ${
-            isDark ? 'bg-gray-800' : 'bg-white'
-          }`}>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  Web Zoeken
-                </h3>
-                <button
-                  onClick={() => setShowWebSearch(false)}
-                  className={`p-2 rounded-lg ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                const query = formData.get('query') as string;
-                if (query.trim()) {
-                  handleWebSearch(query.trim());
-                }
-              }}>
-                <input
-                  name="query"
-                  type="text"
-                  placeholder="Zoek op het web..."
-                  className={`w-full p-3 rounded-lg border mb-4 ${
-                    isDark 
-                      ? 'bg-gray-700 border-gray-600 text-white' 
-                      : 'bg-white border-gray-300 text-gray-900'
-                  } focus:outline-none focus:ring-2 focus:ring-purple-500`}
-                  autoFocus
-                />
-                <button
-                  type="submit"
-                  className="w-full py-3 px-4 bg-purple-500 text-white rounded-lg font-medium hover:bg-purple-600 transition-colors"
-                >
-                  Zoeken
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Image Generation Modal */}
-      {showImageGeneration && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className={`w-full max-w-md rounded-lg shadow-xl ${
-            isDark ? 'bg-gray-800' : 'bg-white'
-          }`}>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  Afbeelding Genereren
-                </h3>
-                <button
-                  onClick={() => setShowImageGeneration(false)}
-                  className={`p-2 rounded-lg ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                const prompt = formData.get('prompt') as string;
-                if (prompt.trim()) {
-                  handleImageGeneration(prompt.trim());
-                }
-              }}>
-                <textarea
-                  name="prompt"
-                  placeholder="Beschrijf de afbeelding die je wilt genereren..."
-                  rows={4}
-                  className={`w-full p-3 rounded-lg border mb-4 resize-none ${
-                    isDark 
-                      ? 'bg-gray-700 border-gray-600 text-white' 
-                      : 'bg-white border-gray-300 text-gray-900'
-                  } focus:outline-none focus:ring-2 focus:ring-purple-500`}
-                  autoFocus
-                />
-                <button
-                  type="submit"
-                  className="w-full py-3 px-4 bg-purple-500 text-white rounded-lg font-medium hover:bg-purple-600 transition-colors"
-                >
-                  Genereren
-                </button>
-              </form>
-            </div>
           </div>
         </div>
       )}
