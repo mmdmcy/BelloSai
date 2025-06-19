@@ -38,7 +38,7 @@ serve(async (req) => {
     console.log('🚀 DeepSeek Edge Function called at:', new Date().toISOString());
     console.log('📝 Request method:', req.method);
     
-    // Get authorization header or apikey for anonymous users - but allow all requests
+    // Get authorization header or apikey for anonymous users
     const authHeader = req.headers.get('Authorization')
     const apiKey = req.headers.get('apikey')
     console.log('🔑 Auth header present:', !!authHeader);
@@ -52,11 +52,74 @@ serve(async (req) => {
       'apikey': apiKey ? '[API KEY PRESENT]' : undefined
     });
     
-    // PRODUCTION: Allow all requests without authentication
-    console.log('🔓 PRODUCTION MODE: Allowing all requests (anonymous mode)');
+    // Create Supabase client for authenticated operations
+    console.log('🔧 Creating Supabase client');
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? 'https://uxqrdnotdkcwfwcifajf.supabase.co',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    )
+    
     let user = null;
     let userData = null;
-    let isAnonymous = true; // Always treat as anonymous in production for now
+    let isAnonymous = true;
+
+    // Try to authenticate user if auth header is present
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      console.log('🔍 Validating user token...');
+      
+      try {
+        const { data: { user: authUser }, error: userError } = await supabaseAdmin.auth.getUser(token)
+        
+        if (!userError && authUser) {
+          user = authUser;
+          isAnonymous = false;
+          console.log('✅ User authenticated:', user.email);
+
+          // Fetch user data for authenticated users
+          console.log('📊 Fetching user data...');
+          const { data: userDataResult, error: userDataError } = await supabaseAdmin
+            .from('users')
+            .select('message_count, message_limit, subscription_tier')
+            .eq('id', user.id)
+            .single()
+
+          if (!userDataError && userDataResult) {
+            userData = userDataResult;
+            console.log('📊 User data:', { 
+              messageCount: userData.message_count, 
+              messageLimit: userData.message_limit, 
+              subscriptionTier: userData.subscription_tier 
+            });
+
+            // Check if user has exceeded message limit
+            if (userData.message_count >= userData.message_limit) {
+              return new Response(
+                JSON.stringify({ 
+                  error: 'Message limit exceeded',
+                  limit: userData.message_limit,
+                  current: userData.message_count,
+                  subscription_tier: userData.subscription_tier
+                }),
+                { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              )
+            }
+          } else {
+            console.error('❌ Failed to fetch user data:', userDataError);
+          }
+        } else {
+          console.log('⚠️ Invalid or expired token, proceeding as anonymous:', userError?.message);
+        }
+      } catch (authError) {
+        console.log('⚠️ Auth error, proceeding as anonymous:', authError);
+      }
+    } else if (apiKey) {
+      console.log('🔓 API key provided - anonymous user request');
+    } else {
+      console.log('🔓 No auth headers - anonymous user request');
+    }
+
+    console.log('👤 User status:', { isAnonymous, hasUser: !!user, hasUserData: !!userData });
 
     // Parse request body
     console.log('📥 Parsing request body...');
@@ -192,6 +255,81 @@ serve(async (req) => {
         model: model
       };
       
+      // Add message count info for authenticated users
+      if (!isAnonymous && userData) {
+        responsePayload.messageCount = userData.message_count + 1;
+        responsePayload.messageLimit = userData.message_limit;
+      }
+      
+      // Save conversation and increment message count for authenticated users
+      if (!isAnonymous && user && userData && conversationId && content) {
+        console.log('💾 Saving non-streaming conversation for authenticated user...');
+        
+        // Increment message count (fire-and-forget for performance)
+        supabaseAdmin
+          .from('users')
+          .update({ 
+            message_count: userData.message_count + 1,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id)
+          .then(({ error: incrementError }) => {
+            if (incrementError) {
+              console.error('Failed to increment message count:', incrementError)
+            } else {
+              console.log('✅ Message count incremented successfully');
+            }
+          });
+          
+        // Save conversation
+        const conversationTitle = messages[0]?.content?.substring(0, 50) || 'New Chat';
+        supabaseAdmin
+          .from('conversations')
+          .upsert({
+            id: conversationId,
+            user_id: user.id,
+            title: conversationTitle,
+            model: model,
+            updated_at: new Date().toISOString()
+          })
+          .then(({ error: convError }) => {
+            if (convError) {
+              console.error('Failed to save conversation:', convError);
+            } else {
+              console.log('✅ Conversation saved successfully');
+            }
+          });
+          
+        // Save messages
+        const messagesToSave = [
+          {
+            id: Date.now(),
+            conversation_id: conversationId,
+            role: 'user',
+            content: messages[messages.length - 1]?.content || '',
+            created_at: new Date().toISOString()
+          },
+          {
+            id: Date.now() + 1,
+            conversation_id: conversationId,
+            role: 'assistant',
+            content: content,
+            created_at: new Date().toISOString()
+          }
+        ];
+        
+        supabaseAdmin
+          .from('messages')
+          .insert(messagesToSave)
+          .then(({ error: msgError }) => {
+            if (msgError) {
+              console.error('Failed to save messages:', msgError);
+            } else {
+              console.log('✅ Messages saved successfully');
+            }
+          });
+      }
+      
       return new Response(
         JSON.stringify(responsePayload),
         { 
@@ -290,12 +428,88 @@ serve(async (req) => {
               model: model
             };
             
+            // Add message count info for authenticated users
+            if (!isAnonymous && userData) {
+              completionPayload.messageCount = userData.message_count + 1;
+              completionPayload.messageLimit = userData.message_limit;
+            }
+            
             const completionData = `data: ${JSON.stringify(completionPayload)}\n\n`
             try {
               controller.enqueue(new TextEncoder().encode(completionData))
               controller.close()
               isControllerActive = false;
               console.log('✅ Stream completed successfully');
+              
+              // Save conversation and increment message count for authenticated users
+              if (!isAnonymous && user && userData && conversationId && fullResponse) {
+                console.log('💾 Saving conversation for authenticated user...');
+                
+                // Increment message count
+                supabaseAdmin
+                  .from('users')
+                  .update({ 
+                    message_count: userData.message_count + 1,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', user.id)
+                  .then(({ error: incrementError }) => {
+                    if (incrementError) {
+                      console.error('Failed to increment message count:', incrementError)
+                    } else {
+                      console.log('✅ Message count incremented successfully');
+                    }
+                  });
+                  
+                // Save conversation
+                const conversationTitle = messages[0]?.content?.substring(0, 50) || 'New Chat';
+                supabaseAdmin
+                  .from('conversations')
+                  .upsert({
+                    id: conversationId,
+                    user_id: user.id,
+                    title: conversationTitle,
+                    model: model,
+                    updated_at: new Date().toISOString()
+                  })
+                  .then(({ error: convError }) => {
+                    if (convError) {
+                      console.error('Failed to save conversation:', convError);
+                    } else {
+                      console.log('✅ Conversation saved successfully');
+                    }
+                  });
+                  
+                // Save messages
+                const messagesToSave = [
+                  {
+                    id: Date.now(),
+                    conversation_id: conversationId,
+                    role: 'user',
+                    content: messages[messages.length - 1]?.content || '',
+                    created_at: new Date().toISOString()
+                  },
+                  {
+                    id: Date.now() + 1,
+                    conversation_id: conversationId,
+                    role: 'assistant',
+                    content: fullResponse,
+                    created_at: new Date().toISOString()
+                  }
+                ];
+                
+                supabaseAdmin
+                  .from('messages')
+                  .insert(messagesToSave)
+                  .then(({ error: msgError }) => {
+                    if (msgError) {
+                      console.error('Failed to save messages:', msgError);
+                    } else {
+                      console.log('✅ Messages saved successfully');
+                    }
+                  });
+              }
+              
             } catch (e) {
               console.warn('Failed to close controller:', e);
               isControllerActive = false;

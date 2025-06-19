@@ -1,4 +1,5 @@
 import { corsHeaders } from '../_shared/cors.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
@@ -10,7 +11,7 @@ Deno.serve(async (req) => {
     console.log('🚀 Claude Edge Function called at:', new Date().toISOString());
     console.log('📝 Request method:', req.method);
     
-    // Get authorization header or apikey for anonymous users - but allow all requests
+    // Get authorization header or apikey for anonymous users
     const authHeader = req.headers.get('Authorization')
     const apiKey = req.headers.get('apikey')
     console.log('🔑 Auth header present:', !!authHeader);
@@ -24,15 +25,78 @@ Deno.serve(async (req) => {
       'apikey': apiKey ? '[API KEY PRESENT]' : undefined
     });
     
-    // PRODUCTION: Allow all requests without authentication
-    console.log('🔓 PRODUCTION MODE: Allowing all requests (anonymous mode)');
+    // Create Supabase client for authenticated operations
+    console.log('🔧 Creating Supabase client');
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? 'https://uxqrdnotdkcwfwcifajf.supabase.co',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    )
+    
     let user = null;
     let userData = null;
-    let isAnonymous = true; // Always treat as anonymous in production for now
+    let isAnonymous = true;
+
+    // Try to authenticate user if auth header is present
+    if (authHeader) {
+      const token = authHeader.replace('Bearer ', '');
+      console.log('🔍 Validating user token...');
+      
+      try {
+        const { data: { user: authUser }, error: userError } = await supabaseAdmin.auth.getUser(token)
+        
+        if (!userError && authUser) {
+          user = authUser;
+          isAnonymous = false;
+          console.log('✅ User authenticated:', user.email);
+
+          // Fetch user data for authenticated users
+          console.log('📊 Fetching user data...');
+          const { data: userDataResult, error: userDataError } = await supabaseAdmin
+            .from('users')
+            .select('message_count, message_limit, subscription_tier')
+            .eq('id', user.id)
+            .single()
+
+          if (!userDataError && userDataResult) {
+            userData = userDataResult;
+            console.log('📊 User data:', { 
+              messageCount: userData.message_count, 
+              messageLimit: userData.message_limit, 
+              subscriptionTier: userData.subscription_tier 
+            });
+
+            // Check if user has exceeded message limit
+            if (userData.message_count >= userData.message_limit) {
+              return new Response(
+                JSON.stringify({ 
+                  error: 'Message limit exceeded',
+                  limit: userData.message_limit,
+                  current: userData.message_count,
+                  subscription_tier: userData.subscription_tier
+                }),
+                { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+              )
+            }
+          } else {
+            console.error('❌ Failed to fetch user data:', userDataError);
+          }
+        } else {
+          console.log('⚠️ Invalid or expired token, proceeding as anonymous:', userError?.message);
+        }
+      } catch (authError) {
+        console.log('⚠️ Auth error, proceeding as anonymous:', authError);
+      }
+    } else if (apiKey) {
+      console.log('🔓 API key provided - anonymous user request');
+    } else {
+      console.log('🔓 No auth headers - anonymous user request');
+    }
+
+    console.log('👤 User status:', { isAnonymous, hasUser: !!user, hasUserData: !!userData });
 
     // Parse request body
     console.log('📥 Parsing request body...');
-    const { messages, model, conversationId }: ChatRequest = await req.json()
+    const { messages, model, conversationId } = await req.json()
     console.log('📥 Parsed request:', { messageCount: messages?.length, model, conversationId });
 
     if (!messages || !Array.isArray(messages)) {
