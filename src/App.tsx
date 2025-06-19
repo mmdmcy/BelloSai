@@ -1031,6 +1031,8 @@ function App() {
   const handleRegenerateResponse = useCallback(async (targetModel?: string) => {
     if (isGenerating || messages.length === 0) return;
     
+    console.log('🔄 Regenerating response...');
+    
     // Find the last user message
     const lastUserMessage = [...messages].reverse().find(msg => msg.type === 'user');
     if (!lastUserMessage) {
@@ -1038,9 +1040,12 @@ function App() {
       return;
     }
     
+    console.log('✅ Found last user message:', lastUserMessage.content);
+    
     // Remove the last AI message if it exists
     const filteredMessages = messages.filter((msg, index) => {
       if (index === messages.length - 1 && msg.type === 'ai') {
+        console.log('🗑️ Removing last AI message for regeneration');
         return false; // Remove last AI message
       }
       return true;
@@ -1049,8 +1054,9 @@ function App() {
     setMessages(filteredMessages);
     
     // Regenerate with the last user message
-    await sendMessage(lastUserMessage.content, true, targetModel);
-  }, [messages, isGenerating, sendMessage]);
+    console.log('🔄 Calling sendMessage with regenerate=true');
+    await sendMessage(lastUserMessage.content, true, targetModel || selectedModel);
+  }, [messages, isGenerating, sendMessage, selectedModel]);
 
   /**
    * Handle new chat creation
