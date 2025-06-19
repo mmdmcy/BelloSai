@@ -126,24 +126,24 @@ export const MODEL_CAPABILITIES: Record<string, ModelCapability> = {
 
 export const AVAILABLE_MODELS: ModelInfo[] = [
   {
-    name: 'Gemini 2.5 Pro',
-    code: 'models/gemini-2.5-pro-preview-06-05',
+    name: 'Gemini 1.5 Flash',
+    code: 'models/gemini-1.5-flash',
     provider: 'Gemini',
-    capabilities: ['text', 'audio', 'image', 'video', 'code', 'function_calling', 'caching', 'structured_outputs', 'reasoning'],
-    description: 'State-of-the-art reasoning, grote context, code, STEM, datasets.'
+    capabilities: ['text', 'audio', 'image', 'video', 'code', 'function_calling'],
+    description: 'Snel, gratis Gemini model met multimodale ondersteuning.'
   },
   {
-    name: 'Gemini 2.5 Flash',
-    code: 'models/gemini-2.5-flash-preview-05-20',
+    name: 'Gemini 1.5 Pro',
+    code: 'models/gemini-1.5-pro',
     provider: 'Gemini',
-    capabilities: ['text', 'audio', 'image', 'video', 'code', 'function_calling', 'caching', 'structured_outputs', 'search'],
-    description: 'Beste prijs-prestatie, snelle preview, brede multimodale input.'
+    capabilities: ['text', 'audio', 'image', 'video', 'code', 'function_calling', 'reasoning'],
+    description: 'Geavanceerd gratis Gemini model met reasoning capabilities.'
   },
   {
     name: 'Gemini 2.0 Flash',
     code: 'models/gemini-2.0-flash',
     provider: 'Gemini',
-    capabilities: ['text', 'audio', 'image', 'video', 'code', 'function_calling', 'caching', 'structured_outputs', 'search'],
+    capabilities: ['text', 'audio', 'image', 'video', 'code', 'function_calling'],
     description: 'Snelle, grote context, tool use, live API.'
   },
   {
@@ -1965,7 +1965,12 @@ function App() {
                   style={{
                     background: customization.gradientEnabled 
                       ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                      : customization.primaryColor
+                      : customization.primaryColor,
+                    borderTop: `3px solid ${customization.primaryColor}`,
+                    borderLeft: `2px solid ${customization.primaryColor}`,
+                    borderRight: `2px solid ${customization.primaryColor}`,
+                    borderRadius: '1.5rem 1.5rem 0 0',
+                    boxShadow: `0 2px 12px 0 ${customization.primaryColor}22`,
                   }}
                 />
               )}
