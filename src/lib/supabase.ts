@@ -18,7 +18,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: false,
     persistSession: true,
-    detectSessionInUrl: true,
+    detectSessionInUrl: false,
     // Use the default localStorage with a custom key
     storage: {
       getItem: (key: string) => {
