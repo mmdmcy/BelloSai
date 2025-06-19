@@ -870,51 +870,27 @@ function App() {
       console.log('  - Conversation ID:', currentConvoId);
       console.log('🚀 Starting sendChatMessage call...');
 
-      // No timeouts - AI can take as long as it needs!
+      // Direct streaming without buffering for immediate display
       let fullResponse = '';
-      let streamBuffer = '';
-      let lastUpdateTime = Date.now();
-      const UPDATE_THROTTLE = 50; // Update UI every 50ms for smoother streaming
 
       try {
         fullResponse = await sendChatMessage(
           chatMessages,
           modelToUse,
-          async (chunk: string) => {
+          (chunk: string) => {
             if (!chunk) return;
             
-            // Add chunk to buffer
-            streamBuffer += chunk;
+            // Direct UI update - no throttling or buffering
+            console.log('📦 Direct chunk update:', chunk.length, 'chars');
             
-            // Throttled UI updates for better performance
-            const now = Date.now();
-            if (now - lastUpdateTime >= UPDATE_THROTTLE || streamBuffer.length > 100) {
-              console.log('📦 Processing buffered chunks:', streamBuffer.length, 'chars');
-              
-              // Update the AI message with buffered content
-              setMessages(prev => prev.map(msg => 
-                msg.id === aiMessageId 
-                  ? { ...msg, content: msg.content + streamBuffer }
-                  : msg
-              ));
-
-              fullResponse += streamBuffer;
-              streamBuffer = ''; // Clear buffer
-              lastUpdateTime = now;
-            }
+            setMessages(prev => prev.map(msg => 
+              msg.id === aiMessageId 
+                ? { ...msg, content: msg.content + chunk }
+                : msg
+            ));
           },
           currentConvoId || undefined
         );
-
-        // Process any remaining buffer
-        if (streamBuffer) {
-          setMessages(prev => prev.map(msg => 
-            msg.id === aiMessageId 
-              ? { ...msg, content: msg.content + streamBuffer }
-              : msg
-          ));
-          fullResponse += streamBuffer;
-        }
         
         console.log('✅ sendChatMessage completed successfully');
         console.log('📝 Full response length:', fullResponse?.length || 0);
