@@ -127,7 +127,7 @@ export const MODEL_CAPABILITIES: Record<string, ModelCapability> = {
 export const AVAILABLE_MODELS: ModelInfo[] = [
   {
     name: 'Gemini 2.5 Pro',
-    code: 'gemini-2.5-pro-preview-06-05',
+    code: 'models/gemini-2.5-pro-preview-06-05',
     provider: 'Gemini',
     capabilities: ['text', 'audio', 'image', 'video', 'code', 'function_calling', 'caching', 'structured_outputs', 'reasoning'],
     description: 'State-of-the-art reasoning, grote context, code, STEM, datasets.'
