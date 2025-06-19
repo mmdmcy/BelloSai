@@ -38,7 +38,7 @@ serve(async (req) => {
     console.log('🚀 DeepSeek Edge Function called at:', new Date().toISOString());
     console.log('📝 Request method:', req.method);
     
-    // Get authorization header or apikey for anonymous users
+    // Get authorization header or apikey for anonymous users - but allow all requests
     const authHeader = req.headers.get('Authorization')
     const apiKey = req.headers.get('apikey')
     console.log('🔑 Auth header present:', !!authHeader);
@@ -52,114 +52,11 @@ serve(async (req) => {
       'apikey': apiKey ? '[API KEY PRESENT]' : undefined
     });
     
-    // Create Supabase client with service role key for admin operations
-    console.log('🔧 Creating Supabase client');
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? 'https://uxqrdnotdkcwfwcifajf.supabase.co',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    )
-
+    // PRODUCTION: Allow all requests without authentication
+    console.log('🔓 PRODUCTION MODE: Allowing all requests (anonymous mode)');
     let user = null;
     let userData = null;
-    let isAnonymous = false;
-
-    // Optimized authentication check
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      console.log('🔍 Validating user token...');
-      
-      const { data: { user: authUser }, error: userError } = await supabaseAdmin.auth.getUser(token)
-      
-      if (userError || !authUser) {
-        console.log('❌ Invalid or expired token:', userError?.message);
-        return new Response(
-          JSON.stringify({ error: 'Invalid or expired token', details: userError?.message || 'Auth session missing!' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-      
-      user = authUser;
-      console.log('✅ User authenticated:', user.email);
-
-      // Fast user data fetch with optimized query
-      console.log('📊 Fetching user data...');
-      const { data: userDataResult, error: userDataError } = await supabaseAdmin
-        .from('users')
-        .select('message_count, message_limit, subscription_tier')
-        .eq('id', user.id)
-        .single()
-
-      if (userDataError) {
-        console.error('❌ Failed to fetch user data:', userDataError);
-        return new Response(
-          JSON.stringify({ error: 'Failed to fetch user data' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-
-      userData = userDataResult;
-      console.log('📊 User data:', { 
-        messageCount: userData.message_count, 
-        messageLimit: userData.message_limit, 
-        subscriptionTier: userData.subscription_tier 
-      });
-
-      // Check if user has exceeded message limit
-      if (userData.message_count >= userData.message_limit) {
-        return new Response(
-          JSON.stringify({ 
-            error: 'Message limit exceeded',
-            limit: userData.message_limit,
-            current: userData.message_count,
-            subscription_tier: userData.subscription_tier
-          }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-    } else if (apiKey) {
-      // Anonymous user - verify API key matches anon key
-      const expectedAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
-      console.log('🔑 Anonymous key verification:', {
-        providedKeyLength: apiKey.length,
-        expectedKeyLength: expectedAnonKey?.length || 0,
-        providedPrefix: apiKey.substring(0, 20) + '...',
-        expectedPrefix: expectedAnonKey?.substring(0, 20) + '...' || 'missing',
-        keysMatch: apiKey === expectedAnonKey,
-        environmentVariableExists: !!expectedAnonKey
-      });
-      
-      // Log all environment variables starting with SUPABASE for debugging
-      console.log('🔍 Available Supabase env vars:', {
-        SUPABASE_URL: !!Deno.env.get('SUPABASE_URL'),
-        SUPABASE_ANON_KEY: !!Deno.env.get('SUPABASE_ANON_KEY'),
-        SUPABASE_SERVICE_ROLE_KEY: !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-      });
-      
-      if (!expectedAnonKey) {
-        console.error('❌ SUPABASE_ANON_KEY environment variable not set');
-        // For now, allow requests without the anon key to make anonymous mode work
-        console.log('⚠️ Allowing anonymous request without key verification (fallback mode)');
-        isAnonymous = true;
-      } else if (apiKey !== expectedAnonKey) {
-        console.log('❌ Invalid API key for anonymous user');
-        console.log('🔍 Debug key comparison:', {
-          expectedStart: expectedAnonKey?.substring(0, 30),
-          providedStart: apiKey.substring(0, 30),
-          expectedEnd: expectedAnonKey?.substring(-10),
-          providedEnd: apiKey.substring(-10)
-        });
-        return new Response(
-          JSON.stringify({ error: 'Invalid API key' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      } else {
-        console.log('🔓 Anonymous user request accepted');
-        isAnonymous = true;
-      }
-    } else {
-      console.log('⚠️ No auth headers provided - allowing as anonymous for debugging');
-      isAnonymous = true;
-    }
+    let isAnonymous = true; // Always treat as anonymous in production for now
 
     // Parse request body
     console.log('📥 Parsing request body...');
@@ -285,26 +182,6 @@ serve(async (req) => {
       )
     }
 
-    // Optimized message count increment (only for authenticated users)
-    if (!isAnonymous && user && userData) {
-      console.log('📊 Incrementing user message count...');
-      // Use fire-and-forget for better performance
-      supabaseAdmin
-        .from('users')
-        .update({ 
-          message_count: userData.message_count + 1,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id)
-        .then(({ error: incrementError }) => {
-          if (incrementError) {
-            console.error('Failed to increment message count:', incrementError)
-          } else {
-            console.log('✅ Message count incremented successfully');
-          }
-        });
-    }
-
     // Handle non-streaming response
     if (!enableStreaming) {
       const responseData = await deepSeekResponse.json()
@@ -314,12 +191,6 @@ serve(async (req) => {
         response: content,
         model: model
       };
-      
-      // Add message count info only for authenticated users
-      if (!isAnonymous && userData) {
-        responsePayload.messageCount = userData.message_count + 1;
-        responsePayload.messageLimit = userData.message_limit;
-      }
       
       return new Response(
         JSON.stringify(responsePayload),
@@ -418,11 +289,6 @@ serve(async (req) => {
               type: 'complete',
               model: model
             };
-            
-            if (!isAnonymous && userData) {
-              completionPayload.messageCount = userData.message_count + 1;
-              completionPayload.messageLimit = userData.message_limit;
-            }
             
             const completionData = `data: ${JSON.stringify(completionPayload)}\n\n`
             try {
