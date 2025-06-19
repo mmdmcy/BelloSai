@@ -44,25 +44,25 @@ interface KeyStatus {
 const API_PROVIDERS = {
   openai_key: {
     name: 'OpenAI',
-    description: 'Voor GPT-4, GPT-3.5, DALL-E',
+    description: 'For GPT-4, GPT-3.5, DALL-E',
     placeholder: 'sk-...',
     helpUrl: 'https://platform.openai.com/api-keys'
   },
   anthropic_key: {
     name: 'Anthropic',
-    description: 'Voor Claude modellen',
+    description: 'For Claude models',
     placeholder: 'sk-ant-...',
     helpUrl: 'https://console.anthropic.com/account/keys'
   },
   deepseek_key: {
     name: 'DeepSeek',
-    description: 'Voor DeepSeek modellen',
+    description: 'For DeepSeek models',
     placeholder: 'sk-...',
     helpUrl: 'https://platform.deepseek.com/api_keys'
   },
   google_key: {
     name: 'Google AI',
-    description: 'Voor Gemini modellen',
+    description: 'For Gemini models',
     placeholder: 'AI...',
     helpUrl: 'https://makersuite.google.com/app/apikey'
   }
@@ -264,8 +264,8 @@ export default function APIKeyManager({
               <div className="text-sm">
                 <p className="font-medium mb-1">Bring Your Own Key (BYOK)</p>
                 <p className={isDark ? 'text-blue-200' : 'text-blue-700'}>
-                  Gebruik je eigen API keys voor directe toegang tot AI providers. 
-                  Keys worden veilig versleuteld opgeslagen en alleen door jou gebruikt.
+                  Use your own API keys for direct access to AI providers. 
+                  Keys are securely encrypted and stored for your use only.
                 </p>
               </div>
             </div>
@@ -296,7 +296,7 @@ export default function APIKeyManager({
                       rel="noopener noreferrer"
                       className="text-purple-500 hover:text-purple-600 text-sm"
                     >
-                      API Key verkrijgen →
+                      Get API Key →
                     </a>
                   </div>
 
@@ -347,7 +347,7 @@ export default function APIKeyManager({
                           ? 'bg-gray-700 border-gray-600 hover:bg-red-600'
                           : 'bg-white border-gray-300 hover:bg-red-50'
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
-                      title="Verwijder API key"
+                      title="Delete API key"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -355,10 +355,10 @@ export default function APIKeyManager({
 
                   {/* Status Message */}
                   {keyStatus === 'valid' && (
-                    <p className="text-sm text-green-500 mt-2">✓ API key is geldig</p>
+                    <p className="text-sm text-green-500 mt-2">✓ API key is valid</p>
                   )}
                   {keyStatus === 'invalid' && (
-                    <p className="text-sm text-red-500 mt-2">✗ API key is ongeldig</p>
+                    <p className="text-sm text-red-500 mt-2">✗ API key is invalid</p>
                   )}
                 </div>
               );
@@ -375,12 +375,12 @@ export default function APIKeyManager({
               {isSaving ? (
                 <div className="flex items-center justify-center gap-2">
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Opslaan...
+                  Saving...
                 </div>
               ) : (
                 <div className="flex items-center justify-center gap-2">
                   <Save className="w-4 h-4" />
-                  Opslaan
+                  Save
                 </div>
               )}
             </button>
@@ -393,7 +393,7 @@ export default function APIKeyManager({
                   : 'bg-gray-200 text-gray-900 hover:bg-gray-300'
               }`}
             >
-              Sluiten
+              Close
             </button>
           </div>
 
@@ -415,8 +415,8 @@ export default function APIKeyManager({
             isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
           }`}>
             <p>
-              🔒 Je API keys worden versleuteld opgeslagen en alleen door jou gebruikt. 
-              BelloSai heeft geen toegang tot je keys of kan deze niet inzien.
+              🔒 Your API keys are encrypted and stored for your use only. 
+              BelloSai has no access to your keys and cannot view them.
             </p>
           </div>
         </div>

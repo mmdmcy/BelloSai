@@ -31,17 +31,17 @@ const AnonymousUsageIndicator: React.FC<AnonymousUsageIndicatorProps> = ({ onLog
       <div className="flex items-center gap-2 mb-2">
         <MessageCircle className={`w-4 h-4 ${getStatusColor()}`} />
         <span className={`text-sm font-medium ${getStatusColor()}`}>
-          {stats.remaining === 0 ? 'Dagelijkse limiet bereikt' : `${stats.remaining} berichten over`}
+          {stats.remaining === 0 ? 'Daily limit reached' : `${stats.remaining} messages left`}
         </span>
       </div>
       
       <div className="text-xs text-gray-600 mb-3">
         <div className="flex items-center gap-1 mb-1">
           <Clock className="w-3 h-3" />
-          <span>Reset om {new Date(stats.resetTime).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })}</span>
+          <span>Resets at {new Date(stats.resetTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
         <div>
-          {stats.used} van {stats.limit} berichten gebruikt vandaag
+          {stats.used} of {stats.limit} messages used today
         </div>
       </div>
 
@@ -50,7 +50,7 @@ const AnonymousUsageIndicator: React.FC<AnonymousUsageIndicatorProps> = ({ onLog
         className="flex items-center gap-2 text-xs bg-blue-500 text-white px-3 py-1.5 rounded-md hover:bg-blue-600 transition-colors"
       >
         <LogIn className="w-3 h-3" />
-        Log in voor onbeperkt gebruik
+        Log in for unlimited use
       </button>
     </div>
   );

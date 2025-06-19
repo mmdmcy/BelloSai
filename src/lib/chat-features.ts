@@ -850,8 +850,8 @@ class ChatFeaturesService {
   }
 
   /**
-   * Remove duplicate AI messages from conversations
-   * Keeps the longest (most complete) message for each conversation
+   * Remove ACTUAL duplicate AI messages (same content) from conversations
+   * Only removes messages with identical content within 30 seconds of each other
    */
   async removeDuplicateMessages(conversationId?: string): Promise<void> {
     try {
@@ -894,30 +894,47 @@ class ChatFeaturesService {
         
         console.log(`🔍 Found ${convMessages.length} AI messages in conversation ${convId}`);
         
-        // Sort by content length (descending) and creation date (descending)
-        // Keep the longest message (most complete response)
-        const sortedMessages = convMessages.sort((a, b) => {
-          const lengthDiff = b.content.length - a.content.length;
-          if (lengthDiff !== 0) return lengthDiff;
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        });
+        // Group messages by exact content match
+        const contentGroups = convMessages.reduce((acc, msg) => {
+          const contentKey = msg.content.trim();
+          if (!acc[contentKey]) {
+            acc[contentKey] = [];
+          }
+          acc[contentKey].push(msg);
+          return acc;
+        }, {} as Record<string, any[]>);
         
-        // Keep the first (longest/newest) message, delete the rest
-        const messagesToDelete = sortedMessages.slice(1);
-        
-        if (messagesToDelete.length > 0) {
-          const idsToDelete = messagesToDelete.map(msg => msg.id);
+        // Find actual duplicates (same content, multiple messages)
+        for (const [content, duplicateMessages] of Object.entries(contentGroups)) {
+          const duplicateArray = duplicateMessages as any[];
+          if (duplicateArray.length <= 1) continue; // Not duplicates
           
-          const { error: deleteError } = await supabase
-            .from('messages')
-            .delete()
-            .in('id', idsToDelete);
+          // Sort by creation date (keep the oldest - first saved)
+          const sortedDuplicates = duplicateArray.sort((a: any, b: any) => 
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
           
-          if (deleteError) {
-            console.error(`❌ Error deleting duplicate messages for conversation ${convId}:`, deleteError);
-          } else {
-            console.log(`✅ Removed ${messagesToDelete.length} duplicate messages from conversation ${convId}`);
-            totalDuplicatesRemoved += messagesToDelete.length;
+          // Check if messages are within 30 seconds of each other (likely duplicates)
+          const firstMessage = sortedDuplicates[0];
+          const messagesToDelete = sortedDuplicates.slice(1).filter((msg: any) => {
+            const timeDiff = new Date(msg.created_at).getTime() - new Date(firstMessage.created_at).getTime();
+            return timeDiff < 30000; // 30 seconds
+          });
+          
+          if (messagesToDelete.length > 0) {
+            const idsToDelete = messagesToDelete.map((msg: any) => msg.id);
+            
+            const { error: deleteError } = await supabase
+              .from('messages')
+              .delete()
+              .in('id', idsToDelete);
+            
+            if (deleteError) {
+              console.error(`❌ Error deleting duplicate messages for conversation ${convId}:`, deleteError);
+            } else {
+              console.log(`✅ Removed ${messagesToDelete.length} duplicate messages from conversation ${convId}`);
+              totalDuplicatesRemoved += messagesToDelete.length;
+            }
           }
         }
       }

@@ -407,7 +407,7 @@ export default function ChatView({
                         isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'
                       }`}
                       onClick={() => navigator.clipboard.writeText(message.content)}
-                      title="Kopieer bericht"
+                      title="Copy message"
                     >
                       <Copy className="w-3.5 h-3.5" />
                     </button>
@@ -419,7 +419,7 @@ export default function ChatView({
                         }`}
                         onClick={onRegenerateResponse}
                         disabled={isGenerating}
-                        title="Regenereer antwoord"
+                        title="Regenerate response"
                       >
                         <RotateCcw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
                       </button>
@@ -492,7 +492,7 @@ export default function ChatView({
     <div className="flex flex-col h-full">
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-800 rounded-lg p-4 mb-4 mx-4">
-          <span className="font-semibold">Fout:</span> {error}
+          <span className="font-semibold">Error:</span> {error}
         </div>
       )}
       

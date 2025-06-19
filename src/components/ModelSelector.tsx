@@ -26,9 +26,9 @@ const PROVIDER_ICON: Record<string, any> = {
 };
 
 const PROVIDER_COLOR: Record<string, string> = {
-  DeepSeek: '#2563eb', // blauw
-  Claude: '#fbbf24', // geel/orange
-  Mistral: '#ef4444', // rood
+  DeepSeek: '#2563eb', // blue
+  Claude: '#fbbf24', // yellow/orange
+  Mistral: '#ef4444', // red
 };
 
 export default function ModelSelector({ 

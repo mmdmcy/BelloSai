@@ -224,11 +224,11 @@ export default function AttachmentUpload({
         <Upload className={`w-8 h-8 mx-auto mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
         
         <p className={`text-lg font-medium mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-          Sleep bestanden hierheen of klik om te selecteren
+          Drag files here or click to select
         </p>
         
         <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
-          Ondersteund: Afbeeldingen, PDF, Tekst (max 10MB per bestand)
+          Supported: Images, PDF, Text (max 10MB per file)
         </p>
       </div>
 

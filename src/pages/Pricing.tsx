@@ -47,7 +47,7 @@ export default function Pricing() {
                 className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
-                Terug naar BelloSai
+                Back to BelloSai
               </button>
             </div>
             <div className="flex items-center gap-2">
@@ -121,14 +121,14 @@ export default function Pricing() {
                       </span>
                       {!isFree && (
                         <span className="text-gray-600 ml-2">
-                          /{plan.interval === 'month' ? 'maand' : 'jaar'}
+                          /{plan.interval === 'month' ? 'month' : 'year'}
                         </span>
                       )}
                     </div>
                     {isYearly && (
                       <div className="mt-2">
                         <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">
-                          Bespaar meer dan 15%
+                          Save over 15%
                         </span>
                       </div>
                     )}
@@ -153,11 +153,11 @@ export default function Pricing() {
                         onClick={handleBackToHome}
                         className="w-full py-3 px-6 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
                       >
-                        Probeer Gratis
+                        Try Free
                       </button>
                     ) : hasActiveSubscription ? (
                       <div className="w-full py-3 px-6 bg-gray-100 text-gray-500 rounded-lg font-medium text-center">
-                        Huidige Plan
+                        Current Plan
                       </div>
                     ) : (
                       <button
@@ -172,12 +172,12 @@ export default function Pricing() {
                         {actionLoading === plan.id ? (
                           <div className="flex items-center justify-center gap-2">
                             <Loader2 className="w-4 h-4 animate-spin" />
-                            Laden...
+                            Loading...
                           </div>
                         ) : !plan.priceId && !isFree ? (
-                          'Binnenkort Beschikbaar'
+                          'Coming Soon'
                         ) : (
-                          'Kies Dit Plan'
+                          'Choose This Plan'
                         )}
                       </button>
                     )}
@@ -191,7 +191,7 @@ export default function Pricing() {
         {/* FAQ or Additional Info */}
         <div className="mt-16 text-center">
           <h3 className="text-2xl font-bold text-gray-900 mb-6">
-            Veelgestelde Vragen
+            Frequently Asked Questions
           </h3>
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             <div className="text-left">
@@ -204,26 +204,26 @@ export default function Pricing() {
             </div>
             <div className="text-left">
               <h4 className="font-semibold text-gray-900 mb-2">
-                Wat gebeurt er met mijn data als ik opzeg?
+                What happens to my data if I cancel?
               </h4>
               <p className="text-gray-600">
-                Je chat geschiedenis en account blijven behouden. Je kunt altijd weer upgraden naar Pro als je wilt.
+                Your chat history and account are preserved. You can always upgrade to Pro again whenever you want.
               </p>
             </div>
             <div className="text-left">
               <h4 className="font-semibold text-gray-900 mb-2">
-                Welke betaalmethoden accepteren jullie?
+                What payment methods do you accept?
               </h4>
               <p className="text-gray-600">
-                We accepteren alle grote creditcards, SEPA overboeking en andere lokale betaalmethoden via Stripe.
+                We accept all major credit cards, SEPA transfers and other local payment methods via Stripe.
               </p>
             </div>
             <div className="text-left">
               <h4 className="font-semibold text-gray-900 mb-2">
-                Is er een gratis proefperiode?
+                Is there a free trial?
               </h4>
               <p className="text-gray-600">
-                Ja! Je kunt BelloSai gratis uitproberen met 20 berichten per maand. Geen creditcard vereist.
+                Yes! You can try BelloSai for free with 20 messages per month. No credit card required.
               </p>
             </div>
           </div>

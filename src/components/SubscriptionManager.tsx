@@ -73,10 +73,10 @@ export function SubscriptionManager() {
     }
   }
 
-  const formatDate = (timestamp: number | null) => {
-    if (!timestamp) return 'Onbekend'
-    return new Date(timestamp * 1000).toLocaleDateString('nl-NL')
-  }
+      const formatDate = (timestamp: number | null) => {
+      if (!timestamp) return 'Unknown'
+      return new Date(timestamp * 1000).toLocaleDateString('en-US')
+    }
 
   const getStatusColor = (status: string | null) => {
     switch (status) {
