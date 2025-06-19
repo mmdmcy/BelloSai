@@ -157,7 +157,7 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     provider: 'Mistral',
     capabilities: ['text', 'reasoning'],
     description: 'State-of-the-art performance. Cost-efficient.',
-    premium: true
+    premium: false
   },
   {
     name: 'Mistral Small 3.1',
@@ -165,7 +165,7 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     provider: 'Mistral',
     capabilities: ['text', 'reasoning', 'multimodal'],
     description: 'SOTA. Multimodal. Multilingual. Apache 2.0.',
-    premium: true
+    premium: false
   },
   {
     name: 'Codestral',
@@ -173,7 +173,7 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     provider: 'Mistral',
     capabilities: ['text', 'code'],
     description: 'Lightweight, fast, proficient in 80+ programming languages.',
-    premium: true
+    premium: false
   }
 ];
 

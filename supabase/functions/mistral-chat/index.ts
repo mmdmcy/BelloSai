@@ -7,6 +7,29 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log('🚀 Mistral Edge Function called at:', new Date().toISOString());
+    
+    // Get authorization header or apikey for anonymous users
+    const authHeader = req.headers.get('Authorization')
+    const apiKey = req.headers.get('apikey')
+    console.log('🔑 Auth header present:', !!authHeader);
+    console.log('🔑 API key present:', !!apiKey);
+    
+    // Allow both authenticated and anonymous users
+    let isAnonymous = false;
+    if (!authHeader && !apiKey) {
+      console.log('❌ Missing authorization header or API key');
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header', code: 401 }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    
+    if (apiKey) {
+      console.log('🔓 Anonymous user request accepted');
+      isAnonymous = true;
+    }
+    
     const { messages, model } = await req.json()
 
     if (!messages || !Array.isArray(messages)) {
