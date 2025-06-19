@@ -3,143 +3,100 @@
  * Manages message limits and usage tracking for non-logged-in users
  */
 
-const ANONYMOUS_STORAGE_KEY = 'bellosai-anonymous-usage';
-const DAILY_MESSAGE_LIMIT = 10;
-
-interface AnonymousUsage {
+interface AnonymousUsageStats {
   messageCount: number;
-  lastResetDate: string; // ISO date string
-  firstUsageDate: string; // ISO date string
+  resetTime: number; // timestamp when count resets
+  dailyLimit: number;
 }
+
+const STORAGE_KEY = 'bellosai-anonymous-usage';
+const DAILY_LIMIT = 10;
 
 class AnonymousUsageService {
-  /**
-   * Get current anonymous usage data
-   */
-  private getUsageData(): AnonymousUsage {
+  private stats: AnonymousUsageStats;
+
+  constructor() {
+    this.stats = this.loadStats();
+    this.checkReset();
+  }
+
+  private loadStats(): AnonymousUsageStats {
     try {
-      const stored = localStorage.getItem(ANONYMOUS_STORAGE_KEY);
-      if (!stored) {
-        return this.createNewUsageData();
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        return JSON.parse(stored);
       }
-      
-      const data: AnonymousUsage = JSON.parse(stored);
-      
-      // Check if we need to reset daily counter
-      const today = new Date().toDateString();
-      const lastReset = new Date(data.lastResetDate).toDateString();
-      
-      if (today !== lastReset) {
-        // Reset daily counter
-        data.messageCount = 0;
-        data.lastResetDate = new Date().toISOString();
-        this.saveUsageData(data);
-      }
-      
-      return data;
     } catch (error) {
-      console.error('Error reading anonymous usage data:', error);
-      return this.createNewUsageData();
+      console.error('Failed to load anonymous usage stats:', error);
     }
+    
+    return this.createNewStats();
   }
 
-  /**
-   * Create new usage data for first-time anonymous user
-   */
-  private createNewUsageData(): AnonymousUsage {
-    const now = new Date().toISOString();
-    const data: AnonymousUsage = {
-      messageCount: 0,
-      lastResetDate: now,
-      firstUsageDate: now
-    };
-    this.saveUsageData(data);
-    return data;
-  }
-
-  /**
-   * Save usage data to localStorage
-   */
-  private saveUsageData(data: AnonymousUsage): void {
-    try {
-      localStorage.setItem(ANONYMOUS_STORAGE_KEY, JSON.stringify(data));
-    } catch (error) {
-      console.error('Error saving anonymous usage data:', error);
-    }
-  }
-
-  /**
-   * Check if user can send a message (within daily limit)
-   */
-  canSendMessage(): boolean {
-    const data = this.getUsageData();
-    return data.messageCount < DAILY_MESSAGE_LIMIT;
-  }
-
-  /**
-   * Get remaining messages for today
-   */
-  getRemainingMessages(): number {
-    const data = this.getUsageData();
-    return Math.max(0, DAILY_MESSAGE_LIMIT - data.messageCount);
-  }
-
-  /**
-   * Get total messages sent today
-   */
-  getMessagesUsedToday(): number {
-    const data = this.getUsageData();
-    return data.messageCount;
-  }
-
-  /**
-   * Increment message count (call when user sends a message)
-   */
-  incrementMessageCount(): void {
-    const data = this.getUsageData();
-    data.messageCount += 1;
-    this.saveUsageData(data);
-  }
-
-  /**
-   * Get daily limit
-   */
-  getDailyLimit(): number {
-    return DAILY_MESSAGE_LIMIT;
-  }
-
-  /**
-   * Get usage statistics for display
-   */
-  getUsageStats(): {
-    used: number;
-    remaining: number;
-    limit: number;
-    resetTime: string;
-  } {
-    const data = this.getUsageData();
-    const tomorrow = new Date();
+  private createNewStats(): AnonymousUsageStats {
+    const now = new Date();
+    const tomorrow = new Date(now);
     tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
+    tomorrow.setHours(2, 0, 0, 0); // Reset at 2 AM next day
     
     return {
-      used: data.messageCount,
-      remaining: this.getRemainingMessages(),
-      limit: DAILY_MESSAGE_LIMIT,
-      resetTime: tomorrow.toLocaleString()
+      messageCount: 0,
+      resetTime: tomorrow.getTime(),
+      dailyLimit: DAILY_LIMIT
     };
   }
 
-  /**
-   * Clear all anonymous usage data (for testing or reset)
-   */
-  clearUsageData(): void {
+  private saveStats(): void {
     try {
-      localStorage.removeItem(ANONYMOUS_STORAGE_KEY);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.stats));
     } catch (error) {
-      console.error('Error clearing anonymous usage data:', error);
+      console.error('Failed to save anonymous usage stats:', error);
     }
+  }
+
+  private checkReset(): void {
+    const now = Date.now();
+    if (now >= this.stats.resetTime) {
+      this.stats = this.createNewStats();
+      this.saveStats();
+    }
+  }
+
+  getStats(): AnonymousUsageStats {
+    this.checkReset();
+    return { ...this.stats };
+  }
+
+  canSendMessage(): boolean {
+    this.checkReset();
+    return this.stats.messageCount < this.stats.dailyLimit;
+  }
+
+  recordMessage(): boolean {
+    this.checkReset();
+    
+    if (!this.canSendMessage()) {
+      return false;
+    }
+    
+    this.stats.messageCount++;
+    this.saveStats();
+    return true;
+  }
+
+  getRemainingMessages(): number {
+    this.checkReset();
+    return Math.max(0, this.stats.dailyLimit - this.stats.messageCount);
+  }
+
+  getResetTimeFormatted(): string {
+    return new Date(this.stats.resetTime).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 }
 
-export const anonymousUsageService = new AnonymousUsageService(); 
+export const anonymousUsageService = new AnonymousUsageService();
+export type { AnonymousUsageStats }; 
+

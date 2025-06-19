@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { X, ChevronLeft, Palette, Type, Eye, EyeOff, Sparkles, Save, Check, RotateCcw, LogOut } from 'lucide-react';
-import { CustomizationSettings } from '../App';
+import { X, ChevronLeft, Palette, Type, Eye, EyeOff, Sparkles, Save, Check, RotateCcw, LogOut, Brush } from 'lucide-react';
+import { CustomizationSettings, AVAILABLE_THEMES } from '../App';
 import type { User } from '@supabase/supabase-js';
 import { useSubscription } from '../hooks/useSubscription';
 import { SUBSCRIPTION_PLANS } from '../lib/stripeService';
@@ -454,6 +454,57 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
                saveStatus === 'saved' ? 'Saved!' : 'Save Changes'}
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Theme Selection */}
+      <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+        <h4 className={`font-medium mb-4 flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          <Brush className="w-5 h-5" />
+          Visual Theme
+        </h4>
+        
+        <div className="grid grid-cols-1 gap-3 mb-4">
+          {AVAILABLE_THEMES.map((theme) => (
+            <button
+              key={theme.id}
+              onClick={() => handleTempCustomizationChange({ 
+                selectedTheme: theme.id,
+                primaryColor: theme.primaryColor,
+                secondaryColor: theme.secondaryColor,
+                fontFamily: theme.fontFamily,
+                gradientEnabled: theme.gradientEnabled
+              })}
+              className={`p-4 rounded-lg border-2 transition-all text-left ${
+                tempCustomization.selectedTheme === theme.id
+                  ? 'border-purple-500 bg-purple-50'
+                  : isDark 
+                    ? 'border-gray-600 hover:border-gray-500' 
+                    : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {theme.name}
+                  </div>
+                  <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {theme.description}
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <div 
+                    className="w-6 h-6 rounded-full border-2 border-white shadow-sm"
+                    style={{ backgroundColor: theme.primaryColor }}
+                  />
+                  <div 
+                    className="w-6 h-6 rounded-full border-2 border-white shadow-sm"
+                    style={{ backgroundColor: theme.secondaryColor }}
+                  />
+                </div>
+              </div>
+            </button>
+          ))}
         </div>
       </div>
 
