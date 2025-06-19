@@ -915,7 +915,7 @@ function App() {
 
         // Validate response
         if (!fullResponse || fullResponse.trim() === '') {
-          throw new Error('Lege response ontvangen van AI service');
+          throw new Error('Empty response received from AI service');
         }
 
         console.log('💾 Saving messages to database...');
@@ -2025,9 +2025,9 @@ function App() {
                     hasGlassEffect() && !isDark 
                       ? 'glass-element' 
                       : isDark 
-                        ? 'bg-gray-900 border-gray-700' 
-                        : 'bg-purple-50 border-purple-100'
-                  } ${!hasGlassEffect() ? 'border-r' : ''} flex items-center justify-center`}
+                        ? 'bg-gray-900' 
+                        : 'bg-purple-50'
+                  } flex items-center justify-center`}
                   style={{
                     background: !hasGlassEffect() && customization.gradientEnabled && !isDark 
                       ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
@@ -2060,9 +2060,9 @@ function App() {
                     hasGlassEffect() && !isDark 
                       ? 'glass-element' 
                       : isDark 
-                        ? 'bg-gray-900 border-gray-700' 
-                        : 'bg-purple-50 border-purple-100'
-                  } ${!hasGlassEffect() ? 'border-r' : ''} flex items-center justify-center p-2`}
+                        ? 'bg-gray-900' 
+                        : 'bg-purple-50'
+                  } flex items-center justify-center p-2`}
                   style={{
                     background: !hasGlassEffect() && customization.gradientEnabled && !isDark 
                       ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
@@ -2101,9 +2101,9 @@ function App() {
                     hasGlassEffect() && !isDark 
                       ? 'glass-element' 
                       : isDark 
-                        ? 'bg-gray-900 border-gray-700' 
-                        : 'bg-purple-50 border-purple-100'
-                  } ${!hasGlassEffect() ? 'border-r' : ''} flex items-center justify-center p-2`}
+                        ? 'bg-gray-900' 
+                        : 'bg-purple-50'
+                  } flex items-center justify-center p-2`}
                   style={{
                     background: !hasGlassEffect() && customization.gradientEnabled && !isDark 
                       ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
@@ -2138,7 +2138,7 @@ function App() {
               {/* Search Button - Detached and moved above sidebar */}
               {elementKey === 'searchButton' && (
                 <div 
-                  className={`h-full w-full ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-purple-50 border-purple-100'} border-r flex items-center justify-center px-2`}
+                  className={`h-full w-full ${isDark ? 'bg-gray-900' : 'bg-purple-50'} flex items-center justify-center px-2`}
                   style={{
                     background: customization.gradientEnabled && !isDark 
                       ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
@@ -2166,7 +2166,7 @@ function App() {
               {/* Account Panel - Detached */}
               {elementKey === 'accountPanel' && (
                 <div 
-                  className={`h-full w-full ${isDark ? 'bg-gray-900 border-gray-700' : 'bg-purple-50 border-purple-100'} border-r flex items-center justify-center`}
+                  className={`h-full w-full ${isDark ? 'bg-gray-900' : 'bg-purple-50'} flex items-center justify-center`}
                   style={{
                     background: customization.gradientEnabled && !isDark 
                       ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
