@@ -1161,16 +1161,15 @@ function App() {
     
     console.log('🔘 Conversation clicked:', conversationId, 'Current:', currentConversationId);
     
-    // If clicking the same conversation and it's already loaded, allow reload if user wants
-    if (currentConversationId === conversationId && messages.length > 0 && !isLoadingConversation) {
-      console.log('✅ Same conversation clicked - allowing reload');
-      // Don't return early - allow the reload
+    // Prevent ANY loading if already loading (regardless of conversation)
+    if (isLoadingConversation) {
+      console.log('⚠️ Already loading a conversation, ignoring click');
+      return;
     }
     
-    // Prevent multiple simultaneous loads for the same conversation
-    if (isLoadingConversation && currentConversationId === conversationId) {
-      console.log('⚠️ Already loading this conversation, ignoring request');
-      return;
+    // If clicking the same conversation and it's already loaded, allow reload
+    if (currentConversationId === conversationId && messages.length > 0) {
+      console.log('✅ Same conversation clicked - allowing reload');
     }
     
     // Reset generating state when switching conversations
@@ -1242,14 +1241,14 @@ function App() {
       });
       
     } finally {
-      // CRITICAL: Always reset loading state
+      // CRITICAL: Always reset loading state immediately
       setIsLoadingConversation(false);
       console.log('🔄 Loading state reset for conversation:', conversationId);
       
-      // Force UI update to ensure loading state is cleared
-      setTimeout(() => {
-        setIsLoadingConversation(false);
-      }, 100);
+      // Triple safety - force UI update multiple ways
+      setTimeout(() => setIsLoadingConversation(false), 50);
+      setTimeout(() => setIsLoadingConversation(false), 200);
+      requestAnimationFrame(() => setIsLoadingConversation(false));
     }
   };
 

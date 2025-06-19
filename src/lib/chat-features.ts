@@ -751,26 +751,17 @@ class ChatFeaturesService {
     try {
       console.log('🔍 Getting messages for conversation:', conversationId);
       
-      // Get current session first to ensure we're authenticated
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error('❌ Session error before query:', sessionError);
-        // Try anyway - might be anonymous
-      }
-      
-      console.log('🔍 Session status for query:', session ? 'Authenticated' : 'Anonymous');
-      
-      // Create the query with explicit timeout and better error handling
+      // Direct query without auth session check to avoid deadlocks
+      // Supabase handles auth automatically through RLS policies
       const queryPromise = supabase
         .from('messages')
         .select('*')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
       
-      // Add our own timeout directly to the query
+      // Add timeout protection
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Query timeout after 8 seconds')), 8000);
+        setTimeout(() => reject(new Error('Query timeout after 5 seconds')), 5000);
       });
       
       const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
@@ -790,7 +781,7 @@ class ChatFeaturesService {
     } catch (error) {
       console.error('❌ ChatFeaturesService: Query failed:', error);
       if (error instanceof Error && error.message.includes('timeout')) {
-        console.error('⏰ Query timed out after 8 seconds');
+        console.error('⏰ Query timed out after 5 seconds');
       }
       return []; // Always return empty array on error
     }
