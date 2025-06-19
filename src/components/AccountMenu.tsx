@@ -48,7 +48,7 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
     }
   }, [subscriptionLoading]);
 
-  const tabs = ['Account', 'Customization', 'History & Sync', 'Models', 'API Keys', 'Attachments', 'Contact Us'];
+  const tabs = ['Account', 'Customization', 'History & Sync', 'Models', 'API Keys', 'Attachments', 'Contact Me'];
 
   const colorPresets = [
     { name: 'Purple', primary: '#7c3aed', secondary: '#a855f7' },
@@ -228,7 +228,7 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
                   Access to All Models
                 </h4>
                 <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Get access to our full suite of models including Claude, o3-mini-high, and more!
+                  Get access to the full suite of models including Claude, o3-mini-high, and more!
                 </p>
               </div>
             </div>
@@ -252,7 +252,7 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
                   Priority Support
                 </h4>
                 <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Get faster responses and dedicated assistance from the BelloSai team whenever you need help!
+                  Get faster responses and dedicated assistance when you need help!
                 </p>
               </div>
             </div>
@@ -600,22 +600,8 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
           API Keys (BYOK)
         </h3>
         <p className={`mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-          Gebruik je eigen API keys voor directe toegang tot AI providers. 
-          Keys worden veilig versleuteld opgeslagen.
+          This section is coming soon. I'm working hard to bring you more features!
         </p>
-        <button
-          onClick={() => {
-            onOpenAPIKeyManager?.();
-          }}
-          className="px-6 py-3 rounded-lg text-white font-medium transition-colors hover:opacity-90"
-          style={{ 
-            background: customization.gradientEnabled 
-              ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-              : customization.primaryColor
-          }}
-        >
-          Beheer API Keys
-        </button>
       </div>
     </div>
   );
@@ -627,7 +613,7 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
           {title}
         </h3>
         <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-          This section is coming soon. We're working hard to bring you more features!
+          This section is coming soon. I'm working hard to bring you more features!
         </p>
       </div>
     </div>
