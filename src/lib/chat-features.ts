@@ -764,8 +764,6 @@ class ChatFeaturesService {
     try {
       console.log('🔍 Getting messages for conversation:', conversationId);
       
-      // Direct query without auth session check to avoid deadlocks
-      // Supabase handles auth automatically through RLS policies
       const { data, error } = await supabase
         .from('messages')
         .select('*')

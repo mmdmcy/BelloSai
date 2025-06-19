@@ -19,21 +19,27 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    storage: localStorage,
-    storageKey: 'bellosai-auth-token',
-    flowType: 'pkce',
-    debug: import.meta.env.DEV,
-    // Lock to prevent concurrent auth operations
-    lock: async (name: string, acquireTimeout?: number, fn?: () => Promise<any>) => {
-      console.log(`🔒 Auth lock acquired: ${name}`);
-      if (fn) {
-        try {
-          return await fn();
-        } finally {
-          console.log(`🔓 Auth lock released: ${name}`);
+    // Use the default localStorage with a custom key
+    storage: {
+      getItem: (key: string) => {
+        if (typeof window !== 'undefined') {
+          return window.localStorage.getItem(key);
         }
-      }
-    }
+        return null;
+      },
+      setItem: (key: string, value: string) => {
+        if (typeof window !== 'undefined') {
+          window.localStorage.setItem(key, value);
+        }
+      },
+      removeItem: (key: string) => {
+        if (typeof window !== 'undefined') {
+          window.localStorage.removeItem(key);
+        }
+      },
+    },
+    storageKey: 'sb-uxqrdnotdkcwfwcifajf-auth-token', // Use the standard Supabase storage key
+    flowType: 'pkce'
   },
   global: {
     headers: {

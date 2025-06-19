@@ -568,36 +568,6 @@ function App() {
     }
   }, [user]);
 
-  // Add session health check when tab becomes visible
-  useEffect(() => {
-    let healthCheckInProgress = false;
-    
-    const handleVisibilityChange = async () => {
-      if (!document.hidden && user && !healthCheckInProgress) {
-        healthCheckInProgress = true;
-        console.log('👀 Tab became visible, checking app health...');
-        
-        try {
-          // Simple health check - just verify auth status without any data reloading
-          const { data: { session }, error } = await supabase.auth.getSession();
-          if (session && !error) {
-            console.log('✅ App health check passed');
-          } else {
-            console.warn('⚠️ Session issue detected:', error);
-            // Let the auth context handle session refresh automatically
-          }
-        } catch (error) {
-          console.warn('⚠️ App health check failed:', error);
-        } finally {
-          healthCheckInProgress = false;
-        }
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [user]);
-
   // Check for successful checkout session in URL parameters
   useEffect(() => {
     const checkForCheckoutSuccess = async () => {
