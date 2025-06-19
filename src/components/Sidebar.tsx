@@ -57,6 +57,7 @@ interface SidebarProps {
   onConversationSelect?: (conversationId: string) => void;
   onConversationDelete?: (conversationId: string) => void;
   hasGlassEffect?: boolean; // New prop for glass effects
+  isLoggedIn?: boolean; // New prop to check if user is logged in
 
 }
 
@@ -74,7 +75,8 @@ export default function Sidebar({
   currentConversationId,
   onConversationSelect,
   onConversationDelete,
-  hasGlassEffect = false
+  hasGlassEffect = false,
+  isLoggedIn = false
 }: SidebarProps) {
   // State for tracking if user has alt-tabbed and needs to refresh
   const [showRefreshPrompt, setShowRefreshPrompt] = useState(false);
@@ -207,8 +209,8 @@ export default function Sidebar({
 
       {/* Chat History Section */}
       <div className="px-4 pb-4 flex-1 overflow-y-auto">
-        {/* Refresh Prompt - shown when user returns after alt-tabbing */}
-        {showRefreshPrompt && (
+        {/* Refresh Prompt - shown when user returns after alt-tabbing (only for logged in users) */}
+        {showRefreshPrompt && isLoggedIn && (
           <div className={`mb-4 p-3 rounded-lg border ${
             isDark 
               ? 'bg-blue-900/30 border-blue-700 text-blue-200' 
