@@ -1,3 +1,26 @@
+/**
+ * Supabase Client Configuration
+ * 
+ * This module configures and exports the Supabase client used throughout the application
+ * for database operations, authentication, and real-time subscriptions.
+ * 
+ * Features:
+ * - Custom storage configuration to prevent cross-tab auth sync issues
+ * - Optimized settings for BelloSai chat application
+ * - Session management with manual refresh control
+ * - Type-safe database operations using generated types
+ * 
+ * Configuration:
+ * - Disables auto-refresh to prevent connection corruption
+ * - Uses localStorage for session persistence
+ * - Implements PKCE flow for secure authentication
+ * - Sets up real-time subscriptions with rate limiting
+ * 
+ * Environment Variables:
+ * - VITE_SUPABASE_URL: Your Supabase project URL
+ * - VITE_SUPABASE_ANON_KEY: Your Supabase anonymous key
+ */
+
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '../types/database'
 

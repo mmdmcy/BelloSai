@@ -1,26 +1,37 @@
 /**
- * Main Application Component
+ * Main Application Component - BelloSai AI Chat Assistant
  * 
- * This is the root component of the BelloSai AI Chat Assistant application.
- * It manages the overall application state, layout configuration, and routing
- * between different views (chat, game, designer mode).
+ * This is the root React component that serves as the entry point for the entire application.
+ * It orchestrates the core functionality including chat interface, AI model integration,
+ * subscription management, and user authentication.
+ * 
+ * Architecture Overview:
+ * - Manages global application state using React hooks and context
+ * - Implements responsive grid-based layout system with drag-and-drop customization
+ * - Handles real-time chat messaging with multiple AI providers (DeepSeek, Claude, Mistral)
+ * - Integrates Stripe payment processing for subscription management
+ * - Provides anonymous usage tracking with daily message limits
  * 
  * Key Features:
- * - Dynamic grid-based layout system with drag-and-drop designer mode
- * - Responsive mobile-first design with adaptive layouts
- * - Theme switching (light/dark mode)
- * - Customizable UI (colors, fonts, gradients)
- * - Chat functionality with AI responses
- * - Gaming section integration
- * - Account management and settings
- * - Mobile-optimized touch interactions
- * - Clean icon buttons without background colors
+ * - Real-time streaming AI chat with multiple models
+ * - Subscription-based usage limits (Free: 20 msgs, Pro: unlimited)
+ * - Anonymous user support with 10 messages/day limit
+ * - Drag-and-drop layout designer for UI customization
+ * - Multi-theme support with custom color schemes
+ * - Mobile-responsive design with touch-optimized interactions
+ * - AI Feud game integration
+ * - Conversation history and search functionality
  * 
  * State Management:
- * - Layout configuration for responsive grid system
- * - Theme and customization settings
- * - Chat messages and conversation history
- * - UI state (modals, sidebars, etc.)
+ * - Authentication state via AuthContext and Supabase Auth
+ * - Chat messages stored in Supabase with real-time sync
+ * - UI preferences persisted in localStorage
+ * - Subscription status tracked via Stripe webhooks
+ * 
+ * External Dependencies:
+ * - Supabase: Database, auth, real-time subscriptions, edge functions
+ * - Stripe: Payment processing and subscription management
+ * - Various AI APIs: DeepSeek, Claude, Mistral for chat responses
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';

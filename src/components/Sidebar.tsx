@@ -1,16 +1,41 @@
 /**
- * Sidebar Component
+ * Sidebar Component - Navigation and Chat History
  * 
- * This component renders the left sidebar of the application containing:
- * - Chat history list
- * - Collapsible functionality for space optimization
- * - Support for detached mode where main components are separate
+ * This component provides the main navigation sidebar for the BelloSai application,
+ * featuring conversation history, quick actions, and responsive design with
+ * collapsible functionality for optimal space utilization.
  * 
  * Features:
- * - Responsive design with collapse/expand functionality
- * - Customizable theming and colors
- * - Chat history organization by time periods
- * - Detached mode support for maximum customization
+ * - Conversation history with chronological organization
+ * - Collapsible/expandable responsive design
+ * - Active conversation highlighting and selection
+ * - Individual conversation deletion with confirmation
+ * - Theme-aware styling with custom color support
+ * - Glass effect support for modern UI aesthetics
+ * - Detached mode for flexible layout arrangements
+ * 
+ * Layout Modes:
+ * - Collapsed: Shows only toggle button to save space
+ * - Expanded: Full sidebar with conversation list and actions
+ * - Detached: Simplified mode when used as standalone component
+ * 
+ * Conversation Management:
+ * - Displays conversation titles with automatic truncation
+ * - Shows last updated date for each conversation
+ * - Provides delete functionality with visual feedback
+ * - Highlights currently active conversation
+ * 
+ * Theme Integration:
+ * - Adapts colors based on dark/light mode
+ * - Supports custom primary and secondary colors
+ * - Implements gradient backgrounds when enabled
+ * - Glass effect compatibility for modern aesthetics
+ * 
+ * Responsive Design:
+ * - Mobile-optimized touch targets
+ * - Smooth transitions and hover effects
+ * - Proper text contrast in all theme modes
+ * - Overflow handling for long conversation lists
  */
 
 import React from 'react';

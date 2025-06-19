@@ -1,7 +1,38 @@
 /**
- * ChatView Component
+ * ChatView Component - Main Chat Interface
  * 
- * Modern chat interface with clean design, loading indicators, and reasoning display
+ * This is the primary chat interface component that handles user interactions
+ * with AI models. It provides a modern, responsive design with real-time messaging,
+ * markdown rendering, and advanced features like message regeneration and sharing.
+ * 
+ * Features:
+ * - Real-time streaming message display with typing indicators
+ * - Advanced markdown rendering with syntax highlighting for code
+ * - Legacy message format conversion and preprocessing
+ * - Model selection dropdown with capability indicators
+ * - Message regeneration and copy functionality
+ * - Chat sharing capabilities with public links
+ * - Anonymous usage tracking and limits display
+ * - Responsive design for mobile and desktop
+ * - Theme support with customizable styling
+ * 
+ * Technical Implementation:
+ * - Uses ReactMarkdown with GitHub Flavored Markdown support
+ * - Implements syntax highlighting via rehype-highlight
+ * - Handles legacy code format conversion for backward compatibility
+ * - Optimized rendering with React.memo for performance
+ * - Responsive layout using Tailwind CSS classes
+ * 
+ * Message Processing:
+ * - Automatically detects and formats code blocks from legacy messages
+ * - Supports multiple programming languages with proper syntax highlighting
+ * - Handles mixed content (text + code) gracefully
+ * - Preserves message formatting while improving readability
+ * 
+ * State Management:
+ * - Controlled component receiving messages and handlers from parent
+ * - Local state for UI interactions (model selector, copy feedback)
+ * - Error handling and display for failed operations
  */
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';

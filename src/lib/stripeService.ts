@@ -1,3 +1,38 @@
+/**
+ * Stripe Service - Payment and Subscription Management
+ * 
+ * This service handles all Stripe-related operations for the BelloSai application,
+ * including subscription management, payment processing, and customer portal access.
+ * 
+ * Features:
+ * - Checkout session creation for new subscriptions
+ * - Subscription status checking and validation
+ * - Customer portal access for self-service billing
+ * - Webhook processing for real-time subscription updates
+ * - Payment verification and session management
+ * 
+ * Subscription Plans:
+ * - Free: €0/month - 20 messages, basic chat functionality
+ * - Pro Monthly: €6.99/month - Unlimited messages, all AI models, priority support
+ * - Pro Yearly: €69.99/year - Same as monthly with 15+ percent savings
+ * 
+ * Technical Implementation:
+ * - Integrates with Supabase Edge Functions for secure server-side operations
+ * - Uses Stripe Customer Portal for self-service billing management
+ * - Implements webhook handling for real-time subscription status updates
+ * - Provides type-safe interfaces using generated database types
+ * 
+ * Security:
+ * - All sensitive operations handled server-side via Edge Functions
+ * - Client-side service only handles UI interactions and status checks
+ * - Stripe keys and secrets managed through Supabase environment variables
+ * 
+ * Database Integration:
+ * - stripe_customers: Links Supabase users to Stripe customer records
+ * - stripe_subscriptions: Stores subscription data with status tracking
+ * - stripe_user_subscriptions: View combining user and subscription data
+ */
+
 import { supabase } from './supabase'
 import type { Database } from './supabase'
 
