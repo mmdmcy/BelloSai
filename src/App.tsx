@@ -774,8 +774,14 @@ function App() {
 
     // Check anonymous usage limit for non-logged-in users
     if (!user && !regenerate) {
-      if (!anonymousUsageService.canSendMessage()) {
-        console.warn('⚠️ Anonymous user has reached daily limit');
+      console.log('🔍 Checking anonymous usage for non-logged-in user...');
+      const canSend = anonymousUsageService.canSendMessage();
+      const stats = anonymousUsageService.getStats();
+      console.log('📊 Anonymous usage stats:', stats);
+      console.log('✅ Can send message:', canSend);
+      
+      if (!canSend) {
+        console.warn('⚠️ Anonymous user has reached daily limit or rate limit');
         setChatError('Daily message limit reached. Create an account to get more messages!');
         return;
       }

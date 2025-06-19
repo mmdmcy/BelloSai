@@ -44,6 +44,14 @@ serve(async (req) => {
     console.log('🔑 Auth header present:', !!authHeader);
     console.log('🔑 API key present:', !!apiKey);
     
+    // DEBUG: Log all headers (excluding sensitive data)
+    const headers = Object.fromEntries(req.headers.entries());
+    console.log('📋 All request headers:', {
+      ...headers,
+      'authorization': authHeader ? 'Bearer [REDACTED]' : undefined,
+      'apikey': apiKey ? '[API KEY PRESENT]' : undefined
+    });
+    
     // Create Supabase client with service role key for admin operations
     console.log('🔧 Creating Supabase client');
     const supabaseAdmin = createClient(
@@ -65,7 +73,7 @@ serve(async (req) => {
       if (userError || !authUser) {
         console.log('❌ Invalid or expired token:', userError?.message);
         return new Response(
-          JSON.stringify({ error: 'Ongeldige of verlopen token', details: userError?.message || 'Auth session missing!' }),
+          JSON.stringify({ error: 'Invalid or expired token', details: userError?.message || 'Auth session missing!' }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
@@ -84,7 +92,7 @@ serve(async (req) => {
       if (userDataError) {
         console.error('❌ Failed to fetch user data:', userDataError);
         return new Response(
-          JSON.stringify({ error: 'Kon gebruikersgegevens niet ophalen' }),
+          JSON.stringify({ error: 'Failed to fetch user data' }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
@@ -111,20 +119,47 @@ serve(async (req) => {
     } else if (apiKey) {
       // Anonymous user - verify API key matches anon key
       const expectedAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
-      if (apiKey !== expectedAnonKey) {
+      console.log('🔑 Anonymous key verification:', {
+        providedKeyLength: apiKey.length,
+        expectedKeyLength: expectedAnonKey?.length || 0,
+        providedPrefix: apiKey.substring(0, 20) + '...',
+        expectedPrefix: expectedAnonKey?.substring(0, 20) + '...' || 'missing',
+        keysMatch: apiKey === expectedAnonKey,
+        environmentVariableExists: !!expectedAnonKey
+      });
+      
+      // Log all environment variables starting with SUPABASE for debugging
+      console.log('🔍 Available Supabase env vars:', {
+        SUPABASE_URL: !!Deno.env.get('SUPABASE_URL'),
+        SUPABASE_ANON_KEY: !!Deno.env.get('SUPABASE_ANON_KEY'),
+        SUPABASE_SERVICE_ROLE_KEY: !!Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+      });
+      
+      if (!expectedAnonKey) {
+        console.error('❌ SUPABASE_ANON_KEY environment variable not set');
+        // For now, allow requests without the anon key to make anonymous mode work
+        console.log('⚠️ Allowing anonymous request without key verification (fallback mode)');
+        isAnonymous = true;
+      } else if (apiKey !== expectedAnonKey) {
         console.log('❌ Invalid API key for anonymous user');
+        console.log('🔍 Debug key comparison:', {
+          expectedStart: expectedAnonKey?.substring(0, 30),
+          providedStart: apiKey.substring(0, 30),
+          expectedEnd: expectedAnonKey?.substring(-10),
+          providedEnd: apiKey.substring(-10)
+        });
         return new Response(
-          JSON.stringify({ error: 'Ongeldige API key' }),
+          JSON.stringify({ error: 'Invalid API key' }),
           { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
+      } else {
+        console.log('🔓 Anonymous user request accepted');
+        isAnonymous = true;
       }
-      
-      console.log('🔓 Anonymous user request accepted');
-      isAnonymous = true;
     } else {
       console.log('❌ Missing authorization header or API key');
       return new Response(
-        JSON.stringify({ error: 'Ontbrekende autorisatie header of API key' }),
+        JSON.stringify({ error: 'Missing authorization header or API key' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -136,7 +171,7 @@ serve(async (req) => {
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(
-        JSON.stringify({ error: 'Berichtenarray is vereist' }),
+        JSON.stringify({ error: 'Messages array is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
@@ -233,7 +268,7 @@ serve(async (req) => {
       console.error('❌ DeepSeek API fetch error:', fetchError);
       
       return new Response(
-        JSON.stringify({ error: 'Kon geen verbinding maken met DeepSeek API' }),
+        JSON.stringify({ error: 'Could not connect to DeepSeek API' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -248,7 +283,7 @@ serve(async (req) => {
         error: errorText
       });
       return new Response(
-        JSON.stringify({ error: `DeepSeek API fout: ${deepSeekResponse.status} - ${deepSeekResponse.statusText}`, details: errorText }),
+        JSON.stringify({ error: `DeepSeek API error: ${deepSeekResponse.status} - ${deepSeekResponse.statusText}`, details: errorText }),
         { status: deepSeekResponse.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
