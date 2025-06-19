@@ -157,9 +157,9 @@ class AnonymousUsageService {
     const now = Date.now();
     const sessionDuration = now - this.stats.sessionStart;
     
-    // Rate limiting: prevent rapid message sending
-    if (sessionDuration < 5000 && this.stats.messageCount > 0) {
-      // Must wait at least 5 seconds between first messages to prevent spam
+    // Rate limiting: prevent rapid message sending (only for multiple messages)
+    if (sessionDuration < 2000 && this.stats.messageCount > 2) {
+      // Must wait at least 2 seconds between messages after 2+ messages to prevent spam
       return false;
     }
     
