@@ -347,7 +347,7 @@ export default function MainContent({
               }`}
               style={{ fontFamily: customization.fontFamily }}
             >
-              Make sure you agree to our{' '}
+              Make sure you agree to the{' '}
               <a 
                 href="#" 
                 className={`underline hover:no-underline ${
@@ -367,7 +367,7 @@ export default function MainContent({
               >
                 Terms
               </a>
-              {' '}and our{' '}
+              {' '}and the{' '}
               <a 
                 href="#" 
                 className={`underline hover:no-underline ${

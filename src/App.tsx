@@ -1132,15 +1132,15 @@ function App() {
   const handleConversationSelect = async (conversationId: string) => {
     if (!user) return;
     
-    // Prevent multiple simultaneous loads of the same conversation
-    if (isLoadingConversation) {
-      console.log('⚠️ Already loading a conversation, forcing reset and proceeding');
-      setIsLoadingConversation(false);
+    // If clicking the same conversation and it's already loaded, do nothing
+    if (currentConversationId === conversationId && messages.length > 0 && !isLoadingConversation) {
+      console.log('✅ Conversation already loaded, no action needed');
+      return;
     }
     
-    // If clicking the same conversation and it's already loaded, do nothing
-    if (currentConversationId === conversationId && messages.length > 0) {
-      console.log('✅ Conversation already loaded, no action needed');
+    // Prevent multiple simultaneous loads but allow forced reload
+    if (isLoadingConversation && currentConversationId === conversationId) {
+      console.log('⚠️ Already loading this conversation, ignoring request');
       return;
     }
     

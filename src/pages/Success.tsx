@@ -93,7 +93,7 @@ export default function Success(props: SuccessPageProps) {
             Processing your payment...
           </h2>
           <p className="text-gray-600 mb-4">
-            We're confirming your subscription. This may take 5-10 seconds.
+            I'm confirming your subscription. This may take 5-10 seconds.
           </p>
           {retryCount > 0 && (
             <p className="text-sm text-purple-600">
