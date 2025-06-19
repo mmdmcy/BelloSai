@@ -761,31 +761,57 @@ class ChatFeaturesService {
    * Get messages for a conversation
    */
   async getConversationMessages(conversationId: string) {
-    try {
-      console.log('🔍 Getting messages for conversation:', conversationId);
-      
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true });
+    const maxRetries = 2;
+    let attempt = 0;
 
-      if (error) {
-        console.error('❌ Database error fetching messages:', error);
-        console.error('❌ Error details:', {
-          message: error.message,
-          code: error.code,
-          details: error.details
-        });
-        return []; // Return empty array instead of throwing
+    while (attempt <= maxRetries) {
+      try {
+        console.log(`🔍 Getting messages for conversation: ${conversationId} (attempt ${attempt + 1})`);
+        
+        const { data, error } = await supabase
+          .from('messages')
+          .select('*')
+          .eq('conversation_id', conversationId)
+          .order('created_at', { ascending: true });
+
+        if (error) {
+          console.error('❌ Database error fetching messages:', error);
+          console.error('❌ Error details:', {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            attempt: attempt + 1
+          });
+          
+          // If it's an auth error and we have retries left, try again
+          if ((error.message.includes('JWT') || error.message.includes('auth') || error.code === 'PGRST301') && attempt < maxRetries) {
+            console.warn(`⚠️ Auth error on attempt ${attempt + 1}, retrying...`);
+            attempt++;
+            await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms before retry
+            continue;
+          }
+          
+          return []; // Return empty array instead of throwing
+        }
+        
+        console.log('✅ Messages query successful:', data ? data.length : 0, 'messages');
+        return data || [];
+      } catch (error) {
+        console.error(`❌ ChatFeaturesService: Query failed on attempt ${attempt + 1}:`, error);
+        
+        // If we have retries left and it might be a network/auth issue, try again
+        if (attempt < maxRetries) {
+          console.warn(`⚠️ Retrying query (attempt ${attempt + 2})...`);
+          attempt++;
+          await new Promise(resolve => setTimeout(resolve, 500)); // Wait 500ms before retry
+          continue;
+        }
+        
+        return []; // Always return empty array on final failure
       }
-      
-      console.log('✅ Messages query successful:', data ? data.length : 0, 'messages');
-      return data || [];
-    } catch (error) {
-      console.error('❌ ChatFeaturesService: Query failed:', error);
-      return []; // Always return empty array on error
     }
+    
+    return []; // Fallback return
   }
 
   /**

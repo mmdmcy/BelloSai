@@ -558,13 +558,18 @@ function App() {
       console.log('🔄 User changed from', lastUserId, 'to', currentUserId);
       setLastUserId(currentUserId);
       
-      if (user) {
-        loadConversations();
-      } else {
-        setConversations([]);
-        setCurrentConversationId(null);
-        setMessages([]);
-      }
+      // Debounce conversation loading to prevent multiple rapid calls during auth state changes
+      const timeoutId = setTimeout(() => {
+        if (user && user.id === currentUserId) { // Double-check user hasn't changed again
+          loadConversations();
+        } else if (!user) {
+          setConversations([]);
+          setCurrentConversationId(null);
+          setMessages([]);
+        }
+      }, 300); // Wait 300ms to see if more auth changes are coming
+      
+      return () => clearTimeout(timeoutId);
     }
   }, [user]);
 
