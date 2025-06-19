@@ -18,9 +18,7 @@ interface ChatRequest {
   stream?: boolean;
 }
 
-// RELIABLE timeouts for stable performance!
-const DEEPSEEK_API_TIMEOUT = 30000; // 30 seconds - reliable for longer conversations
-const STREAM_START_TIMEOUT = 5000; // 5 seconds - reasonable response time
+// No timeouts - let AI work without interruption!
 
 const DEEPSEEK_API_KEY = Deno.env.get('DEEPSEEK_API_KEY') || '';
 const DEEPSEEK_BASE_URL = 'https://api.deepseek.com';
@@ -206,16 +204,10 @@ serve(async (req) => {
       hasApiKey: !!DEEPSEEK_API_KEY
     });
     
-    // Reliable timeout for DeepSeek API call - stable performance
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => {
-      console.log('⏰ DeepSeek API timeout after 30 seconds - ensuring reliability');
-      controller.abort();
-    }, DEEPSEEK_API_TIMEOUT);
-    
+    // No timeouts - let DeepSeek work without interruption!
     let deepSeekResponse;
     try {
-      console.log('📡 Sending ultra-optimized request to DeepSeek API...');
+      console.log('📡 Sending request to DeepSeek API...');
       deepSeekResponse = await fetch(`${DEEPSEEK_BASE_URL}/chat/completions`, {
         method: 'POST',
         headers: {
@@ -235,20 +227,10 @@ serve(async (req) => {
           frequency_penalty: 0.1,
           presence_penalty: 0.1
         }, null, 0), // Use proper JSON.stringify parameters to handle Unicode
-        signal: controller.signal
       });
-      clearTimeout(timeoutId);
-      console.log('📡 DeepSeek API request completed in:', Date.now());
+      console.log('📡 DeepSeek API request completed');
     } catch (fetchError) {
-      clearTimeout(timeoutId);
       console.error('❌ DeepSeek API fetch error:', fetchError);
-      
-      if (fetchError.name === 'AbortError') {
-        return new Response(
-          JSON.stringify({ error: 'Verzoek timeout - DeepSeek API duurde te lang om te reageren' }),
-          { status: 408, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
       
       return new Response(
         JSON.stringify({ error: 'Kon geen verbinding maken met DeepSeek API' }),
@@ -328,18 +310,7 @@ serve(async (req) => {
         let fullResponse = ''
         let hasStartedStreaming = false
         
-        // Stream start timeout with proper cleanup
-        const streamStartTimeout = setTimeout(() => {
-          if (!hasStartedStreaming && isControllerActive) {
-            console.error('❌ DeepSeek streaming timeout after 5s');
-            isControllerActive = false;
-            try {
-              controller.error(new Error('DeepSeek streaming timeout'));
-            } catch (e) {
-              console.warn('Controller already closed');
-            }
-          }
-        }, STREAM_START_TIMEOUT);
+        // No timeouts - let streaming work without interruption!
 
         try {
           console.log('🔄 Starting FIXED streaming loop...');
@@ -389,9 +360,6 @@ serve(async (req) => {
             }
           }
 
-          // Clear timeout
-          clearTimeout(streamStartTimeout);
-
           // Validate response
           if (!hasStartedStreaming) {
             console.error('No streaming data received from DeepSeek API');
@@ -438,7 +406,6 @@ serve(async (req) => {
 
         } catch (error) {
           console.error('Streaming error:', error)
-          clearTimeout(streamStartTimeout);
           if (isControllerActive) {
             isControllerActive = false;
             try {
