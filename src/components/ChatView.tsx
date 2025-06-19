@@ -360,15 +360,15 @@ export default function ChatView({
                       style={{ backgroundColor: customization.primaryColor }}
                     ></div>
                   </div>
-                  <span 
-                    className="font-medium animate-pulse"
-                    style={{ 
-                      color: customization.primaryColor,
-                      fontFamily: customization.fontFamily 
-                    }}
-                  >
-                    Thinking...
-                  </span>
+                                     <span 
+                     className="font-medium animate-pulse"
+                     style={{ 
+                       color: customization.primaryColor,
+                       fontFamily: customization.fontFamily 
+                     }}
+                   >
+                     Loading...
+                   </span>
                 </div>
               </div>
             )}
