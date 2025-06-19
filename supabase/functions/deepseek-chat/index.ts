@@ -318,51 +318,39 @@ serve(async (req) => {
       )
     }
 
-    // Set up optimized streaming response
-    console.log('🌊 Setting up optimized streaming response...');
+    // Set up FIXED streaming response
+    console.log('🌊 Setting up FIXED streaming response...');
     const stream = new ReadableStream({
       async start(controller) {
+        let isControllerActive = true;
         const reader = deepSeekResponse.body!.getReader()
         const decoder = new TextDecoder()
         let fullResponse = ''
         let hasStartedStreaming = false
         
-        // Optimized stream start timeout
-        let streamStartTimeout = setTimeout(() => {
-          if (!hasStartedStreaming) {
-            console.error('❌ DeepSeek streaming did not start within 5s');
+        // Stream start timeout with proper cleanup
+        const streamStartTimeout = setTimeout(() => {
+          if (!hasStartedStreaming && isControllerActive) {
+            console.error('❌ DeepSeek streaming timeout after 5s');
+            isControllerActive = false;
             try {
-              controller.error(new Error('DeepSeek streaming startte niet binnen 5 seconden. Probeer het opnieuw.'));
+              controller.error(new Error('DeepSeek streaming timeout'));
             } catch (e) {
-              console.warn('Controller already closed or errored');
+              console.warn('Controller already closed');
             }
           }
         }, STREAM_START_TIMEOUT);
 
         try {
-          console.log('�� Starting optimized streaming loop...');
-          
-          // Skip saving user message here - it's handled by the frontend
-          console.log('📝 Skipping user message save - handled by frontend');
-
-          let chunkBuffer = '';
-          const CHUNK_SIZE = 8; // Smaller chunks for smoother streaming
+          console.log('🔄 Starting FIXED streaming loop...');
 
           while (true) {
+            if (!isControllerActive) break;
+            
             const { done, value } = await reader.read()
             
             if (done) {
               console.log('✅ Streaming completed - no more data');
-              // Send any remaining buffer
-              if (chunkBuffer.trim()) {
-                const sseData = `data: ${JSON.stringify({ content: chunkBuffer, type: 'chunk' })}\n\n`
-                try {
-                  controller.enqueue(new TextEncoder().encode(sseData))
-                  fullResponse += chunkBuffer;
-                } catch (e) {
-                  console.warn('Failed to enqueue final chunk:', e);
-                }
-              }
               break;
             }
 
@@ -370,6 +358,7 @@ serve(async (req) => {
             const lines = chunk.split('\n')
 
             for (const line of lines) {
+              if (!isControllerActive) break;
               if (line.trim() === '') continue
               if (line.trim() === 'data: [DONE]') continue
               if (!line.startsWith('data: ')) continue
@@ -379,27 +368,18 @@ serve(async (req) => {
                 const data = JSON.parse(jsonStr)
                 
                 const content = data.choices?.[0]?.delta?.content
-                if (content) {
+                if (content && isControllerActive) {
                   hasStartedStreaming = true
+                  fullResponse += content
                   
-                  // Add to buffer for smoother streaming
-                  chunkBuffer += content
-                  
-                  // Send optimal chunks for smoother UX
-                  while (chunkBuffer.length >= CHUNK_SIZE) {
-                    const chunkToSend = chunkBuffer.slice(0, CHUNK_SIZE);
-                    chunkBuffer = chunkBuffer.slice(CHUNK_SIZE);
-                    
-                    fullResponse += chunkToSend
-                    
-                    // Send the chunk to client
-                    const sseData = `data: ${JSON.stringify({ content: chunkToSend, type: 'chunk' })}\n\n`
-                    try {
-                      controller.enqueue(new TextEncoder().encode(sseData))
-                    } catch (e) {
-                      console.warn('Failed to enqueue chunk:', e);
-                      break;
-                    }
+                  // Send the chunk to client
+                  const sseData = `data: ${JSON.stringify({ content, type: 'chunk' })}\n\n`
+                  try {
+                    controller.enqueue(new TextEncoder().encode(sseData))
+                  } catch (e) {
+                    console.warn('Failed to enqueue chunk:', e);
+                    isControllerActive = false;
+                    break;
                   }
                 }
               } catch (parseError) {
@@ -409,61 +389,69 @@ serve(async (req) => {
             }
           }
 
-          // Clear timeout since we're done
+          // Clear timeout
           clearTimeout(streamStartTimeout);
 
-          // Validate the response
+          // Validate response
           if (!hasStartedStreaming) {
             console.error('No streaming data received from DeepSeek API');
-            try {
-              controller.error(new Error('Geen streaming data ontvangen van AI service'));
-            } catch (e) {
-              console.warn('Controller already closed or errored');
+            if (isControllerActive) {
+              isControllerActive = false;
+              controller.error(new Error('No streaming data received'));
             }
             return;
           }
 
           if (!fullResponse || fullResponse.trim() === '') {
             console.error('Empty response received from DeepSeek API');
-            try {
-              controller.error(new Error('Lege response ontvangen van AI service'));
-            } catch (e) {
-              console.warn('Controller already closed or errored');
+            if (isControllerActive) {
+              isControllerActive = false;
+              controller.error(new Error('Empty response received'));
             }
             return;
           }
 
-          // Skip saving AI response here - it's handled by the frontend
-          console.log('📝 Skipping AI response save - handled by frontend');
-
           // Send completion signal
-          const completionPayload: any = { 
-            content: fullResponse, 
-            type: 'complete',
-            model: model
-          };
-          
-          if (!isAnonymous && userData) {
-            completionPayload.messageCount = userData.message_count + 1;
-            completionPayload.messageLimit = userData.message_limit;
-          }
-          
-          const completionData = `data: ${JSON.stringify(completionPayload)}\n\n`
-          try {
-            controller.enqueue(new TextEncoder().encode(completionData))
-            controller.close()
-            console.log('✅ Stream completed successfully');
-          } catch (e) {
-            console.warn('Failed to send completion or close controller:', e);
+          if (isControllerActive) {
+            const completionPayload: any = { 
+              content: fullResponse, 
+              type: 'complete',
+              model: model
+            };
+            
+            if (!isAnonymous && userData) {
+              completionPayload.messageCount = userData.message_count + 1;
+              completionPayload.messageLimit = userData.message_limit;
+            }
+            
+            const completionData = `data: ${JSON.stringify(completionPayload)}\n\n`
+            try {
+              controller.enqueue(new TextEncoder().encode(completionData))
+              controller.close()
+              isControllerActive = false;
+              console.log('✅ Stream completed successfully');
+            } catch (e) {
+              console.warn('Failed to close controller:', e);
+              isControllerActive = false;
+            }
           }
 
         } catch (error) {
           console.error('Streaming error:', error)
           clearTimeout(streamStartTimeout);
+          if (isControllerActive) {
+            isControllerActive = false;
+            try {
+              controller.error(error)
+            } catch (e) {
+              console.warn('Controller error failed:', e);
+            }
+          }
+        } finally {
           try {
-            controller.error(error)
+            reader.releaseLock();
           } catch (e) {
-            console.warn('Controller already closed or errored');
+            console.warn('Failed to release reader lock:', e);
           }
         }
       }
