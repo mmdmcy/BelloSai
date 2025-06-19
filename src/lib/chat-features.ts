@@ -749,21 +749,49 @@ class ChatFeaturesService {
    */
   async getConversationMessages(conversationId: string) {
     try {
-      // Simple direct query without timeout complexity
-      const { data, error } = await supabase
+      console.log('🔍 Getting messages for conversation:', conversationId);
+      
+      // Get current session first to ensure we're authenticated
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('❌ Session error before query:', sessionError);
+        // Try anyway - might be anonymous
+      }
+      
+      console.log('🔍 Session status for query:', session ? 'Authenticated' : 'Anonymous');
+      
+      // Create the query with explicit timeout and better error handling
+      const queryPromise = supabase
         .from('messages')
         .select('*')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
+      
+      // Add our own timeout directly to the query
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Query timeout after 8 seconds')), 8000);
+      });
+      
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
 
       if (error) {
-        console.error('Error fetching messages:', error);
+        console.error('❌ Database error fetching messages:', error);
+        console.error('❌ Error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details
+        });
         return []; // Return empty array instead of throwing
       }
       
+      console.log('✅ Messages query successful:', data ? data.length : 0, 'messages');
       return data || [];
     } catch (error) {
-      console.error('ChatFeaturesService: Query failed:', error);
+      console.error('❌ ChatFeaturesService: Query failed:', error);
+      if (error instanceof Error && error.message.includes('timeout')) {
+        console.error('⏰ Query timed out after 8 seconds');
+      }
       return []; // Always return empty array on error
     }
   }
