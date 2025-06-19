@@ -1153,13 +1153,15 @@ function App() {
   const handleConversationSelect = async (conversationId: string) => {
     if (!user) return;
     
-    // If clicking the same conversation and it's already loaded, do nothing
+    console.log('🔘 Conversation clicked:', conversationId, 'Current:', currentConversationId);
+    
+    // If clicking the same conversation and it's already loaded, allow reload if user wants
     if (currentConversationId === conversationId && messages.length > 0 && !isLoadingConversation) {
-      console.log('✅ Conversation already loaded, no action needed');
-      return;
+      console.log('✅ Same conversation clicked - allowing reload');
+      // Don't return early - allow the reload
     }
     
-    // Prevent multiple simultaneous loads but allow forced reload
+    // Prevent multiple simultaneous loads for the same conversation
     if (isLoadingConversation && currentConversationId === conversationId) {
       console.log('⚠️ Already loading this conversation, ignoring request');
       return;
@@ -1176,24 +1178,13 @@ function App() {
     setConversationTitle(conversation?.title || 'Loading conversation...');
     
     try {
-      // Check cache first
-      const cachedMessages = conversationCache.get(conversationId);
-      if (cachedMessages) {
-        console.log('✅ Using cached messages for:', conversationId);
-        setMessages(cachedMessages);
-        setConversationTitle(conversation?.title || 'Untitled Conversation');
-        return;
-      }
-
-      // Skip duplicate message removal during conversation loading to avoid removing legitimate messages
-      
-      // Fetch fresh data from database
+      // Always fetch fresh data from database (don't use cache for now to debug)
       console.log('🔄 Loading fresh messages from database for:', conversationId);
       const conversationMessages = await chatFeaturesService.getConversationMessages(conversationId);
       
       if (conversationMessages && conversationMessages.length > 0) {
         // Convert to Message format with model information
-        const messages: Message[] = conversationMessages.map((msg: any) => ({
+        const convertedMessages: Message[] = conversationMessages.map((msg: any) => ({
           id: msg.id,
           type: (msg.role || msg.type) === 'user' ? 'user' : 'ai',
           content: msg.content,
@@ -1201,13 +1192,13 @@ function App() {
           model: msg.model // Include model information for AI messages
         }));
         
-        console.log('✅ Loaded', messages.length, 'messages from database');
-        setMessages(messages);
+        console.log('✅ Loaded', convertedMessages.length, 'messages from database');
+        setMessages(convertedMessages);
         
         // Update cache with fresh data
-        setConversationCache(prev => new Map(prev.set(conversationId, messages)));
+        setConversationCache(prev => new Map(prev.set(conversationId, convertedMessages)));
       } else {
-        console.log('⚠️ No messages found in database');
+        console.log('⚠️ No messages found in database for conversation:', conversationId);
         setMessages([]);
         // Cache empty array too
         setConversationCache(prev => new Map(prev.set(conversationId, [])));
@@ -1215,13 +1206,16 @@ function App() {
       
       // Update title once loaded
       setConversationTitle(conversation?.title || 'Untitled Conversation');
+      console.log('✅ Conversation loaded successfully:', conversationId);
+      
     } catch (error) {
-      console.error('Failed to load conversation messages:', error);
+      console.error('❌ Failed to load conversation messages:', error);
       // Show error but still allow user to use the conversation
       setMessages([]);
       setConversationTitle(conversation?.title || 'Conversation (failed to load)');
     } finally {
       setIsLoadingConversation(false);
+      console.log('🔄 Loading state reset for conversation:', conversationId);
     }
   };
 

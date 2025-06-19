@@ -61,7 +61,7 @@ const preprocessLegacyContent = (content: string): string => {
     return result;
   }
   
-  // Single code block detection patterns
+  // Single code block detection patterns - only if content starts with language name
   const singleCodePatterns = [
     { pattern: /^(python|py)\s*([\s\S]+)$/i, lang: 'python' },
     { pattern: /^(javascript|js)\s*([\s\S]+)$/i, lang: 'javascript' },
@@ -85,49 +85,45 @@ const preprocessLegacyContent = (content: string): string => {
     }
   }
   
-  // General code detection patterns
-  const codePatterns = [
-    /def\s+\w+\([^)]*\):/g,
-    /function\s+\w+\([^)]*\)\s*{/g,
-    /(const|let|var)\s+\w+\s*=\s*\([^)]*\)\s*=>/g,
-    /<[^>]+>/g,
-    /[.#]\w+\s*{[^}]*}/g,
-    /(import|from|require)\s+/g,
-    /(if|for|while|class|public|private|return)\s+/g,
-    /print\s*\(/g,
-    /console\.log\s*\(/g,
-    /System\.out\.println/g,
-    /std::cout/g
-  ];
+  // Very strict code detection patterns - must have multiple clear indicators
+  const hasSpecificCodeStructure = (
+    // Function definitions with proper syntax
+    (/def\s+\w+\s*\([^)]*\)\s*:/.test(content) && /\n\s+/.test(content)) ||
+    (/function\s+\w+\s*\([^)]*\)\s*\{/.test(content) && /\}/.test(content)) ||
+    // Class definitions with structure
+    (/class\s+\w+\s*[\{:]/.test(content) && (/\n\s+/.test(content) || /\}/.test(content))) ||
+    // Import/export statements
+    (/^(import|from|export|require)\s+.+$/m.test(content) && content.includes('\n')) ||
+    // Code with semicolons and braces (clear programming structure)
+    (content.includes(';') && content.includes('{') && content.includes('}')) ||
+    // HTML tags with attributes
+    (/<\w+[^>]*>[\s\S]*<\/\w+>/.test(content)) ||
+    // CSS with selectors and properties
+    (/[.#]?\w+\s*\{[\s\S]*\}/.test(content) && content.includes(':') && content.includes(';'))
+  );
   
-  let hasCode = false;
-  for (const pattern of codePatterns) {
-    if (pattern.test(content)) {
-      hasCode = true;
-      break;
-    }
-  }
-  
-  if (hasCode && content.length > 20) {
-    // Try to detect language
+  // Only treat as code if there are clear structural indicators AND it's substantial
+  if (hasSpecificCodeStructure && content.length > 30) {
+    // Try to detect language based on specific patterns
     let language = '';
-    if (/def\s+\w+\([^)]*\):/.test(content) || /print\s*\(/.test(content)) {
+    if (/def\s+\w+\s*\([^)]*\)\s*:/.test(content) || /import\s+\w+/.test(content)) {
       language = 'python';
-    } else if (/function\s+\w+\([^)]*\)\s*{/.test(content) || /(const|let|var)\s+/.test(content) || /console\.log/.test(content)) {
+    } else if (/function\s+\w+\s*\([^)]*\)\s*\{/.test(content) || /(const|let|var)\s+\w+\s*=/.test(content)) {
       language = 'javascript';
-    } else if (/<[^>]+>/.test(content)) {
+    } else if (/<\w+[^>]*>[\s\S]*<\/\w+>/.test(content)) {
       language = 'html';
-    } else if (/[.#]\w+\s*{[^}]*}/.test(content)) {
+    } else if (/[.#]?\w+\s*\{[\s\S]*\}/.test(content) && content.includes(':') && content.includes(';')) {
       language = 'css';
-    } else if (/System\.out\.println/.test(content) || /public\s+class/.test(content)) {
+    } else if (/public\s+class\s+\w+/.test(content) || /System\.out\.println/.test(content)) {
       language = 'java';
-    } else if (/std::cout/.test(content) || /#include\s*</.test(content)) {
+    } else if (/#include\s*<.+>/.test(content) || /std::/.test(content)) {
       language = 'cpp';
     }
     
     return `\`\`\`${language}\n${content}\n\`\`\``;
   }
   
+  // Return content as-is for normal text
   return content;
 };
 
