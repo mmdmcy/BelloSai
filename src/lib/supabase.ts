@@ -14,31 +14,36 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables. Please check your deployment settings.')
 }
 
-// Create the initial Supabase client
-let supabaseInstance = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+// Create a custom storage that disables BroadcastChannel to prevent cross-tab auth sync
+const customStorage = {
+  getItem: (key: string) => {
+    if (typeof window !== 'undefined') {
+      return window.localStorage.getItem(key);
+    }
+    return null;
+  },
+  setItem: (key: string, value: string) => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(key, value);
+    }
+  },
+  removeItem: (key: string) => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(key);
+    }
+  },
+  // Add this to disable BroadcastChannel
+  removeEventListener: () => {},
+  addEventListener: () => {}
+}
+
+// Create the Supabase client with disabled cross-tab sync
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: false, // Disable auto-refresh to prevent connection corruption
     persistSession: true,
     detectSessionInUrl: false, // Disable URL session detection to prevent auth state changes
-    // Use the default localStorage with a custom key
-    storage: {
-      getItem: (key: string) => {
-        if (typeof window !== 'undefined') {
-          return window.localStorage.getItem(key);
-        }
-        return null;
-      },
-      setItem: (key: string, value: string) => {
-        if (typeof window !== 'undefined') {
-          window.localStorage.setItem(key, value);
-        }
-      },
-      removeItem: (key: string) => {
-        if (typeof window !== 'undefined') {
-          window.localStorage.removeItem(key);
-        }
-      },
-    },
+    storage: customStorage,
     storageKey: 'sb-uxqrdnotdkcwfwcifajf-auth-token', // Use the standard Supabase storage key
     flowType: 'pkce'
   },
@@ -55,63 +60,6 @@ let supabaseInstance = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     params: {
       eventsPerSecond: 10
     }
-  }
-})
-
-// Function to recreate the Supabase client when it gets corrupted
-export const recreateSupabaseClient = () => {
-  console.log('🔄 Recreating Supabase client due to corruption...')
-  
-  supabaseInstance = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: true,
-      detectSessionInUrl: false,
-      storage: {
-        getItem: (key: string) => {
-          if (typeof window !== 'undefined') {
-            return window.localStorage.getItem(key);
-          }
-          return null;
-        },
-        setItem: (key: string, value: string) => {
-          if (typeof window !== 'undefined') {
-            window.localStorage.setItem(key, value);
-          }
-        },
-        removeItem: (key: string) => {
-          if (typeof window !== 'undefined') {
-            window.localStorage.removeItem(key);
-          }
-        },
-      },
-      storageKey: 'sb-uxqrdnotdkcwfwcifajf-auth-token',
-      flowType: 'pkce'
-    },
-    global: {
-      headers: {
-        'x-client-info': 'bellosai',
-        'x-app-version': '1.0.0'
-      }
-    },
-    db: {
-      schema: 'public'
-    },
-    realtime: {
-      params: {
-        eventsPerSecond: 10
-      }
-    }
-  })
-  
-  console.log('✅ Supabase client recreated successfully')
-  return supabaseInstance
-}
-
-// Export the current instance
-export const supabase = new Proxy({} as typeof supabaseInstance, {
-  get(target, prop, receiver) {
-    return Reflect.get(supabaseInstance, prop, receiver)
   }
 })
 
