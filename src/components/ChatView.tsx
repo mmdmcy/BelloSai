@@ -36,12 +36,76 @@ interface ChatViewProps {
   setError?: (err: string | null) => void;
 }
 
+// Helper function to detect and format code in legacy messages
+const preprocessLegacyContent = (content: string): string => {
+  // Check if content already has proper markdown code blocks
+  if (content.includes('```')) {
+    return content;
+  }
+  
+  // Patterns that suggest code content
+  const codePatterns = [
+    // Python function definitions
+    /def\s+\w+\([^)]*\):/g,
+    // JavaScript/TypeScript function definitions
+    /function\s+\w+\([^)]*\)\s*{/g,
+    /(const|let|var)\s+\w+\s*=\s*\([^)]*\)\s*=>/g,
+    // HTML tags
+    /<[^>]+>/g,
+    // CSS rules
+    /[.#]\w+\s*{[^}]*}/g,
+    // Import statements
+    /(import|from|require)\s+/g,
+    // Common programming keywords in sequence
+    /(if|for|while|class|public|private|return)\s+/g
+  ];
+  
+  let hasCode = false;
+  for (const pattern of codePatterns) {
+    if (pattern.test(content)) {
+      hasCode = true;
+      break;
+    }
+  }
+  
+  // If we detect code patterns and no markdown formatting, wrap in code block
+  if (hasCode && !content.includes('\n\n') && content.length > 50) {
+    // Try to detect language
+    let language = '';
+    if (/def\s+\w+\([^)]*\):/.test(content) || /import\s+\w+/.test(content)) {
+      language = 'python';
+    } else if (/function\s+\w+\([^)]*\)\s*{/.test(content) || /(const|let|var)\s+/.test(content)) {
+      language = 'javascript';
+    } else if (/<[^>]+>/.test(content)) {
+      language = 'html';
+    } else if (/[.#]\w+\s*{[^}]*}/.test(content)) {
+      language = 'css';
+    }
+    
+    return `\`\`\`${language}\n${content}\n\`\`\``;
+  }
+  
+  // Look for inline code patterns (single words/short phrases with programming syntax)
+  const inlineCodePattern = /(\w+\(\)|[a-zA-Z_]\w*\.[a-zA-Z_]\w*|\w+\[\w*\])/g;
+  const matches = content.match(inlineCodePattern);
+  
+  if (matches && matches.length > 2 && content.length < 200) {
+    // Multiple code-like elements in short text, likely inline code
+    return content.replace(/(\w+\(\)|[a-zA-Z_]\w*\.[a-zA-Z_]\w*|\w+\[\w*\])/g, '`$1`');
+  }
+  
+  return content;
+};
+
 // Modern markdown component without complex styling
 const MarkdownContent: React.FC<{ 
   content: string; 
   isDark: boolean; 
   customization: CustomizationSettings;
 }> = React.memo(({ content, isDark, customization }) => {
+  // Preprocess content to handle legacy code formatting
+  const processedContent = preprocessLegacyContent(content);
+  
   return (
     <div className={`prose ${isDark ? 'prose-invert' : 'prose-gray'} max-w-none`}>
       <ReactMarkdown
@@ -165,7 +229,7 @@ const MarkdownContent: React.FC<{
           ),
         }}
       >
-        {content}
+        {processedContent}
       </ReactMarkdown>
     </div>
   );
@@ -452,7 +516,7 @@ export default function ChatView({
                 value={inputValue}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
-                placeholder="Typ je bericht hier..."
+                placeholder="Type your message here..."
                 className={`w-full px-4 py-3 pr-32 rounded-2xl resize-none focus:outline-none min-h-[60px] max-h-32 ${
                   isDark 
                     ? 'bg-gray-800 text-white placeholder-gray-400' 
@@ -524,7 +588,7 @@ export default function ChatView({
                   value={inputValue}
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
-                  placeholder="Typ je bericht hier..."
+                  placeholder="Type your message here..."
                   className={`w-full px-4 py-3 pr-32 rounded-2xl resize-none focus:outline-none min-h-[60px] max-h-32 ${
                     isDark 
                       ? 'bg-gray-800 text-white placeholder-gray-400' 
