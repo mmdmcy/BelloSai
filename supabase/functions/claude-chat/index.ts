@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
 
     // Convert to Claude's expected format
     const claudeMessages = messages.map(msg => ({
-      role: msg.role === 'user' ? 'user' : 'assistant',
+      role: (msg.role || msg.type) === 'user' ? 'user' : 'assistant',
       content: [
         {
           type: 'text',
@@ -57,14 +57,9 @@ Deno.serve(async (req) => {
       throw new Error('No text content found in Claude response')
     }
 
-    // Return in the format expected by the client
+    // Return in the format expected by the client (response field for non-DeepSeek providers)
     const responseData = {
-      choices: [{
-        message: {
-          content: textContent.text,
-          role: 'assistant'
-        }
-      }],
+      response: textContent.text,
       model: model || 'claude-3-haiku-20240307'
     }
 

@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
 
     // Convert to Mistral's expected format
     const mistralMessages = messages.map(msg => ({
-      role: msg.role,
+      role: msg.role || (msg.type === 'user' ? 'user' : 'assistant'),
       content: msg.content
     }))
 
@@ -52,7 +52,13 @@ Deno.serve(async (req) => {
       throw new Error('No message content found in Mistral response')
     }
 
-    return new Response(JSON.stringify(data), {
+    // Return in the format expected by the frontend (response field for non-DeepSeek providers)
+    const responseData = {
+      response: choice.message.content,
+      model: model || 'mistral-medium'
+    }
+
+    return new Response(JSON.stringify(responseData), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {
