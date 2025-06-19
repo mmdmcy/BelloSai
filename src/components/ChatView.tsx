@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { ChevronDown, ArrowUp, Copy, RotateCcw, Loader2 } from 'lucide-react';
+import { ChevronDown, ArrowUp, Copy, RotateCcw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
@@ -236,8 +236,7 @@ export default function ChatView({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Check if current model supports reasoning
-  const isReasoningModel = selectedModel === 'DeepSeek-R1' || selectedModel === 'gemini-2.5-pro-preview-06-05';
+
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
@@ -293,92 +292,66 @@ export default function ChatView({
       return (
         <div key={message.id} className="flex justify-start mb-6">
           <div className="max-w-[85%] w-full">
-            {/* Single message box containing content and loading state */}
-            <div className={`rounded-2xl p-4 ${
-              isDark ? 'bg-gray-800/50' : 'bg-gray-50'
-            }`}>
-              {/* Show loading state if this is the last AI message and AI is generating */}
-              {isLastAiMessage && isGenerating && (
-                <div className="mb-4">
-                  {isReasoningModel ? (
-                    <div className="flex items-center space-x-3">
-                      <div className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                        <span className="font-medium">Reasoning</span>
-                      </div>
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-3">
-                      <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
-                      <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                        AI aan het typen...
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              {/* Message content (only show if there's content) */}
-              {message.content && (
+            {/* Only show content if message has content and is not currently being generated */}
+            {message.content && (
+              <div className="mb-3">
                 <MarkdownContent 
                   content={message.content}
                   isDark={isDark}
                   customization={customization}
                 />
-              )}
-            </div>
+              </div>
+            )}
             
-            {/* Message header with model name and actions */}
-            <div className="flex items-center justify-between mt-3 px-2">
-              <div className="flex items-center space-x-3">
-                {message.model && (
-                  <span 
-                    className={`text-xs px-3 py-1.5 rounded-full text-white font-medium`}
-                    style={{ 
-                      backgroundColor: customization.secondaryColor,
-                      fontFamily: customization.fontFamily 
-                    }}
-                  >
-                    {availableModels.find(m => m.code === message.model)?.name || message.model}
-                  </span>
-                )}
-                
-                {/* Action buttons next to model name */}
-                <div className="flex items-center space-x-1">
-                  <button 
-                    className={`p-1.5 rounded-lg transition-colors ${
-                      isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'
-                    }`}
-                    onClick={() => navigator.clipboard.writeText(message.content)}
-                    title="Kopieer bericht"
-                  >
-                    <Copy className="w-3.5 h-3.5" />
-                  </button>
+            {/* Only show model info and actions when response is complete (not generating) */}
+            {message.content && !(isLastAiMessage && isGenerating) && (
+              <div className="flex items-center justify-between px-2">
+                <div className="flex items-center space-x-3">
+                  {message.model && (
+                    <span 
+                      className={`text-xs px-3 py-1.5 rounded-full text-white font-medium`}
+                      style={{ 
+                        backgroundColor: customization.secondaryColor,
+                        fontFamily: customization.fontFamily 
+                      }}
+                    >
+                      {availableModels.find(m => m.code === message.model)?.name || message.model}
+                    </span>
+                  )}
                   
-                  {onRegenerateResponse && isLastAiMessage && (
+                  {/* Action buttons next to model name */}
+                  <div className="flex items-center space-x-1">
                     <button 
                       className={`p-1.5 rounded-lg transition-colors ${
                         isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'
                       }`}
-                      onClick={onRegenerateResponse}
-                      disabled={isGenerating}
-                      title="Regenereer antwoord"
+                      onClick={() => navigator.clipboard.writeText(message.content)}
+                      title="Kopieer bericht"
                     >
-                      <RotateCcw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
+                      <Copy className="w-3.5 h-3.5" />
                     </button>
-                  )}
+                    
+                    {onRegenerateResponse && isLastAiMessage && (
+                      <button 
+                        className={`p-1.5 rounded-lg transition-colors ${
+                          isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'
+                        }`}
+                        onClick={onRegenerateResponse}
+                        disabled={isGenerating}
+                        title="Regenereer antwoord"
+                      >
+                        <RotateCcw className={`w-3.5 h-3.5 ${isGenerating ? 'animate-spin' : ''}`} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       );
     }
-  }, [customization, isDark, isGenerating, onRegenerateResponse, availableModels, isReasoningModel]);
+  }, [customization, isDark, isGenerating, onRegenerateResponse, availableModels]);
 
   // Input-only mode
   if (inputOnly) {
@@ -449,38 +422,6 @@ export default function ChatView({
       >
         <div className="max-w-4xl mx-auto">
           {messages.map((message, index) => renderMessage(message, index))}
-          
-          {/* Show loading state for completely new AI response */}
-          {isGenerating && (!messages.length || messages[messages.length - 1]?.type === 'user') && (
-            <div className="flex justify-start mb-6">
-              <div className="max-w-[85%] w-full">
-                <div className={`rounded-2xl p-4 ${
-                  isDark ? 'bg-gray-800/50' : 'bg-gray-50'
-                }`}>
-                  {isReasoningModel ? (
-                    <div className="flex items-center space-x-3">
-                      <div className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                        <span className="font-medium">Reasoning</span>
-                      </div>
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-3">
-                      <Loader2 className="w-5 h-5 animate-spin text-blue-500" />
-                      <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                        AI aan het typen...
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-          
           <div ref={messagesEndRef} />
         </div>
       </div>

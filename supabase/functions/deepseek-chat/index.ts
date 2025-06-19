@@ -189,8 +189,14 @@ serve(async (req) => {
       }
     }
 
-    // Get the DeepSeek model ID
+    // Get the DeepSeek model ID with debug logging
     const modelId = DEEPSEEK_MODELS[model] || 'deepseek-chat';
+    console.log('🔧 Model mapping debug:', {
+      inputModel: model,
+      mappedModelId: modelId,
+      availableModels: Object.keys(DEEPSEEK_MODELS),
+      hasMatchingKey: model in DEEPSEEK_MODELS
+    });
 
     // Call DeepSeek API with ultra-optimized settings for speed
     console.log('🚀 Calling DeepSeek API with lightning-fast settings:', {

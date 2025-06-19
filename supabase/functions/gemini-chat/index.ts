@@ -140,9 +140,14 @@ serve(async (req) => {
       }
     };
 
-    // Gemini endpoint
+    // Gemini endpoint with debug logging
     const modelId = model.replace(/^models\//, '');
     const endpoint = `${GEMINI_BASE_URL}/${modelId}:generateContent?key=${GEMINI_API_KEY}`;
+    console.log('🔧 Gemini model debug:', {
+      inputModel: model,
+      processedModelId: modelId,
+      finalEndpoint: endpoint.replace(GEMINI_API_KEY, '[API_KEY_HIDDEN]')
+    });
 
     // Optimized timeout for Gemini API
     const controller = new AbortController();
