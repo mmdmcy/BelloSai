@@ -1,5 +1,35 @@
 -- BelloSai Database Schema
--- This file contains the complete database schema for the SaaS ChatGPT-like application
+-- 
+-- Complete PostgreSQL database schema for the BelloSai AI Chat Assistant application.
+-- This schema supports multi-user chat functionality, subscription management,
+-- and AI conversation storage with advanced features.
+--
+-- Architecture Overview:
+-- - User management with Supabase Auth integration
+-- - Conversation-based chat organization with branching support
+-- - Subscription management with Stripe integration
+-- - File attachment support for multimedia conversations
+-- - Row Level Security (RLS) for data protection
+-- - Real-time capabilities with optimized indexing
+--
+-- Key Features:
+-- - Multi-tier subscription system (free, pro, enterprise)
+-- - Message branching for conversation alternatives
+-- - Shared conversation support with public links
+-- - Attachment management with file metadata
+-- - Automatic timestamp tracking and triggers
+-- - Comprehensive indexing for performance
+--
+-- Security:
+-- - Row Level Security enabled on all user-facing tables
+-- - User-scoped data access policies
+-- - Shared conversation access controls
+-- - Secure function execution with SECURITY DEFINER
+--
+-- External Integrations:
+-- - Supabase Auth for user management
+-- - Stripe for payment processing and subscriptions
+-- - Edge Functions for AI model integration
 
 -- Enable required extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";

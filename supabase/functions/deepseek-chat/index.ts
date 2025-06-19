@@ -1,3 +1,40 @@
+/**
+ * DeepSeek Chat Edge Function
+ * 
+ * This Supabase Edge Function handles AI chat requests using the DeepSeek API.
+ * It processes user messages, manages authentication, enforces usage limits,
+ * and streams responses back to the client in real-time.
+ * 
+ * Supported Models:
+ * - DeepSeek-V3: Advanced general-purpose chat model (Free tier)
+ * - DeepSeek-R1: Reasoning-optimized model (Premium tier)
+ * 
+ * Features:
+ * - Real-time streaming responses for immediate feedback
+ * - User authentication and anonymous usage support
+ * - Message limit enforcement based on subscription tier
+ * - Automatic message counting and database updates
+ * - Error handling and graceful fallbacks
+ * - Unicode content sanitization for JSON safety
+ * 
+ * Authentication Flow:
+ * 1. Accepts Bearer token or API key for anonymous users
+ * 2. Validates user session and fetches usage data
+ * 3. Enforces message limits based on subscription tier
+ * 4. Updates message count after successful response
+ * 
+ * Rate Limiting:
+ * - Anonymous: 10 messages/day (resets at 2 AM)
+ * - Free tier: 20 messages/month
+ * - Pro tier: Unlimited messages
+ * 
+ * Technical Details:
+ * - Deployed as Deno runtime Edge Function
+ * - Uses DeepSeek's REST API with streaming support
+ * - Implements CORS for browser compatibility
+ * - Handles message format conversion between UI and API
+ */
+
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4"
 

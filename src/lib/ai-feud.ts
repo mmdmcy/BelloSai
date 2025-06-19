@@ -1,10 +1,40 @@
 /**
- * AI Feud AI Service
+ * AI Feud Game Logic and AI Integration
  * 
- * Handles AI integration for AI Feud game:
- * - DeepSeek-V3 generates questions and top 5 answers
- * - DeepSeek-R1 provides AI player responses
- * - Answer matching and scoring logic
+ * This module implements the complete game logic for the AI Feud game, a Family Feud-style
+ * game where players compete against AI to guess the most popular survey answers.
+ * 
+ * Game Architecture:
+ * - Question generation using DeepSeek-V3 for creative, varied questions
+ * - AI opponent powered by DeepSeek-R1 for strategic answer guessing
+ * - Flexible answer matching system with keyword-based scoring
+ * - Real-time scoring and game state management
+ * 
+ * AI Integration:
+ * - DeepSeek-V3: Generates original questions with 5 answers and point values
+ * - DeepSeek-R1: Acts as AI opponent with strategic thinking and adaptation
+ * - Advanced prompt engineering for consistent output formatting
+ * - Fallback mechanisms for robust error handling
+ * 
+ * Answer Matching Features:
+ * - Fuzzy string matching for user-friendly input
+ * - Keyword extraction and synonym matching
+ * - Case-insensitive matching with partial word support
+ * - Duplicate answer prevention
+ * - Progressive difficulty with revealed answers
+ * 
+ * Game Mechanics:
+ * - Survey-style questions with point-based answers (totaling 100 points)
+ * - Turn-based gameplay between human and AI players
+ * - Strategic AI that adapts based on revealed answers
+ * - Confidence scoring for AI guesses
+ * - Multiple game modes and difficulty levels
+ * 
+ * Content Generation:
+ * - Modern, relatable questions covering current topics
+ * - Technology, social media, lifestyle, and pop culture themes
+ * - Automated variety to prevent repetitive gameplay
+ * - Family-friendly content suitable for all ages
  */
 
 import { sendChatMessage, ChatMessage } from './supabase-chat';

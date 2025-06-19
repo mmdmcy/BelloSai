@@ -1,7 +1,40 @@
 /**
- * Anonymous Usage Service
- * Manages message limits and usage tracking for non-logged-in users
- * Includes anti-abuse measures to prevent limit bypass
+ * Anonymous Usage Service - Message Tracking for Non-Authenticated Users
+ * 
+ * This service manages message limits and usage tracking for users who access
+ * BelloSai without creating an account. It implements robust anti-abuse measures
+ * to prevent limit circumvention while providing a fair trial experience.
+ * 
+ * Features:
+ * - Daily message limit enforcement (10 messages/day)
+ * - Browser fingerprinting to prevent easy limit bypass
+ * - Dual storage system for data integrity verification
+ * - Time-based reset mechanism (2 AM daily)
+ * - Rate limiting to prevent rapid-fire message abuse
+ * - Tamper detection and security measures
+ * 
+ * Abuse Prevention:
+ * - Browser fingerprinting using device characteristics
+ * - Dual localStorage storage with integrity checks
+ * - Time manipulation protection
+ * - Session-based rate limiting
+ * - Automatic reset validation
+ * 
+ * Usage Limits:
+ * - Anonymous users: 10 messages per day
+ * - Reset time: 2 AM local time
+ * - Rate limit: 2 second delay between messages after 2+ messages
+ * 
+ * Technical Implementation:
+ * - Uses localStorage for client-side persistence
+ * - Implements browser fingerprinting for user identification
+ * - Validates data integrity using backup storage
+ * - Handles edge cases like localStorage quota exceeded
+ * 
+ * Storage Structure:
+ * - Primary storage: 'bellosai-anonymous-usage'
+ * - Backup storage: 'bellosai-anon-backup'
+ * - Data includes: message count, reset time, browser fingerprint, session start
  */
 
 interface AnonymousUsageStats {
