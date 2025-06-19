@@ -57,7 +57,7 @@ export function MessageTracker() {
   }
 
   const handleCleanup = async () => {
-    const confirmed = window.confirm('Weet je zeker dat je berichten ouder dan 30 dagen wilt verwijderen?')
+    const confirmed = window.confirm('Are you sure you want to delete messages older than 30 days?')
     if (!confirmed) return
 
     try {
@@ -83,15 +83,15 @@ export function MessageTracker() {
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Berichtensysteem</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Message System</h2>
         
         {/* Stats */}
         <div className="bg-blue-50 p-4 rounded-lg mb-6">
           <p className="text-blue-800">
-            <strong>Totaal aantal berichten:</strong> {messageCount}
+            <strong>Total number of messages:</strong> {messageCount}
           </p>
           <p className="text-blue-800">
-            <strong>Gebruiker:</strong> {user.email}
+            <strong>User:</strong> {user.email}
           </p>
         </div>
 
@@ -109,7 +109,7 @@ export function MessageTracker() {
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="Voer een bericht in om te tracken..."
+              placeholder="Enter a message to track..."
               className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={isTracking}
             />
@@ -118,7 +118,7 @@ export function MessageTracker() {
               disabled={isTracking || !newMessage.trim()}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isTracking ? 'Bezig...' : 'Track Bericht'}
+              {isTracking ? 'Tracking...' : 'Track Message'}
             </button>
           </div>
         </form>
@@ -130,7 +130,7 @@ export function MessageTracker() {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Zoek in berichten..."
+              placeholder="Search messages..."
               className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
               disabled={isSearching}
             />
@@ -139,7 +139,7 @@ export function MessageTracker() {
               disabled={isSearching || !searchTerm.trim()}
               className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSearching ? 'Zoeken...' : 'Zoeken'}
+              {isSearching ? 'Searching...' : 'Search'}
             </button>
           </div>
         </form>
@@ -151,26 +151,26 @@ export function MessageTracker() {
             disabled={loading}
             className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50"
           >
-            Vernieuwen
+            Refresh
           </button>
           <button
             onClick={handleCleanup}
             className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
           >
-            Oude Berichten Opruimen
+            Clean Up Old Messages
           </button>
         </div>
 
         {/* Search Results */}
         {searchResults.length > 0 && (
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-3">Zoekresultaten ({searchResults.length})</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Search Results ({searchResults.length})</h3>
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {searchResults.map((message) => (
                 <div key={message.id} className="bg-green-50 p-3 rounded border">
                   <p className="text-gray-800">{message.message}</p>
                   <p className="text-sm text-gray-500 mt-1">
-                    {new Date(message.created_at).toLocaleString('nl-NL')}
+                    {new Date(message.created_at).toLocaleString('en-US')}
                   </p>
                 </div>
               ))}
@@ -181,18 +181,18 @@ export function MessageTracker() {
         {/* Recent Messages */}
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-3">
-            Recente Berichten {loading && '(Laden...)'}
+            Recent Messages {loading && '(Loading...)'}
           </h3>
           
           {messages.length === 0 && !loading ? (
-            <p className="text-gray-500 italic">Nog geen berichten gevonden.</p>
+            <p className="text-gray-500 italic">No messages found yet.</p>
           ) : (
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {messages.map((message) => (
                 <div key={message.id} className="bg-gray-50 p-3 rounded border">
                   <p className="text-gray-800">{message.message}</p>
                   <p className="text-sm text-gray-500 mt-1">
-                    {new Date(message.created_at).toLocaleString('nl-NL')}
+                    {new Date(message.created_at).toLocaleString('en-US')}
                   </p>
                 </div>
               ))}

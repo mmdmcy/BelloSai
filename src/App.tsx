@@ -113,17 +113,17 @@ export interface ModelInfo {
 }
 
 export const MODEL_CAPABILITIES: Record<string, ModelCapability> = {
-  text: { key: 'text', label: 'Tekst', icon: 'FileText' },
-  image: { key: 'image', label: 'Afbeelding', icon: 'Image' },
+  text: { key: 'text', label: 'Text', icon: 'FileText' },
+  image: { key: 'image', label: 'Image', icon: 'Image' },
   audio: { key: 'audio', label: 'Audio', icon: 'Mic' },
   video: { key: 'video', label: 'Video', icon: 'Video' },
   code: { key: 'code', label: 'Code', icon: 'Code' },
-  function_calling: { key: 'function_calling', label: 'Functie-aanroep', icon: 'FunctionSquare' },
+  function_calling: { key: 'function_calling', label: 'Function Calling', icon: 'FunctionSquare' },
   caching: { key: 'caching', label: 'Caching', icon: 'Database' },
   structured_outputs: { key: 'structured_outputs', label: 'Structured Output', icon: 'ListChecks' },
-  search: { key: 'search', label: 'Zoeken', icon: 'Globe' },
+  search: { key: 'search', label: 'Search', icon: 'Globe' },
   tuning: { key: 'tuning', label: 'Tuning', icon: 'SlidersHorizontal' },
-  reasoning: { key: 'reasoning', label: 'Redeneren', icon: 'Brain' },
+  reasoning: { key: 'reasoning', label: 'Reasoning', icon: 'Brain' },
 };
 
 export const AVAILABLE_MODELS: ModelInfo[] = [
@@ -874,7 +874,7 @@ function App() {
       }
       
       if (!modelToUse) {
-        throw new Error('Geen model geselecteerd');
+        throw new Error('No model selected');
       }
       
       console.log('✅ Pre-flight checks passed, calling sendChatMessage...');
@@ -1034,17 +1034,17 @@ function App() {
     console.error('❌ Message sending failed:', error);
       
       // Enhanced error handling with better user messages
-      let errorMessage = 'Er is een fout opgetreden bij het verwerken van je bericht.';
+      let errorMessage = 'An error occurred while processing your message.';
       
       if (error instanceof Error) {
         if (error.message.includes('timeout') || error.message.includes('Timeout')) {
-          errorMessage = 'Het verzoek duurde te lang. Probeer opnieuw met een kortere vraag.';
+          errorMessage = 'The request took too long. Please try again with a shorter question.';
         } else if (error.message.includes('limit') || error.message.includes('Limit')) {
-          errorMessage = 'Je hebt je berichtenlimiet bereikt. Upgrade je account voor meer berichten.';
+          errorMessage = 'You have reached your message limit. Please upgrade your account for more messages.';
         } else if (error.message.includes('network') || error.message.includes('fetch')) {
-          errorMessage = 'Netwerkfout. Controleer je internetverbinding en probeer opnieuw.';
+          errorMessage = 'Network error. Please check your internet connection and try again.';
         } else if (error.message.includes('auth') || error.message.includes('token')) {
-          errorMessage = 'Authenticatiefout. Log opnieuw in en probeer het opnieuw.';
+          errorMessage = 'Authentication error. Please log in again and try again.';
         } else {
           errorMessage = error.message;
         }
@@ -1134,8 +1134,8 @@ function App() {
     
     // Prevent multiple simultaneous loads of the same conversation
     if (isLoadingConversation) {
-      console.log('⚠️ Already loading a conversation, ignoring request');
-      return;
+      console.log('⚠️ Already loading a conversation, forcing reset and proceeding');
+      setIsLoadingConversation(false);
     }
     
     // If clicking the same conversation and it's already loaded, do nothing
@@ -1164,8 +1164,7 @@ function App() {
         return;
       }
 
-      // Clean up any duplicate messages first
-      await chatFeaturesService.removeDuplicateMessages(conversationId);
+      // Skip duplicate message removal during conversation loading to avoid removing legitimate messages
       
       // Fetch fresh data from database
       console.log('🔄 Loading fresh messages from database for:', conversationId);
@@ -1955,7 +1954,7 @@ function App() {
                               className={`p-1 pointer-events-auto ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
                               style={{ color: isDark ? undefined : customization.primaryColor }}
                               onTouchStart={(e) => e.stopPropagation()}
-                              title="Zoek in chat geschiedenis"
+                              title="Search chat history"
                             >
                               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/>
@@ -2342,7 +2341,7 @@ function App() {
                                   onClick={() => setIsSearchFocused(true)}
                                   className={`p-1 ${isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-700'}`}
                                   style={{ color: isDark ? undefined : customization.primaryColor }}
-                                  title="Zoek in chat geschiedenis"
+                                  title="Search chat history"
                                 >
                                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                                     <path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/>
@@ -2587,10 +2586,10 @@ function App() {
                   {isSearching ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Zoeken...
+                      Searching...
                     </>
                   ) : (
-                    'Zoeken'
+                    'Search'
                   )}
                 </button>
                 <button
@@ -2606,7 +2605,7 @@ function App() {
                       : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                   }`}
                 >
-                  Annuleren
+                  Cancel
                 </button>
               </div>
             </form>

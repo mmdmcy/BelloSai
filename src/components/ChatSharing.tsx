@@ -72,7 +72,7 @@ export default function ChatSharing({
       setShareData(shared);
       setShareSettings(prev => ({ ...prev, isPublic: true }));
     } catch (error: any) {
-      setError(error.message || 'Er is een fout opgetreden bij het delen');
+      setError(error.message || 'An error occurred while sharing');
     } finally {
       setIsSharing(false);
     }
@@ -87,7 +87,7 @@ export default function ChatSharing({
       setShareData(null);
       setShareSettings(prev => ({ ...prev, isPublic: false }));
     } catch (error: any) {
-      setError(error.message || 'Er is een fout opgetreden bij het stoppen van delen');
+      setError(error.message || 'An error occurred while stopping sharing');
     } finally {
       setIsSharing(false);
     }
@@ -122,7 +122,7 @@ export default function ChatSharing({
   };
 
   const formatExpiryDate = (expiresAt: string) => {
-    return new Date(expiresAt).toLocaleDateString('nl-NL', {
+    return new Date(expiresAt).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -143,7 +143,7 @@ export default function ChatSharing({
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
             <Share2 className="w-5 h-5 text-purple-500" />
-            <h3 className="text-lg font-semibold">Gesprek Delen</h3>
+            <h3 className="text-lg font-semibold">Share Conversation</h3>
           </div>
           <button
             onClick={onClose}
@@ -159,7 +159,7 @@ export default function ChatSharing({
         <div className="p-6 space-y-6">
           {/* Conversation Info */}
           <div>
-            <h4 className="font-medium mb-2">Gesprek:</h4>
+            <h4 className="font-medium mb-2">Conversation:</h4>
             <p className={`text-sm p-3 rounded-lg ${
               isDark ? 'bg-gray-700' : 'bg-gray-100'
             }`}>
@@ -170,13 +170,13 @@ export default function ChatSharing({
           {/* Share Settings */}
           {!shareData && (
             <div className="space-y-4">
-              <h4 className="font-medium">Deel Instellingen:</h4>
+              <h4 className="font-medium">Share Settings:</h4>
               
               {/* Expiration */}
               <div>
                 <label className="block text-sm font-medium mb-2">
                   <Calendar className="w-4 h-4 inline mr-2" />
-                  Verloopt na:
+                  Expires after:
                 </label>
                 <select
                   value={shareSettings.expiresInDays || ''}
@@ -190,11 +190,11 @@ export default function ChatSharing({
                       : 'bg-white border-gray-300 text-gray-900'
                   } focus:outline-none focus:ring-2 focus:ring-purple-500`}
                 >
-                  <option value="">Nooit</option>
-                  <option value="1">1 dag</option>
+                  <option value="">Never</option>
+                  <option value="1">1 day</option>
                   <option value="7">1 week</option>
-                  <option value="30">1 maand</option>
-                  <option value="90">3 maanden</option>
+                  <option value="30">1 month</option>
+                  <option value="90">3 months</option>
                 </select>
               </div>
 
@@ -204,7 +204,7 @@ export default function ChatSharing({
                 disabled={isSharing}
                 className="w-full py-3 px-4 bg-purple-500 text-white rounded-lg font-medium hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {isSharing ? 'Delen...' : 'Gesprek Delen'}
+                                    {isSharing ? 'Sharing...' : 'Share Conversation'}
               </button>
             </div>
           )}
@@ -243,7 +243,7 @@ export default function ChatSharing({
                           ? 'bg-gray-700 border-gray-600 hover:bg-gray-600'
                           : 'bg-white border-gray-300 hover:bg-gray-50'
                     }`}
-                    title="Kopieer link"
+                    title="Copy link"
                   >
                     {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
                   </button>
@@ -254,7 +254,7 @@ export default function ChatSharing({
                         ? 'bg-gray-700 border-gray-600 hover:bg-gray-600'
                         : 'bg-white border-gray-300 hover:bg-gray-50'
                     }`}
-                    title="Open in nieuwe tab"
+                    title="Open in new tab"
                   >
                     <ExternalLink className="w-5 h-5" />
                   </button>
@@ -269,12 +269,12 @@ export default function ChatSharing({
                   {shareData.expires_at && (
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4" />
-                      <span>Verloopt op: {formatExpiryDate(shareData.expires_at)}</span>
+                      <span>Expires on: {formatExpiryDate(shareData.expires_at)}</span>
                     </div>
                   )}
                   <div className="flex items-center gap-2">
                     <Eye className="w-4 h-4" />
-                    <span>Bekeken: {shareData.view_count || 0} keer</span>
+                    <span>Viewed: {shareData.view_count || 0} times</span>
                   </div>
                 </div>
               </div>
@@ -289,7 +289,7 @@ export default function ChatSharing({
                     : 'bg-gray-200 text-gray-900 hover:bg-gray-300'
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                {isSharing ? 'Stoppen...' : 'Stop met Delen'}
+                {isSharing ? 'Stopping...' : 'Stop Sharing'}
               </button>
             </div>
           )}
@@ -306,8 +306,8 @@ export default function ChatSharing({
             isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
           }`}>
             <p>
-              ℹ️ Gedeelde gesprekken zijn publiek toegankelijk via de link. 
-              Zorg ervoor dat je geen gevoelige informatie deelt.
+              ℹ️ Shared conversations are publicly accessible via the link. 
+              Make sure you don't share any sensitive information.
             </p>
           </div>
         </div>

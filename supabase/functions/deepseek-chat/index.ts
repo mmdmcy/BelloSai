@@ -100,7 +100,7 @@ serve(async (req) => {
       if (userData.message_count >= userData.message_limit) {
         return new Response(
           JSON.stringify({ 
-            error: 'Berichtenlimiet overschreden',
+            error: 'Message limit exceeded',
             limit: userData.message_limit,
             current: userData.message_count,
             subscription_tier: userData.subscription_tier
