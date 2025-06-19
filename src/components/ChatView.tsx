@@ -43,7 +43,47 @@ const preprocessLegacyContent = (content: string): string => {
     return content;
   }
   
-  // Handle the specific pattern from legacy messages: "languagenameCodeHere###NextLanguage"
+  // Handle the specific OLD format pattern: ":### Pythonpythonprint('hello')### JavaScriptjavascriptconsole.log('hello')"
+  // This pattern has :### or ### followed by language name+code, then actual code
+  const oldLegacyPattern = /:?###\s*([A-Z][a-z]*?)([a-z+#]+)(.*?)(?=###|$)/g;
+  const oldMatches = [...content.matchAll(oldLegacyPattern)];
+  
+  if (oldMatches.length > 0) {
+    console.log('🔧 Found old legacy code format, converting...', oldMatches.length, 'matches');
+    let result = '';
+    oldMatches.forEach((match, index) => {
+      const [fullMatch, displayName, langCode, code] = match;
+      console.log('🔧 Processing match:', { fullMatch, displayName, langCode, code: code.substring(0, 50) + '...' });
+      
+      const cleanDisplayName = displayName.trim();
+      const cleanCode = code.trim();
+      
+      // Map language codes to proper identifiers
+      const langMap: { [key: string]: string } = {
+        'python': 'python',
+        'javascript': 'javascript', 
+        'java': 'java',
+        'cpp': 'cpp',
+        'csharp': 'csharp',
+        'ruby': 'ruby',
+        'php': 'php',
+        'swift': 'swift',
+        'go': 'go',
+        'html': 'html',
+        'css': 'css',
+        'typescript': 'typescript'
+      };
+      
+      const properLang = langMap[langCode.toLowerCase()] || langCode.toLowerCase();
+      
+      if (index > 0) result += '\n\n';
+      result += `### ${cleanDisplayName}\n\`\`\`${properLang}\n${cleanCode}\n\`\`\`\n`;
+    });
+    console.log('🔧 Converted result:', result.substring(0, 200) + '...');
+    return result;
+  }
+  
+  // Handle the newer pattern from legacy messages: "languagenameCodeHere###NextLanguage"
   const legacyCodePattern = /([a-zA-Z+#]+)((?:(?!###).)+)(?:###|$)/g;
   const matches = [...content.matchAll(legacyCodePattern)];
   
