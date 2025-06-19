@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Brain, Sparkles } from 'lucide-react';
+import { ChevronDown, Brain, Sparkles, Feather, Star, Lock } from 'lucide-react';
 import { CustomizationSettings } from '../App';
 import type { ModelInfo } from '../App';
 
@@ -16,16 +16,19 @@ interface ModelSelectorProps {
   availableModels: ModelInfo[];
   isDark: boolean;
   customization: CustomizationSettings;
+  hasActiveSubscription?: boolean;
 }
 
 const PROVIDER_ICON: Record<string, any> = {
-  Gemini: Sparkles,
   DeepSeek: () => <span className="text-base">🐋</span>, // Whale emoji for DeepSeek
+  Claude: Feather,
+  Mistral: Star,
 };
 
 const PROVIDER_COLOR: Record<string, string> = {
-  Gemini: '#a855f7', // paars
   DeepSeek: '#2563eb', // blauw
+  Claude: '#fbbf24', // geel/orange
+  Mistral: '#ef4444', // rood
 };
 
 export default function ModelSelector({ 
@@ -33,7 +36,8 @@ export default function ModelSelector({
   onModelChange, 
   availableModels, 
   isDark,
-  customization
+  customization,
+  hasActiveSubscription = false
 }: ModelSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -93,14 +97,16 @@ export default function ModelSelector({
               const isSelected = model.code === selectedModel;
               const ModelProviderIcon = PROVIDER_ICON[model.provider];
               const providerColor = PROVIDER_COLOR[model.provider];
-              
+              const isPremium = model.premium;
+              const isDisabled = isPremium && !hasActiveSubscription;
               return (
                 <button
                   key={model.code}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 ${
                     isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
-                  } ${isSelected ? (isDark ? 'bg-gray-700' : 'bg-purple-50') : ''}`}
-                  onClick={() => handleModelSelect(model.code)}
+                  } ${isSelected ? (isDark ? 'bg-gray-700' : 'bg-purple-50') : ''} ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  onClick={() => !isDisabled && handleModelSelect(model.code)}
+                  disabled={isDisabled}
                 >
                   <ModelProviderIcon 
                     className="w-4 h-4" 
@@ -109,7 +115,10 @@ export default function ModelSelector({
                   <span className={`text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {model.name}
                   </span>
-                  {isSelected && (
+                  {isPremium && !hasActiveSubscription && (
+                    <Lock className="w-4 h-4 text-gray-400 ml-2" />
+                  )}
+                  {isSelected && !isDisabled && (
                     <div 
                       className="ml-auto w-2 h-2 rounded-full"
                       style={{ backgroundColor: providerColor }}
