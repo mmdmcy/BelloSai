@@ -56,11 +56,14 @@ class AnonymousUsageService {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        // Validate fingerprint matches
-        if (parsed.browserFingerprint === this.browserFingerprint) {
+        // Only validate fingerprint for completely different devices - be more lenient
+        // Allow slight variations that can happen during normal browser usage
+        if (parsed.browserFingerprint === this.browserFingerprint || 
+            !parsed.browserFingerprint || // Handle old data without fingerprint
+            Math.abs(parsed.browserFingerprint.length - this.browserFingerprint.length) <= 2) {
           return parsed;
         } else {
-          console.warn('Browser fingerprint mismatch - possible abuse attempt');
+          console.log('Browser fingerprint changed, creating fresh stats');
         }
       }
       
@@ -68,7 +71,9 @@ class AnonymousUsageService {
       const backup = localStorage.getItem(BACKUP_STORAGE_KEY);
       if (backup) {
         const parsed = JSON.parse(backup);
-        if (parsed.browserFingerprint === this.browserFingerprint) {
+        if (parsed.browserFingerprint === this.browserFingerprint || 
+            !parsed.browserFingerprint ||
+            Math.abs(parsed.browserFingerprint.length - this.browserFingerprint.length) <= 2) {
           return parsed;
         }
       }
