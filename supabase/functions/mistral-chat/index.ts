@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import { MistralClient } from 'npm:@mistralai/mistralai'
 import { corsHeaders } from '../_shared/cors.ts'
 
 Deno.serve(async (req) => {
@@ -13,34 +14,25 @@ Deno.serve(async (req) => {
       throw new Error('Messages array is required')
     }
 
-    const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${Deno.env.get('MISTRAL_API_KEY')}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: model || "mistral-medium",
-        messages,
-        stream: false
-      })
+    const client = new MistralClient(Deno.env.get('MISTRAL_API_KEY') || '')
+
+    const response = await client.chat({
+      model: model || "mistral-medium",
+      messages: messages.map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }))
     })
 
-    if (!response.ok) {
-      const error = await response.text()
-      throw new Error(`Mistral API error: ${error}`)
-    }
-
-    const data = await response.json()
-    
-    if (!data || !data.choices || !data.choices[0] || !data.choices[0].message) {
+    if (!response || !response.choices || !response.choices[0] || !response.choices[0].message) {
       throw new Error('Invalid response format from Mistral API')
     }
 
-    return new Response(JSON.stringify(data), {
+    return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {
+    console.error('Mistral API error:', error)
     return new Response(JSON.stringify({ 
       error: `Error processing request: ${error.message}` 
     }), {
