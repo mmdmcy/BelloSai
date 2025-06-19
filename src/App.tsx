@@ -370,6 +370,14 @@ function App() {
   const [selectedModel, setSelectedModel] = useState(() => {
     try {
       const savedModel = localStorage.getItem('bellosai-selected-model');
+      
+      // Migration: If the saved model is DeepSeek-R1, update it to DeepSeek-V3
+      if (savedModel === 'DeepSeek-R1') {
+        console.log('🔄 Migrating default model from DeepSeek-R1 to DeepSeek-V3');
+        localStorage.setItem('bellosai-selected-model', 'DeepSeek-V3');
+        return 'DeepSeek-V3';
+      }
+      
       return savedModel || 'DeepSeek-V3'; // Default to DeepSeek V3 (not R1)
     } catch (error) {
       console.log('Failed to load selected model from localStorage:', error);
@@ -554,31 +562,27 @@ function App() {
 
   // Add session health check when tab becomes visible
   useEffect(() => {
+    let healthCheckInProgress = false;
+    
     const handleVisibilityChange = async () => {
-      if (!document.hidden && user) {
+      if (!document.hidden && user && !healthCheckInProgress) {
+        healthCheckInProgress = true;
         console.log('👀 Tab became visible, checking app health...');
         
-        // Simple health check - try to get conversations
         try {
-          await chatFeaturesService.getUserConversations(user.id);
-          console.log('✅ App health check passed');
-        } catch (error) {
-          console.warn('⚠️ App health check failed, may need session refresh:', error);
-          
-          // If it's an auth error, try to refresh
-          if (error instanceof Error && (
-            error.message.includes('Authentication') ||
-            error.message.includes('Invalid') ||
-            error.message.includes('expired')
-          )) {
-            console.log('🔄 Attempting session refresh...');
-            try {
-              await supabase.auth.refreshSession();
-              console.log('✅ Session refreshed successfully');
-            } catch (refreshError) {
-              console.error('❌ Failed to refresh session:', refreshError);
-            }
+          // Simple health check - just verify auth status without loading conversations
+          // Conversations will be reloaded by the auth state change effect
+          const { data: { session }, error } = await supabase.auth.getSession();
+          if (session && !error) {
+            console.log('✅ App health check passed');
+          } else {
+            console.warn('⚠️ Session issue detected:', error);
+            // Let the auth context handle session refresh
           }
+        } catch (error) {
+          console.warn('⚠️ App health check failed:', error);
+        } finally {
+          healthCheckInProgress = false;
         }
       }
     };
@@ -624,6 +628,9 @@ function App() {
     checkForCheckoutSuccess();
   }, [user]);
 
+  // Add a ref to prevent concurrent conversation loads
+  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
+  
   const loadConversations = async () => {
     console.log('🔄 loadConversations called, user:', user ? user.id : 'none');
     
@@ -632,6 +639,13 @@ function App() {
       setConversations([]);
       return;
     }
+    
+    if (isLoadingConversations) {
+      console.log('⚠️ Already loading conversations, ignoring request');
+      return;
+    }
+    
+    setIsLoadingConversations(true);
     
     try {
       console.log('📋 Getting user conversations...');
@@ -649,9 +663,19 @@ function App() {
       
     } catch (error) {
       console.error('❌ Failed to load conversations:', error);
-      // If tables don't exist yet, just set empty array
-      setConversations([]);
-    }
+      
+      // Don't clear conversations on timeout - keep existing ones
+      if (error instanceof Error && error.message.includes('timeout')) {
+        console.warn('⚠️ Conversations query timed out, keeping existing conversations');
+        // Don't call setConversations([]) on timeout
+             } else {
+         // Only clear conversations for other errors (like missing tables)
+         console.warn('⚠️ Non-timeout error, clearing conversations');
+         setConversations([]);
+       }
+     } finally {
+       setIsLoadingConversations(false);
+     }
   };
 
 

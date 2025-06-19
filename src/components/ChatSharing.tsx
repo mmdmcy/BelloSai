@@ -3,7 +3,7 @@
  * 
  * Allows users to share conversations publicly
  * Features:
- * - Generate shareable links
+ * - Generate shareable links // not implemented yet, WIP
  * - Set expiration dates
  * - View share statistics
  * - Copy links to clipboard

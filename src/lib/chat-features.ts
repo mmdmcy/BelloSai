@@ -580,9 +580,9 @@ class ChatFeaturesService {
         .eq('user_id', userId)
         .order('updated_at', { ascending: false });
       
-      // Add timeout to avoid hanging
+      // Add timeout to avoid hanging - longer timeout for conversations with many records
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Conversations query timeout')), 5000);
+        setTimeout(() => reject(new Error('Conversations query timeout')), 10000);
       });
       
       const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
