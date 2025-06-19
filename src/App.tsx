@@ -664,18 +664,12 @@ function App() {
     } catch (error) {
       console.error('❌ Failed to load conversations:', error);
       
-      // Don't clear conversations on timeout - keep existing ones
-      if (error instanceof Error && error.message.includes('timeout')) {
-        console.warn('⚠️ Conversations query timed out, keeping existing conversations');
-        // Don't call setConversations([]) on timeout
-             } else {
-         // Only clear conversations for other errors (like missing tables)
-         console.warn('⚠️ Non-timeout error, clearing conversations');
-         setConversations([]);
-       }
-     } finally {
-       setIsLoadingConversations(false);
-     }
+      // Keep existing conversations on any error to maintain user experience
+      console.warn('⚠️ Error loading conversations, keeping existing ones');
+      // Don't call setConversations([]) on any error
+    } finally {
+      setIsLoadingConversations(false);
+    }
   };
 
 
@@ -1196,11 +1190,7 @@ function App() {
     
     console.log('🔘 Conversation clicked:', conversationId, 'Current:', currentConversationId);
     
-    // Prevent ANY loading if already loading (regardless of conversation)
-    if (isLoadingConversation) {
-      console.log('⚠️ Already loading a conversation, ignoring click');
-      return;
-    }
+    // Allow conversation switching at any time - no loading checks
     
     // If clicking the same conversation and it's already loaded, allow reload
     if (currentConversationId === conversationId && messages.length > 0) {
@@ -1218,10 +1208,10 @@ function App() {
     setConversationTitle(conversation?.title || 'Loading conversation...');
     
     try {
-      // Always fetch fresh data from database with timeout protection
+      // Always fetch fresh data from database
       console.log('🔄 Loading fresh messages from database for:', conversationId);
       
-      // Direct query with built-in timeout handling
+      // Direct query - no timeout restrictions
       const conversationMessages = await chatFeaturesService.getConversationMessages(conversationId);
       
       if (conversationMessages && conversationMessages.length > 0) {
@@ -1256,10 +1246,7 @@ function App() {
       // Show specific error messages based on error type
       let errorMessage = 'Conversation (failed to load)';
       if (error instanceof Error) {
-        if (error.message.includes('timeout')) {
-          errorMessage = 'Conversation (timeout)';
-          console.log('⏰ Database query timed out for conversation:', conversationId);
-        } else if (error.message.includes('network')) {
+        if (error.message.includes('network')) {
           errorMessage = 'Conversation (network error)';
         }
       }

@@ -574,18 +574,11 @@ class ChatFeaturesService {
     console.log('🔍 ChatFeaturesService: Getting conversations for user:', userId);
     
     try {
-      const queryPromise = supabase
+      const { data, error } = await supabase
         .from('conversations')
         .select('*')
         .eq('user_id', userId)
         .order('updated_at', { ascending: false });
-      
-      // Add timeout to avoid hanging - longer timeout for conversations with many records
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Conversations query timeout')), 10000);
-      });
-      
-      const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
 
       if (error) {
         console.error('❌ Error getting user conversations:', error);
@@ -773,18 +766,11 @@ class ChatFeaturesService {
       
       // Direct query without auth session check to avoid deadlocks
       // Supabase handles auth automatically through RLS policies
-      const queryPromise = supabase
+      const { data, error } = await supabase
         .from('messages')
         .select('*')
         .eq('conversation_id', conversationId)
         .order('created_at', { ascending: true });
-      
-      // Add timeout protection
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Query timeout after 5 seconds')), 5000);
-      });
-      
-      const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
 
       if (error) {
         console.error('❌ Database error fetching messages:', error);
@@ -800,9 +786,6 @@ class ChatFeaturesService {
       return data || [];
     } catch (error) {
       console.error('❌ ChatFeaturesService: Query failed:', error);
-      if (error instanceof Error && error.message.includes('timeout')) {
-        console.error('⏰ Query timed out after 5 seconds');
-      }
       return []; // Always return empty array on error
     }
   }
