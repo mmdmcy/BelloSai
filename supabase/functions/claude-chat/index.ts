@@ -1,22 +1,35 @@
-import { serve } from "std/server";
-const CLAUDE_API_KEY = Deno.env.get("CLAUDE_API_KEY");
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import { corsHeaders } from '../_shared/cors.ts'
 
-serve(async (req) => {
-  const { messages, model, conversationId } = await req.json();
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
 
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": CLAUDE_API_KEY,
-      "content-type": "application/json"
-    },
-    body: JSON.stringify({
-      model,
-      messages,
-      conversation_id: conversationId
+  try {
+    const { messages, model, conversationId } = await req.json()
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": Deno.env.get('CLAUDE_API_KEY'),
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        conversation_id: conversationId
+      })
     })
-  });
 
-  const data = await response.json();
-  return new Response(JSON.stringify(data), { headers: { "content-type": "application/json" } });
-}); 
+    const data = await response.json()
+    return new Response(JSON.stringify(data), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500,
+    })
+  }
+}) 
