@@ -38,8 +38,8 @@
  * - Overflow handling for long conversation lists
  */
 
-import React from 'react';
-import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight, Trash2, RefreshCw } from 'lucide-react';
 import { CustomizationSettings } from '../App';
 
 interface SidebarProps {
@@ -57,6 +57,7 @@ interface SidebarProps {
   onConversationSelect?: (conversationId: string) => void;
   onConversationDelete?: (conversationId: string) => void;
   hasGlassEffect?: boolean; // New prop for glass effects
+  onRefreshConversations?: () => void; // New prop for refreshing conversations
 }
 
 export default function Sidebar({ 
@@ -73,8 +74,59 @@ export default function Sidebar({
   currentConversationId,
   onConversationSelect,
   onConversationDelete,
-  hasGlassEffect = false
+  hasGlassEffect = false,
+  onRefreshConversations
 }: SidebarProps) {
+  // State for tracking if user has alt-tabbed and needs to refresh
+  const [showRefreshPrompt, setShowRefreshPrompt] = useState(false);
+  const [wasTabHidden, setWasTabHidden] = useState(false);
+
+  // Effect to track tab visibility changes (alt-tab detection)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // User has switched away from the tab
+        setWasTabHidden(true);
+      } else if (wasTabHidden) {
+        // User has returned to the tab after being away
+        setShowRefreshPrompt(true);
+      }
+    };
+
+    // Also listen for window focus/blur as backup
+    const handleWindowBlur = () => {
+      setWasTabHidden(true);
+    };
+
+    const handleWindowFocus = () => {
+      if (wasTabHidden) {
+        setShowRefreshPrompt(true);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener('focus', handleWindowFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('focus', handleWindowFocus);
+    };
+  }, [wasTabHidden]);
+
+  // Handle refresh button click
+  const handleRefresh = () => {
+    setShowRefreshPrompt(false);
+    setWasTabHidden(false);
+    onRefreshConversations?.();
+  };
+
+  // Handle dismiss refresh prompt
+  const handleDismissRefresh = () => {
+    setShowRefreshPrompt(false);
+    setWasTabHidden(false);
+  };
   
 
 
@@ -167,6 +219,51 @@ export default function Sidebar({
 
       {/* Chat History Section */}
       <div className="px-4 pb-4 flex-1 overflow-y-auto">
+        {/* Refresh Prompt - shown when user returns after alt-tabbing */}
+        {showRefreshPrompt && (
+          <div className={`mb-4 p-3 rounded-lg border ${
+            isDark 
+              ? 'bg-blue-900/30 border-blue-700 text-blue-200' 
+              : 'bg-blue-50 border-blue-200 text-blue-800'
+          }`}>
+            <div className="flex items-start gap-2">
+              <RefreshCw className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className={`text-sm font-medium mb-1`} style={{ fontFamily: customization.fontFamily }}>
+                  Refresh Chat History
+                </p>
+                <p className={`text-xs ${isDark ? 'text-blue-300' : 'text-blue-600'}`} style={{ fontFamily: customization.fontFamily }}>
+                  Please refresh to get up to date chat history conversations
+                </p>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    onClick={handleRefresh}
+                    className={`px-2 py-1 text-xs rounded transition-colors ${
+                      isDark
+                        ? 'bg-blue-700 hover:bg-blue-600 text-white'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                    }`}
+                    style={{ fontFamily: customization.fontFamily }}
+                  >
+                    Refresh Now
+                  </button>
+                  <button
+                    onClick={handleDismissRefresh}
+                    className={`px-2 py-1 text-xs rounded transition-colors ${
+                      isDark
+                        ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                        : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
+                    }`}
+                    style={{ fontFamily: customization.fontFamily }}
+                  >
+                    Dismiss
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {conversations.length > 0 ? (
           <>
             {/* Today Section */}
