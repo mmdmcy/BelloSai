@@ -35,7 +35,7 @@ type ModelProvider = 'DeepSeek' | 'Gemini';
 // Configuration constants for reliable performance
 const REQUEST_TIMEOUT = Infinity; // No timeout - let AI work!
 const STREAM_TIMEOUT = Infinity; // No stream timeout
-const OPTIMAL_CHUNK_SIZE = 12; // Characters per chunk for smooth streaming
+// Direct streaming - no chunk size optimization needed
 
 // Performance optimization: Balanced timeouts for reliable responses
 const FAST_TIMEOUT = 20000; // 20 seconds for reliable response
@@ -221,26 +221,14 @@ export async function sendChatMessage(
       const decoder = new TextDecoder();
       let fullResponse = '';
       let hasStartedStreaming = false;
-      // No stream timeout needed
-      let lastChunkTime = Date.now();
-      let chunkBuffer = ''; // Buffer for smoother chunk processing
       
-      // No stream timeouts - let AI stream without interruption!
-      
-              try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-              console.log('✅ Streaming completed');
-              // Process any remaining buffer
-              if (chunkBuffer.trim()) {
-                onChunk?.(chunkBuffer);
-                fullResponse += chunkBuffer;
-              }
-              break;
-            }
-            
-            lastChunkTime = Date.now();
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            console.log('✅ Streaming completed');
+            break;
+          }
           
           const chunk = decoder.decode(value, { stream: true });
           const lines = chunk.split('\n');
@@ -250,29 +238,16 @@ export async function sendChatMessage(
             try {
               const jsonStr = line.slice(6);
               const data: ChatResponse = JSON.parse(jsonStr);
-              console.log('📝 Parsed data:', data);
+              
               if (data.type === 'chunk' && data.content) {
                 hasStartedStreaming = true;
                 
-                // Add content to buffer for smoother streaming
-                chunkBuffer += data.content;
-                
-                // Process buffer in optimal chunks for smoother UX
-                while (chunkBuffer.length >= OPTIMAL_CHUNK_SIZE) {
-                  const chunkToSend = chunkBuffer.slice(0, OPTIMAL_CHUNK_SIZE);
-                  chunkBuffer = chunkBuffer.slice(OPTIMAL_CHUNK_SIZE);
-                  fullResponse += chunkToSend;
-                  onChunk?.(chunkToSend);
-                }
+                // Direct chunk processing - no buffering for immediate display
+                console.log('📦 Direct chunk:', data.content.length, 'chars');
+                fullResponse += data.content;
+                onChunk?.(data.content);
                 
               } else if (data.type === 'complete') {
-                // Send any remaining buffer
-                if (chunkBuffer.trim()) {
-                  fullResponse += chunkBuffer;
-                  onChunk?.(chunkBuffer);
-                  chunkBuffer = '';
-                }
-                
                 if (data.content && data.content.trim() !== '') {
                   fullResponse = data.content;
                 }
