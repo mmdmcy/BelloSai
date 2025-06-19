@@ -20,7 +20,7 @@ interface ModelSelectorProps {
 
 const PROVIDER_ICON: Record<string, any> = {
   Gemini: Sparkles,
-  DeepSeek: Brain,
+  DeepSeek: () => <span className="text-base">🐋</span>, // Whale emoji for DeepSeek
 };
 
 const PROVIDER_COLOR: Record<string, string> = {
@@ -65,14 +65,11 @@ export default function ModelSelector({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border ${
-          isDark 
-            ? 'bg-gray-600/80 border-gray-500 text-gray-200 hover:bg-gray-600 hover:border-gray-400' 
-            : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100 hover:border-gray-300'
-        } ${isOpen ? 'ring-2' : ''}`}
+        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 text-white ${isOpen ? 'ring-2 ring-opacity-50' : ''}`}
         style={{ 
           fontFamily: customization.fontFamily,
-          '--tw-ring-color': customization.primaryColor + '40'
+          backgroundColor: customization.primaryColor,
+          '--tw-ring-color': customization.secondaryColor
         } as React.CSSProperties}
       >
         <ProviderIcon className="w-3.5 h-3.5 opacity-80" />

@@ -273,6 +273,8 @@ export default function ChatView({
 
   const renderMessage = useCallback((message: Message, index: number) => {
     const isLastAiMessage = message.type === 'ai' && index === messages.length - 1;
+    const isReasoningModel = message.model === 'DeepSeek-R1' || message.model?.includes('gemini-2.5-pro');
+    const shouldShowReasoning = isLastAiMessage && isGenerating && isReasoningModel && !message.content;
     
     if (message.type === 'user') {
       return (
@@ -292,7 +294,26 @@ export default function ChatView({
       return (
         <div key={message.id} className="flex justify-start mb-6">
           <div className="max-w-[85%] w-full">
-            {/* Only show content if message has content and is not currently being generated */}
+            {/* Show reasoning indicator for R1 and Gemini 2.5 Pro when they haven't started generating content */}
+            {shouldShowReasoning && (
+              <div className="mb-3 flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  </div>
+                  <span 
+                    className="text-blue-500 font-medium"
+                    style={{ fontFamily: customization.fontFamily }}
+                  >
+                    Reasoning...
+                  </span>
+                </div>
+              </div>
+            )}
+            
+            {/* Only show content if message has content */}
             {message.content && (
               <div className="mb-3">
                 <MarkdownContent 

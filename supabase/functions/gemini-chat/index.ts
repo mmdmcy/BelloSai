@@ -146,7 +146,9 @@ serve(async (req) => {
     console.log('🔧 Gemini model debug:', {
       inputModel: model,
       processedModelId: modelId,
-      finalEndpoint: endpoint.replace(GEMINI_API_KEY, '[API_KEY_HIDDEN]')
+      finalEndpoint: endpoint.replace(GEMINI_API_KEY, '[API_KEY_HIDDEN]'),
+      hasApiKey: !!GEMINI_API_KEY,
+      apiKeyLength: GEMINI_API_KEY?.length || 0
     });
 
     // Optimized timeout for Gemini API
