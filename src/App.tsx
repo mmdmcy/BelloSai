@@ -23,7 +23,7 @@
  * - UI state (modals, sidebars, etc.)
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatView from './components/ChatView';
 import MainContent from './components/MainContent';
@@ -551,6 +551,8 @@ function App() {
 
   // Load conversations when user logs in (only when actually changing, not on session refresh)
   const [lastUserId, setLastUserId] = useState<string | null>(null);
+  const loadConversationsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   useEffect(() => {
     const currentUserId = user?.id || null;
     
@@ -558,20 +560,37 @@ function App() {
       console.log('🔄 User changed from', lastUserId, 'to', currentUserId);
       setLastUserId(currentUserId);
       
+      // Clear any existing timeout
+      if (loadConversationsTimeoutRef.current) {
+        console.log('🧹 Clearing previous conversation load timeout');
+        clearTimeout(loadConversationsTimeoutRef.current);
+      }
+      
       // Debounce conversation loading to prevent multiple rapid calls during auth state changes
-      const timeoutId = setTimeout(() => {
+      loadConversationsTimeoutRef.current = setTimeout(() => {
+        console.log('🔄 Debounced effect triggered for user:', currentUserId);
         if (user && user.id === currentUserId) { // Double-check user hasn't changed again
+          console.log('🔄 User still matches, loading conversations...');
           loadConversations();
-        } else if (!user) {
+        } else if (!currentUserId) {
+          console.log('🔄 No user, clearing conversations...');
           setConversations([]);
           setCurrentConversationId(null);
           setMessages([]);
         }
+        loadConversationsTimeoutRef.current = null;
       }, 300); // Wait 300ms to see if more auth changes are coming
-      
-      return () => clearTimeout(timeoutId);
     }
-  }, [user]);
+  }, [user]); // Only depend on user
+  
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (loadConversationsTimeoutRef.current) {
+        clearTimeout(loadConversationsTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Check for successful checkout session in URL parameters
   useEffect(() => {
