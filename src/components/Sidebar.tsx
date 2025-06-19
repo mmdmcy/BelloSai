@@ -84,9 +84,9 @@ export default function Sidebar({
           hasGlassEffect && !isDark 
             ? 'glass-sidebar' 
             : isDark 
-              ? 'bg-gray-900 border-gray-700' 
-              : 'bg-purple-50 border-purple-100'
-        } ${!hasGlassEffect ? 'border-r' : ''} flex flex-col items-center py-4 gap-4`}
+              ? 'bg-gray-900' 
+              : 'bg-purple-50'
+        } flex flex-col items-center py-4 gap-4`}
         style={{
           background: !hasGlassEffect && customization.gradientEnabled && !isDark 
             ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
@@ -116,9 +116,9 @@ export default function Sidebar({
         hasGlassEffect && !isDark 
           ? 'glass-sidebar' 
           : isDark 
-            ? 'bg-gray-900 border-gray-700' 
-            : 'bg-purple-50 border-purple-100'
-      } ${!hasGlassEffect ? 'border-r' : ''} flex flex-col`}
+            ? 'bg-gray-900' 
+            : 'bg-purple-50'
+      } flex flex-col`}
       style={{
         background: !hasGlassEffect && customization.gradientEnabled && !isDark 
           ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
