@@ -564,46 +564,40 @@
   contain-intrinsic-size: 0 500px;
 }
 
-/* Beautiful wave text animation - characters appear one by one like a wave */
-.wave-text {
-  display: inline;
-}
-
-.wave-char {
-  display: inline-block;
+/* Super quick sea wave reveal animation */
+.sea-wave-reveal {
   opacity: 0;
-  transform: translateY(8px) scale(0.95);
-  animation: waveCharAppear 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  transform: translateY(15px);
+  transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-@keyframes waveCharAppear {
+.sea-wave-reveal.wave-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Add wave-like staggered reveal for child elements */
+.sea-wave-reveal.wave-visible > * {
+  animation: seaWaveStagger 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.sea-wave-reveal.wave-visible > *:nth-child(1) { animation-delay: 0.05s; }
+.sea-wave-reveal.wave-visible > *:nth-child(2) { animation-delay: 0.1s; }
+.sea-wave-reveal.wave-visible > *:nth-child(3) { animation-delay: 0.15s; }
+.sea-wave-reveal.wave-visible > *:nth-child(4) { animation-delay: 0.2s; }
+.sea-wave-reveal.wave-visible > *:nth-child(5) { animation-delay: 0.25s; }
+.sea-wave-reveal.wave-visible > *:nth-child(6) { animation-delay: 0.3s; }
+.sea-wave-reveal.wave-visible > *:nth-child(7) { animation-delay: 0.35s; }
+.sea-wave-reveal.wave-visible > *:nth-child(8) { animation-delay: 0.4s; }
+.sea-wave-reveal.wave-visible > *:nth-child(n+9) { animation-delay: 0.45s; }
+
+@keyframes seaWaveStagger {
   0% {
     opacity: 0;
-    transform: translateY(8px) scale(0.95);
-  }
-  60% {
-    opacity: 1;
-    transform: translateY(-2px) scale(1.02);
+    transform: translateY(12px);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: translateY(0);
   }
-}
-
-/* Beautiful smooth text reveal animation - fallback for non-simple content */
-.wave-reveal {
-  position: relative;
-}
-
-.wave-reveal .relative {
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
-              transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.wave-reveal.wave-visible .relative {
-  opacity: 1;
-  transform: translateY(0);
 }

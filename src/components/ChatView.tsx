@@ -50,196 +50,158 @@ interface ChatViewProps {
   setError?: (err: string | null) => void;
 }
 
-// Custom component for beautiful wave text animation
+// Simple sea wave reveal animation for AI responses
 const AnimatedText: React.FC<{ 
   content: string; 
   isStreaming?: boolean; 
   isDark: boolean; 
   customization: CustomizationSettings;
 }> = React.memo(({ content, isStreaming = false, isDark, customization }) => {
-  const [displayContent, setDisplayContent] = useState('');
-  const [animationStarted, setAnimationStarted] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   
   useEffect(() => {
     if (!content) return;
     
-    // Reset animation state
-    setAnimationStarted(false);
-    setDisplayContent('');
+    setIsVisible(false);
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, 50);
     
-         // Start animation after a small delay
-     const startDelay = setTimeout(() => {
-       setAnimationStarted(true);
-       setDisplayContent(content);
-     }, 50);
-    
-    return () => clearTimeout(startDelay);
+    return () => clearTimeout(timer);
   }, [content]);
-
-
 
   return (
     <div 
-      className={`prose ${isDark ? 'prose-invert' : 'prose-gray'} max-w-none mb-6`}
+      className={`prose ${isDark ? 'prose-invert' : 'prose-gray'} max-w-none sea-wave-reveal ${isVisible ? 'wave-visible' : ''}`}
     >
-      <div className="relative">
-        {animationStarted ? (
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            rehypePlugins={[rehypeHighlight]}
-            components={{
-              // For simple text content, use wave animation
-              p: ({ children, ...props }) => {
-                // Check if this is simple text content (no nested components)
-                const isSimpleText = typeof children === 'string' || 
-                  (Array.isArray(children) && children.every(child => typeof child === 'string'));
-                
-                                 if (isSimpleText) {
-                   const textContent = Array.isArray(children) ? children.join('') : String(children);
-                   const words = textContent.split(' ');
-                   let globalCharIndex = 0;
-                   
-                   return (
-                     <p 
-                       className={`mb-6 leading-relaxed text-base ${isDark ? 'text-gray-200' : 'text-gray-700'}`}
-                       style={{ 
-                         fontFamily: customization.fontFamily,
-                         lineHeight: '1.7',
-                       }}
-                       {...props}
-                     >
-                       <span className="wave-text">
-                         {words.map((word, wordIndex) => {
-                           const wordElement = (
-                             <span key={wordIndex} className="inline-block">
-                               {word.split('').map((char, charIndexInWord) => {
-                                 const currentCharIndex = globalCharIndex++;
-                                 return (
-                                   <span
-                                     key={`${wordIndex}-${charIndexInWord}`}
-                                     className="wave-char"
-                                     style={{
-                                       animationDelay: `${currentCharIndex * 0.015}s`
-                                     }}
-                                   >
-                                     {char}
-                                   </span>
-                                 );
-                               })}
-                               {wordIndex < words.length - 1 && (
-                                 <span
-                                   className="wave-char"
-                                                                        style={{
-                                       animationDelay: `${globalCharIndex++ * 0.015}s`
-                                     }}
-                                 >
-                                   {' '}
-                                 </span>
-                               )}
-                             </span>
-                           );
-                           return wordElement;
-                         })}
-                       </span>
-                     </p>
-                   );
-                 }
-                
-                // For complex content, render normally without wave effect
-                return (
-                  <p 
-                    className={`mb-6 leading-relaxed text-base ${isDark ? 'text-gray-200' : 'text-gray-700'} animate-fade-in`}
-                    style={{ 
-                      fontFamily: customization.fontFamily,
-                      lineHeight: '1.7',
-                    }}
-                    {...props}
-                  >
-                    {children}
-                  </p>
-                );
-              },
-              // Custom styling for code blocks
-              pre: ({ children, ...props }) => (
-                <div className={`rounded-xl overflow-hidden ${
-                  isDark ? 'bg-gray-900' : 'bg-white'
-                } border ${isDark ? 'border-gray-700' : 'border-purple-200'} transform transition-all duration-500 ease-in-out hover:scale-[1.02] shadow-lg mb-6 animate-fade-in`}>
-                  <div 
-                    className="flex items-center justify-between px-4 py-3 border-b text-white"
-                    style={{ 
-                      backgroundColor: customization.primaryColor,
-                      borderBottomColor: isDark ? '#374151' : customization.primaryColor + '40'
-                    }}
-                  >
-                    <span 
-                      className="text-sm font-medium"
-                      style={{ fontFamily: customization.fontFamily }}
-                    >
-                      Code
-                    </span>
-                    <button 
-                      className="p-1 rounded hover:bg-black/10 text-white transition-all duration-200 hover:scale-110"
-                      onClick={() => {
-                        const code = (children as any)?.props?.children?.[0]?.props?.children;
-                        if (code && typeof code === 'string') {
-                          navigator.clipboard.writeText(code);
-                        }
-                      }}
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <div className="p-6">
-                    <pre 
-                      {...props}
-                      className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'} overflow-x-auto m-0 leading-relaxed`}
-                      style={{ fontFamily: 'Monaco, Consolas, monospace' }}
-                    >
-                      {children}
-                    </pre>
-                  </div>
-                </div>
-              ),
-              // Better list spacing
-              ul: ({ children, ...props }) => (
-                <ul className="mb-6 space-y-2 pl-6 animate-fade-in" {...props}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeHighlight]}
+        components={{
+          // Paragraphs with proper spacing like the pink image
+          p: ({ children, ...props }) => (
+            <p 
+              className={`mb-6 text-lg leading-relaxed ${isDark ? 'text-gray-100' : 'text-gray-800'}`}
+              style={{ 
+                fontFamily: customization.fontFamily,
+                lineHeight: '1.8',
+                fontSize: '18px'
+              }}
+              {...props}
+            >
+              {children}
+            </p>
+          ),
+          // Headings with proper spacing
+          h1: ({ children, ...props }) => (
+            <h1 
+              className={`mb-8 mt-10 text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}
+              style={{ fontFamily: customization.fontFamily }}
+              {...props}
+            >
+              {children}
+            </h1>
+          ),
+          h2: ({ children, ...props }) => (
+            <h2 
+              className={`mb-6 mt-8 text-2xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}
+              style={{ fontFamily: customization.fontFamily }}
+              {...props}
+            >
+              {children}
+            </h2>
+          ),
+          h3: ({ children, ...props }) => (
+            <h3 
+              className={`mb-5 mt-7 text-xl font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}
+              style={{ fontFamily: customization.fontFamily }}
+              {...props}
+            >
+              {children}
+            </h3>
+          ),
+          // Lists with better spacing
+          ul: ({ children, ...props }) => (
+            <ul className="mb-8 space-y-3 pl-6" {...props}>
+              {children}
+            </ul>
+          ),
+          ol: ({ children, ...props }) => (
+            <ol className="mb-8 space-y-3 pl-6" {...props}>
+              {children}
+            </ol>
+          ),
+          li: ({ children, ...props }) => (
+            <li 
+              className={`mb-2 text-lg leading-relaxed ${isDark ? 'text-gray-100' : 'text-gray-800'}`}
+              style={{ 
+                fontFamily: customization.fontFamily,
+                lineHeight: '1.7'
+              }}
+              {...props}
+            >
+              {children}
+            </li>
+          ),
+          // Code blocks with better styling
+          pre: ({ children, ...props }) => (
+            <div className={`rounded-2xl overflow-hidden mb-8 ${
+              isDark ? 'bg-gray-900' : 'bg-gray-50'
+            } border ${isDark ? 'border-gray-700' : 'border-gray-200'} shadow-sm`}>
+              <div 
+                className="flex items-center justify-between px-6 py-4 border-b text-white"
+                style={{ 
+                  backgroundColor: customization.primaryColor,
+                  borderBottomColor: isDark ? '#374151' : '#e5e7eb'
+                }}
+              >
+                <span 
+                  className="text-sm font-medium"
+                  style={{ fontFamily: customization.fontFamily }}
+                >
+                  Code
+                </span>
+                <button 
+                  className="p-1.5 rounded hover:bg-black/10 text-white transition-colors"
+                  onClick={() => {
+                    const code = (children as any)?.props?.children?.[0]?.props?.children;
+                    if (code && typeof code === 'string') {
+                      navigator.clipboard.writeText(code);
+                    }
+                  }}
+                >
+                  <Copy className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="p-6">
+                <pre 
+                  {...props}
+                  className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'} overflow-x-auto m-0 leading-relaxed`}
+                  style={{ fontFamily: 'Monaco, Consolas, monospace' }}
+                >
                   {children}
-                </ul>
-              ),
-              ol: ({ children, ...props }) => (
-                <ol className="mb-6 space-y-2 pl-6 animate-fade-in" {...props}>
-                  {children}
-                </ol>
-              ),
-              li: ({ children, ...props }) => (
-                <li className="mb-2 leading-relaxed" {...props}>
-                  {children}
-                </li>
-              ),
-              // Better heading spacing
-              h1: ({ children, ...props }) => (
-                <h1 className="mb-6 mt-8 text-2xl font-bold animate-fade-in" {...props}>
-                  {children}
-                </h1>
-              ),
-              h2: ({ children, ...props }) => (
-                <h2 className="mb-5 mt-7 text-xl font-semibold animate-fade-in" {...props}>
-                  {children}
-                </h2>
-              ),
-              h3: ({ children, ...props }) => (
-                <h3 className="mb-4 mt-6 text-lg font-medium animate-fade-in" {...props}>
-                  {children}
-                </h3>
-              ),
-            }}
-          >
-            {displayContent}
-          </ReactMarkdown>
-                 ) : (
-           <div className="invisible">Loading...</div>
-         )}
-      </div>
+                </pre>
+              </div>
+            </div>
+          ),
+          // Inline code
+          code: ({ children, ...props }) => (
+            <code 
+              className={`px-2 py-1 rounded text-sm ${
+                isDark 
+                  ? 'bg-gray-700 text-purple-300' 
+                  : 'bg-purple-50 text-purple-700'
+              }`}
+              style={{ fontFamily: 'Monaco, Consolas, monospace' }}
+              {...props}
+            >
+              {children}
+            </code>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
     </div>
   );
 });
