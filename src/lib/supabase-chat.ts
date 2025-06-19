@@ -30,7 +30,7 @@ export interface MessageLimitError {
 
 export type DeepSeekModel = 'DeepSeek-V3' | 'DeepSeek-R1';
 
-type ModelProvider = 'DeepSeek' | 'Gemini';
+type ModelProvider = 'DeepSeek' | 'Claude' | 'Mistral';
 
 // Configuration constants for reliable performance
 const REQUEST_TIMEOUT = Infinity; // No timeout - let AI work!
@@ -45,7 +45,9 @@ const FAST_TIMEOUT = 20000; // 20 seconds for reliable response
  */
 function getModelProvider(modelCode: string): ModelProvider {
   const model = AVAILABLE_MODELS.find(m => m.code === modelCode);
-  return model?.provider === 'Gemini' ? 'Gemini' : 'DeepSeek';
+  if (model?.provider === 'Claude') return 'Claude';
+  if (model?.provider === 'Mistral') return 'Mistral';
+  return 'DeepSeek';
 }
 
 /**
@@ -132,7 +134,10 @@ export async function sendChatMessage(
 
     // Choose appropriate edge function
     const provider = getModelProvider(modelCode);
-    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${provider === 'Gemini' ? 'gemini-chat' : 'deepseek-chat'}`;
+    let url = '';
+    if (provider === 'DeepSeek') url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`;
+    else if (provider === 'Claude') url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/claude-chat`;
+    else if (provider === 'Mistral') url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mistral-chat`;
     console.log('📡 Calling Edge Function:', url);
     console.log('📡 Request payload:', { messages, model: modelCode, conversationId });
     

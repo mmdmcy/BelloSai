@@ -42,6 +42,7 @@ import { anonymousUsageService } from './lib/anonymous-usage';
 import { layoutManager, ExtendedLayoutConfig, MobileLayoutConfig, defaultMobileLayout } from './lib/auth-integration'
 import { StripeService } from './lib/stripeService';
 import { LogIn, UserPlus, User, Loader2, Menu, X } from 'lucide-react'
+import { useSubscription } from './hooks/useSubscription';
 
 /**
  * Message Interface
@@ -105,9 +106,10 @@ export interface ModelCapability {
 export interface ModelInfo {
   name: string;
   code: string;
-  provider: 'DeepSeek' | 'Gemini';
+  provider: 'DeepSeek' | 'Claude' | 'Mistral';
   capabilities: string[]; // array van capability keys
   description?: string;
+  premium?: boolean; // true if model is for premium users only
 }
 
 export const MODEL_CAPABILITIES: Record<string, ModelCapability> = {
@@ -126,40 +128,61 @@ export const MODEL_CAPABILITIES: Record<string, ModelCapability> = {
 
 export const AVAILABLE_MODELS: ModelInfo[] = [
   {
-    name: 'Gemini 1.5 Flash',
-    code: 'models/gemini-1.5-flash',
-    provider: 'Gemini',
-    capabilities: ['text', 'audio', 'image', 'video', 'code', 'function_calling'],
-    description: 'Snel, gratis Gemini model met multimodale ondersteuning.'
-  },
-  {
-    name: 'Gemini 1.5 Pro',
-    code: 'models/gemini-1.5-pro',
-    provider: 'Gemini',
-    capabilities: ['text', 'audio', 'image', 'video', 'code', 'function_calling', 'reasoning'],
-    description: 'Geavanceerd gratis Gemini model met reasoning capabilities.'
-  },
-  {
-    name: 'Gemini 2.0 Flash',
-    code: 'models/gemini-2.0-flash',
-    provider: 'Gemini',
-    capabilities: ['text', 'audio', 'image', 'video', 'code', 'function_calling'],
-    description: 'Snelle, grote context, tool use, live API.'
+    name: 'Claude Haiku 3',
+    code: 'claude-3-haiku-20240307',
+    provider: 'Claude',
+    capabilities: ['text', 'reasoning'],
+    description: 'Fast, cost-effective Claude 3 Haiku model.',
+    premium: false
   },
   {
     name: 'DeepSeek V3',
     code: 'DeepSeek-V3',
     provider: 'DeepSeek',
     capabilities: ['text', 'code', 'reasoning'],
-    description: 'DeepSeek chat model, sterke algemene AI.'
+    description: 'DeepSeek chat model, strong general AI.',
+    premium: false
   },
   {
     name: 'DeepSeek R1',
     code: 'DeepSeek-R1',
     provider: 'DeepSeek',
     capabilities: ['text', 'code', 'reasoning'],
-    description: 'DeepSeek reasoner, geoptimaliseerd voor redeneren.'
+    description: 'DeepSeek reasoner, optimized for reasoning.',
+    premium: true
   },
+  {
+    name: 'Mistral Medium 3',
+    code: 'mistral-medium-latest',
+    provider: 'Mistral',
+    capabilities: ['text', 'reasoning'],
+    description: 'State-of-the-art performance. Cost-efficient.',
+    premium: true
+  },
+  {
+    name: 'Mistral OCR',
+    code: 'mistral-ocr-latest',
+    provider: 'Mistral',
+    capabilities: ['text', 'image'],
+    description: "World's best document understanding API.",
+    premium: true
+  },
+  {
+    name: 'Mistral Small 3.1',
+    code: 'mistral-small-latest',
+    provider: 'Mistral',
+    capabilities: ['text', 'reasoning', 'multimodal'],
+    description: 'SOTA. Multimodal. Multilingual. Apache 2.0.',
+    premium: true
+  },
+  {
+    name: 'Codestral',
+    code: 'codestral-latest',
+    provider: 'Mistral',
+    capabilities: ['text', 'code'],
+    description: 'Lightweight, fast, proficient in 80+ programming languages.',
+    premium: true
+  }
 ];
 
 export const AVAILABLE_THEMES: Theme[] = [
@@ -1363,6 +1386,13 @@ function App() {
     return name.charAt(0).toUpperCase();
   };
 
+  const { hasActiveSubscription } = useSubscription();
+
+  // Filter models based on subscription
+  const filteredModels = hasActiveSubscription
+    ? AVAILABLE_MODELS
+    : AVAILABLE_MODELS.filter(m => !m.premium);
+
   // Render designer mode if active
   if (isDesignerMode) {
     if (isMobile) {
@@ -1808,7 +1838,7 @@ function App() {
                 onSendMessage={sendMessage}
                 selectedModel={selectedModel}
                 onModelChange={setSelectedModel}
-                availableModels={availableModels}
+                availableModels={filteredModels}
                 hideInput={true}
                 customization={customization}
                 isLoggedIn={!!user}
@@ -1891,9 +1921,10 @@ function App() {
                           <ModelSelector
                             selectedModel={selectedModel}
                             onModelChange={setSelectedModel}
-                            availableModels={availableModels}
+                            availableModels={filteredModels}
                             isDark={isDark}
                             customization={customization}
+                            hasActiveSubscription={hasActiveSubscription}
                           />
                           {/* Search Button */}
                           {user && (
@@ -2186,13 +2217,14 @@ function App() {
                       onSendMessage={sendMessage}
                       selectedModel={selectedModel}
                       onModelChange={setSelectedModel}
-                      availableModels={availableModels}
+                      availableModels={filteredModels}
                       customization={customization}
                       isLoggedIn={!!user}
                       onLoginClick={() => setShowLoginModal(true)}
                       // Alleen input tonen als er geen inputBox in layout is of als we mobiel zijn
                       hideInput={!!layout.inputBox && !isMobile}
                       hasGlassEffect={hasGlassEffect()}
+                      hasActiveSubscription={hasActiveSubscription}
                     />
                   ) : !isMobile && (
                     <ChatView 
@@ -2201,7 +2233,7 @@ function App() {
                       onSendMessage={sendMessage}
                       selectedModel={selectedModel}
                       onModelChange={setSelectedModel}
-                      availableModels={availableModels}
+                      availableModels={filteredModels}
                       hideInput={true}
                       customization={customization}
                       isGenerating={isGenerating}
@@ -2281,9 +2313,10 @@ function App() {
                               <ModelSelector
                                 selectedModel={selectedModel}
                                 onModelChange={setSelectedModel}
-                                availableModels={availableModels}
+                                availableModels={filteredModels}
                                 isDark={isDark}
                                 customization={customization}
+                                hasActiveSubscription={hasActiveSubscription}
                               />
                               {/* Search Button */}
                               {user && (

@@ -39,6 +39,7 @@ interface MainContentProps {
   isLoggedIn?: boolean;
   onLoginClick?: () => void;
   hasGlassEffect?: boolean;
+  hasActiveSubscription?: boolean;
 }
 
 export default function MainContent({ 
@@ -53,7 +54,8 @@ export default function MainContent({
   isGenerating = false,
   isLoggedIn = false,
   onLoginClick,
-  hasGlassEffect = false
+  hasGlassEffect = false,
+  hasActiveSubscription = false
 }: MainContentProps) {
   // Input state management
   const [inputValue, setInputValue] = useState('');
@@ -203,6 +205,7 @@ export default function MainContent({
                     availableModels={availableModels}
                     isDark={isDark}
                     customization={customization}
+                    hasActiveSubscription={hasActiveSubscription}
                   />
 
                 </div>
@@ -417,6 +420,7 @@ export default function MainContent({
                       availableModels={availableModels}
                       isDark={isDark}
                       customization={customization}
+                      hasActiveSubscription={hasActiveSubscription}
                     />
 
                   </div>
