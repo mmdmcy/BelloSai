@@ -1989,10 +1989,6 @@ function App() {
                     background: customization.gradientEnabled 
                       ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
                       : customization.primaryColor,
-                    borderTop: `3px solid ${customization.primaryColor}`,
-                    borderLeft: `2px solid ${customization.primaryColor}`,
-                    borderRight: `2px solid ${customization.primaryColor}`,
-                    borderRadius: '1.5rem 1.5rem 0 0',
                     boxShadow: `0 2px 12px 0 ${customization.primaryColor}22`,
                   }}
                 />

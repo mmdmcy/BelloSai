@@ -32,13 +32,7 @@ export type DeepSeekModel = 'DeepSeek-V3' | 'DeepSeek-R1';
 
 type ModelProvider = 'DeepSeek' | 'Claude' | 'Mistral';
 
-// Configuration constants for reliable performance
-const REQUEST_TIMEOUT = Infinity; // No timeout - let AI work!
-const STREAM_TIMEOUT = Infinity; // No stream timeout
-// Direct streaming - no chunk size optimization needed
-
-// Performance optimization: Balanced timeouts for reliable responses
-const FAST_TIMEOUT = 20000; // 20 seconds for reliable response
+// No timeouts - let AI work without any interruption!
 
 /**
  * Get model provider based on model code
@@ -64,7 +58,6 @@ export async function sendChatMessage(
   console.log('📥 Parameters:', { messages, model: modelCode, conversationId, onChunk: !!onChunk, retryCount });
   
   let abortController: AbortController | null = null;
-  let timeoutId: NodeJS.Timeout | null = null;
 
   try {
     console.log('🚀 Starting chat message request:', { messages, model: modelCode, conversationId });
@@ -159,10 +152,7 @@ export async function sendChatMessage(
     });
     console.log('✅ Fetch request completed, got response');
 
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-      timeoutId = null;
-    }
+
 
     console.log('📨 Edge Function response status:', response.status);
 
@@ -171,15 +161,6 @@ export async function sendChatMessage(
       console.error('❌ Edge Function error:', errorData);
       
       // Handle specific error types with English messages
-      if (response.status === 408) {
-        // Timeout error - retry once if we haven't already
-        if (retryCount === 0) {
-          console.log('🔄 Got timeout error, retrying once...');
-          return sendChatMessage(messages, modelCode, onChunk, conversationId, retryCount + 1);
-        } else {
-          throw new Error('Request timeout - AI service took too long. Please try again.');
-        }
-      }
       
       // Authentication errors - improved retry logic
       if (response.status === 401 && retryCount === 0) {
@@ -300,9 +281,6 @@ export async function sendChatMessage(
     
     // Enhanced error handling for better UX
     if (error instanceof Error) {
-      if (error.name === 'AbortError') {
-        throw new Error('Verzoek timeout - AI service duurde te lang. Probeer opnieuw.');
-      }
       if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
         throw new Error('Network error. Please check your internet connection and try again.');
       }
@@ -310,9 +288,6 @@ export async function sendChatMessage(
     
     throw error;
   } finally {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
     if (abortController) {
       abortController.abort();
     }
