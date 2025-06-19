@@ -131,18 +131,8 @@ export async function sendChatMessage(
 
     // Enhanced retry logic for failed authentication
     if (sessionError && retryCount === 0) {
-      console.log('🔄 Session error detected, attempting fresh refresh...');
-      try {
-        // Force a fresh session
-        await supabase.auth.signOut();
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-        if (!refreshError && refreshData.session) {
-          session = refreshData.session;
-          console.log('✅ Session completely refreshed after error');
-        }
-      } catch (refreshError) {
-        console.warn('⚠️ Complete session refresh failed, continuing as anonymous');
-      }
+      console.log('🔄 Session error detected, continuing without refresh to avoid breaking database connection...');
+      // Removed manual refresh that was causing auth state changes and breaking DB connection
     }
     
     // Prepare authentication headers with optimized settings
@@ -155,24 +145,8 @@ export async function sendChatMessage(
       console.log('🔑 Access token length:', session.access_token.length);
       console.log('⏰ Token expires at:', new Date(session.expires_at! * 1000));
 
-      // Proactive token refresh for better performance
-      const now = Date.now() / 1000;
-      const timeUntilExpiry = (session.expires_at || 0) - now;
-      
-      // Refresh if token expires within 5 minutes (300 seconds)
-      if (session.expires_at && timeUntilExpiry < 300) {
-        console.log('🔄 Token expires soon, proactively refreshing...');
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-        
-        if (refreshError || !refreshData.session) {
-          console.error('❌ Failed to refresh token:', refreshError);
-          throw new Error('Session expired. Please log in again.');
-        }
-        
-        // Use the refreshed session
-        session = refreshData.session;
-        console.log('✅ Token refreshed proactively');
-      }
+      // Removed proactive token refresh that was causing auth state changes and breaking DB connection
+      // The token will be refreshed naturally when needed, without breaking the database connection
       
       // Add authorization header for authenticated users
       if (session) {
@@ -222,16 +196,8 @@ export async function sendChatMessage(
       
       // Authentication errors - improved retry logic
       if (response.status === 401 && retryCount === 0) {
-        console.log('🔄 Got 401 error, attempting to refresh session and retry...');
-        try {
-          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-          if (!refreshError && refreshData.session) {
-            console.log('✅ Session refreshed after 401, retrying request...');
-            return sendChatMessage(messages, modelCode, onChunk, conversationId, retryCount + 1);
-          }
-        } catch (refreshError) {
-          console.warn('⚠️ Session refresh failed');
-        }
+        console.log('🔄 Got 401 error, but skipping refresh to avoid breaking database connection...');
+        // Removed manual refresh that was causing auth state changes and breaking DB connection
       }
       
       if (response.status === 429) {
