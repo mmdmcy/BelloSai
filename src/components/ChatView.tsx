@@ -273,7 +273,7 @@ export default function ChatView({
 
   const renderMessage = useCallback((message: Message, index: number) => {
     const isLastAiMessage = message.type === 'ai' && index === messages.length - 1;
-    const isReasoningModel = message.model === 'DeepSeek-R1' || message.model?.includes('gemini-2.5-pro');
+    const isReasoningModel = message.model === 'DeepSeek-R1' || message.model?.includes('gemini-1.5-pro');
     const shouldShowReasoning = isLastAiMessage && isGenerating && isReasoningModel && !message.content;
     
     if (message.type === 'user') {
