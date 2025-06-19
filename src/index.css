@@ -572,18 +572,18 @@
 .wave-char {
   display: inline-block;
   opacity: 0;
-  transform: translateY(20px) scale(0.8);
-  animation: waveCharAppear 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  transform: translateY(8px) scale(0.95);
+  animation: waveCharAppear 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
 }
 
 @keyframes waveCharAppear {
   0% {
     opacity: 0;
-    transform: translateY(20px) scale(0.8);
+    transform: translateY(8px) scale(0.95);
   }
-  50% {
-    opacity: 0.7;
-    transform: translateY(-5px) scale(1.05);
+  60% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.02);
   }
   100% {
     opacity: 1;
