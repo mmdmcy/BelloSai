@@ -160,14 +160,6 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     premium: true
   },
   {
-    name: 'Mistral OCR',
-    code: 'mistral-ocr-latest',
-    provider: 'Mistral',
-    capabilities: ['text', 'image'],
-    description: "World's best document understanding API.",
-    premium: true
-  },
-  {
     name: 'Mistral Small 3.1',
     code: 'mistral-small-latest',
     provider: 'Mistral',
