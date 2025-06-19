@@ -549,14 +549,22 @@ function App() {
     }
   }, [user]);
 
-  // Load conversations when user logs in
+  // Load conversations when user logs in (only when actually changing, not on session refresh)
+  const [lastUserId, setLastUserId] = useState<string | null>(null);
   useEffect(() => {
-    if (user) {
-      loadConversations();
-    } else {
-      setConversations([]);
-      setCurrentConversationId(null);
-      setMessages([]);
+    const currentUserId = user?.id || null;
+    
+    if (currentUserId !== lastUserId) {
+      console.log('🔄 User changed from', lastUserId, 'to', currentUserId);
+      setLastUserId(currentUserId);
+      
+      if (user) {
+        loadConversations();
+      } else {
+        setConversations([]);
+        setCurrentConversationId(null);
+        setMessages([]);
+      }
     }
   }, [user]);
 
@@ -570,14 +578,13 @@ function App() {
         console.log('👀 Tab became visible, checking app health...');
         
         try {
-          // Simple health check - just verify auth status without loading conversations
-          // Conversations will be reloaded by the auth state change effect
+          // Simple health check - just verify auth status without any data reloading
           const { data: { session }, error } = await supabase.auth.getSession();
           if (session && !error) {
             console.log('✅ App health check passed');
           } else {
             console.warn('⚠️ Session issue detected:', error);
-            // Let the auth context handle session refresh
+            // Let the auth context handle session refresh automatically
           }
         } catch (error) {
           console.warn('⚠️ App health check failed:', error);
