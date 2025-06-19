@@ -50,30 +50,14 @@ interface ChatViewProps {
   setError?: (err: string | null) => void;
 }
 
-// Simple sea wave reveal animation for AI responses
-const AnimatedText: React.FC<{ 
+// Vervang de AnimatedText component met eenvoudige versie zonder animaties
+const StaticMarkdownText: React.FC<{ 
   content: string; 
-  isStreaming?: boolean; 
   isDark: boolean; 
   customization: CustomizationSettings;
-}> = React.memo(({ content, isStreaming = false, isDark, customization }) => {
-  const [isVisible, setIsVisible] = useState(false);
-  
-  useEffect(() => {
-    if (!content) return;
-    
-    setIsVisible(false);
-    const timer = setTimeout(() => {
-      setIsVisible(true);
-    }, 50);
-    
-    return () => clearTimeout(timer);
-  }, [content]);
-
+}> = React.memo(({ content, isDark, customization }) => {
   return (
-    <div 
-      className={`prose ${isDark ? 'prose-invert' : 'prose-gray'} max-w-none sea-wave-reveal ${isVisible ? 'wave-visible' : ''}`}
-    >
+    <div className={`prose ${isDark ? 'prose-invert' : 'prose-gray'} max-w-none`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeHighlight]}
@@ -446,62 +430,81 @@ export default function ChatView({
       return (
         <div 
           key={message.id} 
-          className="flex justify-start mb-6 transform transition-all duration-500 ease-in-out animate-fade-in"
+          className="flex justify-start mb-6"
         >
           <div className="w-full" style={{ maxWidth: responsiveStyles.aiMessageMaxWidth }}>
-            {/* Animated Markdown Content */}
-            <AnimatedText 
+            {/* Static Markdown Content */}
+            <StaticMarkdownText 
               content={message.content}
-              isStreaming={shouldShowLoading}
               isDark={isDark}
               customization={customization}
             />
 
-            {/* Action buttons with smooth animations */}
-            <div className="flex items-center space-x-2 mt-3 opacity-0 group-hover:opacity-100 transition-all duration-300">
-              <button 
-                className={`p-2 rounded-lg transition-all duration-200 hover:scale-110 ${
-                  isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'
-                }`}
-                onClick={() => navigator.clipboard.writeText(message.content)}
-                title="Kopieer bericht"
-              >
-                <Copy className="w-4 h-4" />
-              </button>
+            {/* Always visible info section with copy button and model */}
+            <div className={`flex items-center justify-between mt-4 p-3 rounded-lg ${
+              isDark ? 'bg-gray-800/50' : 'bg-gray-50'
+            }`}>
+              <div className="flex items-center space-x-3">
+                {/* Model info */}
+                {message.model && (
+                  <span 
+                    className={`text-xs px-2 py-1 rounded-full ${
+                      isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-600'
+                    }`}
+                    style={{ fontFamily: customization.fontFamily }}
+                  >
+                    {message.model}
+                  </span>
+                )}
+                
+                {/* Original prompt indicator */}
+                {index > 0 && messages[index - 1]?.type === 'user' && (
+                  <span 
+                    className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}
+                    style={{ fontFamily: customization.fontFamily }}
+                  >
+                    Antwoord op: "{messages[index - 1].content.slice(0, 50)}{messages[index - 1].content.length > 50 ? '...' : ''}"
+                  </span>
+                )}
+              </div>
               
-              {onRegenerateResponse && index === messages.length - 1 && (
+              <div className="flex items-center space-x-2">
+                {/* Copy button */}
                 <button 
-                  className={`p-2 rounded-lg transition-all duration-200 hover:scale-110 ${
-                    isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'
+                  className={`p-2 rounded-lg ${
+                    isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'
                   }`}
-                  onClick={onRegenerateResponse}
-                  disabled={isGenerating}
-                  title="Regenereer antwoord"
+                  onClick={() => navigator.clipboard.writeText(message.content)}
+                  title="Kopieer bericht"
                 >
-                  <RotateCcw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
+                  <Copy className="w-4 h-4" />
                 </button>
-              )}
-              
-              <button 
-                className={`p-2 rounded-lg transition-all duration-200 hover:scale-110 ${
-                  isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-600'
-                }`}
-                onClick={() => setShowChatSharing(true)}
-                title="Deel bericht"
-              >
-                <Share2 className="w-4 h-4" />
-              </button>
-              
-              {message.model && (
-                <span 
-                  className={`text-xs px-2 py-1 rounded-full ${
-                    isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
+                
+                {/* Regenerate button */}
+                {onRegenerateResponse && index === messages.length - 1 && (
+                  <button 
+                    className={`p-2 rounded-lg ${
+                      isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'
+                    }`}
+                    onClick={onRegenerateResponse}
+                    disabled={isGenerating}
+                    title="Regenereer antwoord"
+                  >
+                    <RotateCcw className={`w-4 h-4 ${isGenerating ? 'animate-spin' : ''}`} />
+                  </button>
+                )}
+                
+                {/* Share button */}
+                <button 
+                  className={`p-2 rounded-lg ${
+                    isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-200 text-gray-600'
                   }`}
-                  style={{ fontFamily: customization.fontFamily }}
+                  onClick={() => setShowChatSharing(true)}
+                  title="Deel bericht"
                 >
-                  {message.model}
-                </span>
-              )}
+                  <Share2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         </div>

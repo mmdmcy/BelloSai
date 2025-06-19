@@ -165,49 +165,7 @@
   }
 }
 
-/* Custom animations voor BelloSai */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideInFromRight {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes slideInFromLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes typewriter {
-  from {
-    width: 0;
-  }
-  to {
-    width: 100%;
-  }
-}
-
+/* Basic utility animations only */
 @keyframes pulse {
   0%, 100% {
     opacity: 1;
@@ -217,256 +175,11 @@
   }
 }
 
-@keyframes smoothBounce {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-3px);
-  }
-}
+/* Remove all text and streaming animations for instant display */
 
-/* Utility classes voor animaties */
-.animate-fade-in {
-  animation: fadeIn 0.5s ease-out forwards;
-}
-
-.animate-slide-in-right {
-  animation: slideInFromRight 0.4s ease-out forwards;
-}
-
-.animate-slide-in-left {
-  animation: slideInFromLeft 0.4s ease-out forwards;
-}
-
-.animate-typewriter {
-  animation: typewriter 1s steps(40, end) forwards;
-}
-
-.animate-smooth-bounce {
-  animation: smoothBounce 2s ease-in-out infinite;
-}
-
-/* Smooth streaming text animations - Enhanced for better UX */
-.streaming-text {
-  position: relative;
-  overflow: visible;
-  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.streaming-text::after {
-  content: '';
-  position: absolute;
-  right: -8px;
-  top: 0;
-  width: 2px;
-  height: 100%;
-  background: linear-gradient(45deg, #8b5cf6, #3b82f6);
-  animation: streamingCursor 1.2s ease-in-out infinite;
-  box-shadow: 0 0 12px rgba(139, 92, 246, 0.6);
-  border-radius: 1px;
-}
-
-@keyframes streamingCursor {
-  0%, 100% { 
-    opacity: 1; 
-    transform: scaleY(1);
-  }
-  50% { 
-    opacity: 0.3; 
-    transform: scaleY(0.8);
-  }
-}
-
-
-
-/* Smooth fade-in animation for text content */
-.text-fade-in {
-  animation: smoothFadeIn 0.4s ease-out forwards;
-}
-
-@keyframes smoothFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Enhanced container voor streaming animaties */
-.streaming-container {
-  position: relative;
-  min-height: 1.5rem;
-  transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.streaming-container .streaming-indicator {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 2px;
-  height: 1.2rem;
-  background: linear-gradient(to bottom, #8b5cf6, #3b82f6);
-  animation: gracefulPulse 1.5s ease-in-out infinite;
-  border-radius: 1px;
-  box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
-}
-
-@keyframes gracefulPulse {
-  0%, 100% { 
-    opacity: 1; 
-    transform: translateY(-50%) scaleY(1);
-    box-shadow: 0 0 8px rgba(139, 92, 246, 0.4);
-  }
-  50% { 
-    opacity: 0.4; 
-    transform: translateY(-50%) scaleY(0.9);
-    box-shadow: 0 0 12px rgba(139, 92, 246, 0.6);
-  }
-}
-
-/* Enhanced fade-in animations with stagger effect */
-.animate-fade-in {
-  animation: enhancedFadeIn 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-}
-
-@keyframes enhancedFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(15px) scale(0.98);
-    filter: blur(2px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
-  }
-}
-
-/* Smooth slide animations for better message entry */
-.animate-slide-in-right {
-  animation: smoothSlideInRight 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-}
-
-.animate-slide-in-left {
-  animation: smoothSlideInLeft 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-}
-
-@keyframes smoothSlideInRight {
-  from {
-    opacity: 0;
-    transform: translateX(30px) scale(0.95);
-    filter: blur(1px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0) scale(1);
-    filter: blur(0);
-  }
-}
-
-@keyframes smoothSlideInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-30px) scale(0.95);
-    filter: blur(1px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0) scale(1);
-    filter: blur(0);
-  }
-}
-
-/* Typewriter effect with character reveal */
-.animate-typewriter {
-  overflow: hidden;
-  white-space: nowrap;
-  animation: typewriterReveal 2s steps(40, end) forwards;
-  border-right: 2px solid #8b5cf6;
-}
-
-@keyframes typewriterReveal {
-  from {
-    width: 0;
-  }
-  to {
-    width: 100%;
-  }
-}
-
-/* Enhanced message container animations */
-.message-container {
-  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  transform: translateZ(0); /* GPU acceleration */
-  will-change: transform, opacity;
-}
-
-.message-container:hover {
-  transform: translateY(-2px) translateZ(0);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
-}
-
-/* Subtle glow effect for streaming content */
-.streaming-glow {
-  position: relative;
-}
-
-.streaming-glow::before {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  background: linear-gradient(45deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1));
-  border-radius: inherit;
-  z-index: -1;
-  animation: gentleGlow 3s ease-in-out infinite;
-}
-
-@keyframes gentleGlow {
-  0%, 100% { 
-    opacity: 0.3; 
-    transform: scale(1);
-  }
-  50% { 
-    opacity: 0.6; 
-    transform: scale(1.02);
-  }
-}
-
-/* Character reveal animation for smoother streaming */
-.char-reveal {
-  display: inline-block;
-  animation: charFadeIn 0.3s ease-out forwards;
-  opacity: 0;
-}
-
-@keyframes charFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.8);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* Smooth transitions voor alle interactieve elementen */
+/* Minimal transitions only for essential interactions */
 .smooth-transition {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Hover effecten voor knoppen */
-.hover-lift:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: opacity 0.2s ease;
 }
 
 /* Loading spinner optimalisatie */
@@ -483,11 +196,7 @@
   }
 }
 
-/* Performance optimalisaties */
-.gpu-accelerated {
-  transform: translateZ(0);
-  will-change: transform, opacity;
-}
+/* Performance optimalisaties removed */
 
 /* Scrollbar styling voor WebKit browsers */
 .custom-scrollbar::-webkit-scrollbar {
@@ -527,35 +236,19 @@
   outline-offset: 2px;
 }
 
-/* Verbeterde performance voor animaties */
+/* Respect user's motion preferences */
 @media (prefers-reduced-motion: reduce) {
-  .animate-fade-in,
-  .animate-slide-in-right,
-  .animate-slide-in-left,
-  .animate-typewriter,
-  .animate-smooth-bounce,
-  .smooth-transition {
-    animation: none;
-    transition: none;
+  * {
+    animation: none !important;
+    transition: none !important;
   }
 }
 
-/* Responsive breakpoints voor animaties */
-@media (max-width: 640px) {
-  .animate-fade-in {
-    animation-duration: 0.3s;
-  }
-  
-  .animate-slide-in-right,
-  .animate-slide-in-left {
-    animation-duration: 0.2s;
-  }
-}
+/* Responsive breakpoints removed - no animations */
 
 /* Performance optimalisatie voor markdown content */
 .markdown-content {
   contain: layout style;
-  will-change: contents;
 }
 
 /* Optimalisatie voor grote content */
@@ -564,40 +257,4 @@
   contain-intrinsic-size: 0 500px;
 }
 
-/* Super quick sea wave reveal animation */
-.sea-wave-reveal {
-  opacity: 0;
-  transform: translateY(15px);
-  transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-.sea-wave-reveal.wave-visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Add wave-like staggered reveal for child elements */
-.sea-wave-reveal.wave-visible > * {
-  animation: seaWaveStagger 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-}
-
-.sea-wave-reveal.wave-visible > *:nth-child(1) { animation-delay: 0.05s; }
-.sea-wave-reveal.wave-visible > *:nth-child(2) { animation-delay: 0.1s; }
-.sea-wave-reveal.wave-visible > *:nth-child(3) { animation-delay: 0.15s; }
-.sea-wave-reveal.wave-visible > *:nth-child(4) { animation-delay: 0.2s; }
-.sea-wave-reveal.wave-visible > *:nth-child(5) { animation-delay: 0.25s; }
-.sea-wave-reveal.wave-visible > *:nth-child(6) { animation-delay: 0.3s; }
-.sea-wave-reveal.wave-visible > *:nth-child(7) { animation-delay: 0.35s; }
-.sea-wave-reveal.wave-visible > *:nth-child(8) { animation-delay: 0.4s; }
-.sea-wave-reveal.wave-visible > *:nth-child(n+9) { animation-delay: 0.45s; }
-
-@keyframes seaWaveStagger {
-  0% {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+/* Sea wave animation classes removed - instant display */

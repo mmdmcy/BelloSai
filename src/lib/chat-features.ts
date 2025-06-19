@@ -647,6 +647,34 @@ class ChatFeaturesService {
   }
 
   /**
+   * Sanitize content to prevent database errors
+   */
+  private sanitizeContent(content: string): string {
+    if (!content || typeof content !== 'string') {
+      return '';
+    }
+    
+    try {
+      // Remove control characters that can break JSON parsing
+      let sanitized = content
+        .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control chars
+        .replace(/\uFEFF/g, '') // Remove BOM
+        .trim(); // Remove extra whitespace
+      
+      // Ensure we have valid UTF-8 by encoding and decoding
+      sanitized = new TextDecoder().decode(new TextEncoder().encode(sanitized));
+      
+      // Replace problematic null bytes and ensure proper escaping
+      sanitized = sanitized.replace(/\0/g, '');
+      
+      return sanitized;
+    } catch (error) {
+      console.warn('⚠️ Failed to sanitize content:', error);
+      return '[Message content could not be processed]';
+    }
+  }
+
+  /**
    * Save a message to a conversation
    */
   async saveMessage(conversationId: string | null, role: 'user' | 'assistant', content: string, model?: string) {
@@ -656,16 +684,19 @@ class ChatFeaturesService {
       throw new Error('Invalid conversation ID provided');
     }
     
+    // Sanitize content to prevent JSON parsing errors
+    const sanitizedContent = this.sanitizeContent(content);
+    
     console.log('📝 Conversation ID:', conversationId);
     console.log('📝 Role:', role);
-    console.log('📝 Content length:', content.length);
-    console.log('📝 Content preview:', content.substring(0, 100) + '...');
+    console.log('📝 Content length:', sanitizedContent.length);
+    console.log('📝 Content preview:', sanitizedContent.substring(0, 100) + '...');
     
     const messageData: any = {
       conversation_id: conversationId,
       role: role, // Use role column directly
       type: role === 'assistant' ? 'ai' : role, // Keep type for backward compatibility
-      content: content
+      content: sanitizedContent
     };
     if (model && role === 'assistant') {
       messageData.model = model;
