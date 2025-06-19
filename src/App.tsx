@@ -1187,14 +1187,8 @@ function App() {
       // Always fetch fresh data from database with timeout protection
       console.log('🔄 Loading fresh messages from database for:', conversationId);
       
-      // Add timeout protection to prevent hanging
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Database query timeout')), 10000); // 10 second timeout
-      });
-      
-      const messagesPromise = chatFeaturesService.getConversationMessages(conversationId);
-      
-      const conversationMessages = await Promise.race([messagesPromise, timeoutPromise]) as any[];
+      // Direct query with built-in timeout handling
+      const conversationMessages = await chatFeaturesService.getConversationMessages(conversationId);
       
       if (conversationMessages && conversationMessages.length > 0) {
         // Convert to Message format with model information
@@ -1316,7 +1310,7 @@ function App() {
       for (const conv of conversations) {
         try {
           const messages = await chatFeaturesService.getConversationMessages(conv.id);
-          const matchingMessages = messages.filter(msg => 
+          const matchingMessages = messages.filter((msg: any) => 
             msg.content && msg.content.toLowerCase().includes(query)
           );
           
