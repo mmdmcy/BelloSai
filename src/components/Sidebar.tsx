@@ -57,7 +57,7 @@ interface SidebarProps {
   onConversationSelect?: (conversationId: string) => void;
   onConversationDelete?: (conversationId: string) => void;
   hasGlassEffect?: boolean; // New prop for glass effects
-  onRefreshConversations?: () => void; // New prop for refreshing conversations
+
 }
 
 export default function Sidebar({ 
@@ -74,8 +74,7 @@ export default function Sidebar({
   currentConversationId,
   onConversationSelect,
   onConversationDelete,
-  hasGlassEffect = false,
-  onRefreshConversations
+  hasGlassEffect = false
 }: SidebarProps) {
   // State for tracking if user has alt-tabbed and needs to refresh
   const [showRefreshPrompt, setShowRefreshPrompt] = useState(false);
@@ -115,18 +114,7 @@ export default function Sidebar({
     };
   }, [wasTabHidden]);
 
-  // Handle refresh button click
-  const handleRefresh = () => {
-    setShowRefreshPrompt(false);
-    setWasTabHidden(false);
-    onRefreshConversations?.();
-  };
 
-  // Handle dismiss refresh prompt
-  const handleDismissRefresh = () => {
-    setShowRefreshPrompt(false);
-    setWasTabHidden(false);
-  };
   
 
 
@@ -229,36 +217,9 @@ export default function Sidebar({
             <div className="flex items-start gap-2">
               <RefreshCw className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
-                <p className={`text-sm font-medium mb-1`} style={{ fontFamily: customization.fontFamily }}>
-                  Refresh Chat History
+                <p className={`text-sm font-medium`} style={{ fontFamily: customization.fontFamily }}>
+                  Please refresh the website to get up to date chat history conversations
                 </p>
-                <p className={`text-xs ${isDark ? 'text-blue-300' : 'text-blue-600'}`} style={{ fontFamily: customization.fontFamily }}>
-                  Please refresh to get up to date chat history conversations
-                </p>
-                <div className="flex gap-2 mt-2">
-                  <button
-                    onClick={handleRefresh}
-                    className={`px-2 py-1 text-xs rounded transition-colors ${
-                      isDark
-                        ? 'bg-blue-700 hover:bg-blue-600 text-white'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white'
-                    }`}
-                    style={{ fontFamily: customization.fontFamily }}
-                  >
-                    Refresh Now
-                  </button>
-                  <button
-                    onClick={handleDismissRefresh}
-                    className={`px-2 py-1 text-xs rounded transition-colors ${
-                      isDark
-                        ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                        : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                    }`}
-                    style={{ fontFamily: customization.fontFamily }}
-                  >
-                    Dismiss
-                  </button>
-                </div>
               </div>
             </div>
           </div>

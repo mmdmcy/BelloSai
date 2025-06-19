@@ -2121,7 +2121,6 @@ function App() {
                   onConversationSelect={handleConversationSelect}
                   onConversationDelete={handleConversationDelete}
                   hasGlassEffect={hasGlassEffect()}
-                  onRefreshConversations={loadConversations}
                 />
               )}
 
