@@ -326,7 +326,7 @@ export default function ChatView({
             
             {/* Only show model info and actions when response is complete (not generating) */}
             {message.content && !(isLastAiMessage && isGenerating) && (
-              <div className="flex items-center justify-center px-2">
+              <div className="flex items-center justify-start px-2">
                 <div className="flex items-center space-x-3">
                   {message.model && (
                     <span 

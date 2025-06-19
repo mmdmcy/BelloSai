@@ -81,17 +81,8 @@ export async function sendChatMessage(
     console.log('🔍 About to get session...');
     let sessionResult;
     try {
-      // Add a timeout only for auth operations (not AI requests)
-      console.log('⏱️ Starting session retrieval with 5s timeout...');
-      const authPromise = supabase.auth.getSession();
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => {
-          console.error('⏰ Auth session timeout after 5 seconds');
-          reject(new Error('Auth timeout - session retrieval took too long'));
-        }, 5000)
-      );
-      
-      sessionResult = await Promise.race([authPromise, timeoutPromise]) as any;
+      console.log('⏱️ Getting session without any timeout...');
+      sessionResult = await supabase.auth.getSession();
       console.log('✅ Session retrieval completed successfully');
     } catch (sessionError) {
       console.error('❌ Session retrieval failed:', sessionError);
