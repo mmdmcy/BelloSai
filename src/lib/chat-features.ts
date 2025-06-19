@@ -571,18 +571,38 @@ class ChatFeaturesService {
    * Get user's conversations with metadata
    */
   async getUserConversations(userId: string) {
-    const { data, error } = await supabase
-      .from('conversations')
-      .select('*')
-      .eq('user_id', userId)
-      .order('updated_at', { ascending: false });
+    console.log('🔍 ChatFeaturesService: Getting conversations for user:', userId);
+    
+    try {
+      const queryPromise = supabase
+        .from('conversations')
+        .select('*')
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: false });
+      
+      // Add timeout to avoid hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Conversations query timeout')), 5000);
+      });
+      
+      const { data, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
 
-    if (error) {
-      console.error('Error getting user conversations:', error);
+      if (error) {
+        console.error('❌ Error getting user conversations:', error);
+        console.error('❌ Error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details
+        });
+        throw error;
+      }
+      
+      console.log('✅ Found conversations:', data ? data.length : 0);
+      return data || [];
+    } catch (error) {
+      console.error('❌ getUserConversations failed:', error);
       throw error;
     }
-    
-    return data || [];
   }
 
   /**

@@ -625,19 +625,30 @@ function App() {
   }, [user]);
 
   const loadConversations = async () => {
+    console.log('🔄 loadConversations called, user:', user ? user.id : 'none');
+    
     if (!user) {
+      console.log('❌ No user, setting empty conversations');
       setConversations([]);
       return;
     }
     
     try {
-      // Clean up duplicates for all conversations on startup
-      await chatFeaturesService.removeDuplicateMessages();
-      
+      console.log('📋 Getting user conversations...');
       const userConversations = await chatFeaturesService.getUserConversations(user.id);
+      console.log('✅ Loaded conversations:', userConversations.length);
       setConversations(userConversations);
+      
+      // Do duplicate cleanup in background (don't wait for it)
+      console.log('🧹 Starting background duplicate removal...');
+      chatFeaturesService.removeDuplicateMessages().then(() => {
+        console.log('✅ Background duplicate removal completed');
+      }).catch(error => {
+        console.warn('⚠️ Background duplicate removal failed:', error);
+      });
+      
     } catch (error) {
-      console.error('Failed to load conversations:', error);
+      console.error('❌ Failed to load conversations:', error);
       // If tables don't exist yet, just set empty array
       setConversations([]);
     }
@@ -944,7 +955,7 @@ function App() {
             console.log('🔄 Ensuring conversation exists in database...');
             try {
               const userConversations = await chatFeaturesService.getUserConversations(user.id);
-              const existingConvo = userConversations.find(conv => conv.id === currentConvoId);
+              const existingConvo = userConversations.find((conv: any) => conv.id === currentConvoId);
               if (!existingConvo) {
                 console.log('📝 Creating new conversation in database...');
                 await chatFeaturesService.createConversationWithId(currentConvoId, user.id, conversationTitle || 'New Conversation', modelToUse);
