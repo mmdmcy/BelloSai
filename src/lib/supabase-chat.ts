@@ -328,10 +328,28 @@ export async function sendChatMessage(
         reader.releaseLock();
       }
     } else {
-      // Gemini: regular JSON response (no streaming)
+      // Claude/Mistral: regular JSON response (no streaming)
+      console.log('📦 Processing non-DeepSeek response for provider:', provider);
       const data = await response.json();
+      console.log('📦 Non-DeepSeek response data:', data);
+      
       if (data.error) throw new Error(data.error);
-      return data.response || '';
+      
+      const responseContent = data.response || '';
+      console.log('📦 Extracted response content length:', responseContent.length);
+      console.log('📦 Response content preview:', responseContent.substring(0, 200) + '...');
+      
+      if (!responseContent || responseContent.trim() === '') {
+        throw new Error('Empty response received from AI service');
+      }
+      
+      // For non-streaming responses, call onChunk with the full content to update UI
+      if (onChunk && responseContent) {
+        console.log('📦 Calling onChunk for non-streaming response');
+        onChunk(responseContent);
+      }
+      
+      return responseContent;
     }
 
   } catch (error) {
