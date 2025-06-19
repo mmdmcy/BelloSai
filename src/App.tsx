@@ -370,10 +370,10 @@ function App() {
   const [selectedModel, setSelectedModel] = useState(() => {
     try {
       const savedModel = localStorage.getItem('bellosai-selected-model');
-      return savedModel || 'DeepSeek-V3';
+      return savedModel || 'DeepSeek-V3'; // Default to DeepSeek V3 (not R1)
     } catch (error) {
       console.log('Failed to load selected model from localStorage:', error);
-      return 'DeepSeek-V3';
+      return 'DeepSeek-V3'; // Default to DeepSeek V3 (not R1)
     }
   });
   
@@ -1130,9 +1130,12 @@ function App() {
     setCurrentConversationId(null);
     setConversationTitle('Untitled Conversation');
     setIsGenerating(false); // Reset generating state
+    setIsLoadingConversation(false); // Reset loading state
     
     // Clear all cache when starting new chat to ensure fresh data
     setConversationCache(new Map());
+    
+    console.log('🆕 New chat started - all states reset');
   };
 
   /**
@@ -1151,7 +1154,10 @@ function App() {
    * Handle conversation selection from sidebar
    */
   const handleConversationSelect = async (conversationId: string) => {
-    if (!user) return;
+    if (!user) {
+      console.log('❌ No user authenticated for conversation selection');
+      return;
+    }
     
     console.log('🔘 Conversation clicked:', conversationId, 'Current:', currentConversationId);
     
@@ -1178,16 +1184,24 @@ function App() {
     setConversationTitle(conversation?.title || 'Loading conversation...');
     
     try {
-      // Always fetch fresh data from database (don't use cache for now to debug)
+      // Always fetch fresh data from database with timeout protection
       console.log('🔄 Loading fresh messages from database for:', conversationId);
-      const conversationMessages = await chatFeaturesService.getConversationMessages(conversationId);
+      
+      // Add timeout protection to prevent hanging
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Database query timeout')), 10000); // 10 second timeout
+      });
+      
+      const messagesPromise = chatFeaturesService.getConversationMessages(conversationId);
+      
+      const conversationMessages = await Promise.race([messagesPromise, timeoutPromise]) as any[];
       
       if (conversationMessages && conversationMessages.length > 0) {
         // Convert to Message format with model information
         const convertedMessages: Message[] = conversationMessages.map((msg: any) => ({
           id: msg.id,
           type: (msg.role || msg.type) === 'user' ? 'user' : 'ai',
-          content: msg.content,
+          content: msg.content || '',
           timestamp: new Date(msg.created_at),
           model: msg.model // Include model information for AI messages
         }));
@@ -1210,12 +1224,38 @@ function App() {
       
     } catch (error) {
       console.error('❌ Failed to load conversation messages:', error);
-      // Show error but still allow user to use the conversation
+      
+      // Show specific error messages based on error type
+      let errorMessage = 'Conversation (failed to load)';
+      if (error instanceof Error) {
+        if (error.message.includes('timeout')) {
+          errorMessage = 'Conversation (timeout)';
+          console.log('⏰ Database query timed out for conversation:', conversationId);
+        } else if (error.message.includes('network')) {
+          errorMessage = 'Conversation (network error)';
+        }
+      }
+      
+      // Clear messages and show error state
       setMessages([]);
-      setConversationTitle(conversation?.title || 'Conversation (failed to load)');
+      setConversationTitle(conversation?.title || errorMessage);
+      
+      // Also clear from cache if it failed to load
+      setConversationCache(prev => {
+        const newCache = new Map(prev);
+        newCache.delete(conversationId);
+        return newCache;
+      });
+      
     } finally {
+      // CRITICAL: Always reset loading state
       setIsLoadingConversation(false);
       console.log('🔄 Loading state reset for conversation:', conversationId);
+      
+      // Force UI update to ensure loading state is cleared
+      setTimeout(() => {
+        setIsLoadingConversation(false);
+      }, 100);
     }
   };
 
