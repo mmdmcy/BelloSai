@@ -10,8 +10,7 @@
  * - Bring Your Own Key (BYOK) functionality
  */
 
-import { v4 as uuidv4 } from 'uuid';
-import { supabaseDB, getAuthenticatedHeaders } from './supabase';
+import { supabase } from './supabase';
 import { attachmentService } from './attachments';
 
 export interface ChatBranch {
@@ -53,14 +52,6 @@ export interface UserAPIKeys {
   encrypted: boolean;
 }
 
-// Define interfaces for our data types
-export interface ChatMessage {
-  id: string;
-  content: string;
-  role: 'user' | 'assistant';
-  timestamp: Date;
-}
-
 class ChatFeaturesService {
   
   // ========================================
@@ -72,7 +63,7 @@ class ChatFeaturesService {
    */
   async createBranch(conversationId: string, parentMessageId: string, title: string): Promise<ChatBranch> {
     try {
-      const { data, error } = await supabaseDBDB
+      const { data, error } = await supabase
         .from('conversation_branches')
         .insert({
           conversation_id: conversationId,
@@ -100,7 +91,7 @@ class ChatFeaturesService {
    */
   async getConversationBranches(conversationId: string): Promise<ChatBranch[]> {
     try {
-      const { data, error } = await supabaseDBDB
+      const { data, error } = await supabase
         .from('conversation_branches')
         .select('*')
         .eq('conversation_id', conversationId)
@@ -124,7 +115,7 @@ class ChatFeaturesService {
    * Get messages for a specific branch
    */
   async getBranchMessages(conversationId: string, branchId?: string) {
-    let query = supabaseDB
+    let query = supabase
       .from('messages')
       .select('*')
       .eq('conversation_id', conversationId);
@@ -152,7 +143,7 @@ class ChatFeaturesService {
       ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000).toISOString()
       : null;
 
-    const { data, error } = await supabaseDBDB
+    const { data, error } = await supabase
       .from('conversations')
       .update({
         is_shared: true,
@@ -176,7 +167,7 @@ class ChatFeaturesService {
    * Get shared conversation by share ID
    */
   async getSharedConversation(shareId: string) {
-    const { data: conversation, error: convError } = await supabaseDBDB
+    const { data: conversation, error: convError } = await supabase
       .from('conversations')
       .select('*')
       .eq('share_id', shareId)
@@ -191,7 +182,7 @@ class ChatFeaturesService {
     }
 
     // Get messages
-    const { data: messages, error: msgError } = await supabaseDBDB
+    const { data: messages, error: msgError } = await supabase
       .from('messages')
       .select('*')
       .eq('conversation_id', conversation.id)
@@ -212,7 +203,7 @@ class ChatFeaturesService {
    * Unshare a conversation
    */
   async unshareConversation(conversationId: string): Promise<void> {
-    const { error } = await supabaseDBDB
+    const { error } = await supabase
       .from('conversations')
       .update({
         is_shared: false,
@@ -230,7 +221,7 @@ class ChatFeaturesService {
   }
 
   private async incrementViewCount(shareId: string): Promise<void> {
-    await supabaseDBDB.rpc('increment_share_view_count', { share_id: shareId });
+    await supabase.rpc('increment_share_view_count', { share_id: shareId });
   }
 
   // ========================================
@@ -334,7 +325,7 @@ class ChatFeaturesService {
       });
 
       // Add metadata
-      await supabaseDBDB
+      await supabase
         .from('attachments')
         .update({
           metadata: {
@@ -361,7 +352,7 @@ class ChatFeaturesService {
    */
   async saveStreamState(conversationId: string, messageId: string, partialContent: string): Promise<void> {
     try {
-      const { error } = await supabaseDB
+      const { error } = await supabase
         .from('stream_states')
         .upsert({
           conversation_id: conversationId,
@@ -384,7 +375,7 @@ class ChatFeaturesService {
    */
   async resumeStream(conversationId: string, messageId: string): Promise<string | null> {
     try {
-      const { data, error } = await supabaseDB
+      const { data, error } = await supabase
         .from('stream_states')
         .select('partial_content')
         .eq('conversation_id', conversationId)
@@ -404,7 +395,7 @@ class ChatFeaturesService {
    */
   async clearStreamState(conversationId: string, messageId: string): Promise<void> {
     try {
-      const { error } = await supabaseDB
+      const { error } = await supabase
         .from('stream_states')
         .delete()
         .eq('conversation_id', conversationId)
@@ -430,7 +421,7 @@ class ChatFeaturesService {
     // Encrypt keys before storing
     const encryptedKeys = await this.encryptAPIKeys(keys);
     
-    const { error } = await supabaseDB
+    const { error } = await supabase
       .from('user_api_keys')
       .upsert({
         user_id: userId,
@@ -446,7 +437,7 @@ class ChatFeaturesService {
    * Get user's API keys (decrypted)
    */
   async getUserAPIKeys(userId: string): Promise<UserAPIKeys | null> {
-    const { data, error } = await supabaseDB
+    const { data, error } = await supabase
       .from('user_api_keys')
       .select('*')
       .eq('user_id', userId)
@@ -543,7 +534,7 @@ class ChatFeaturesService {
    * Create new conversation with proper initialization
    */
   async createConversation(userId: string, title: string, model: string) {
-    const { data, error } = await supabaseDB
+    const { data, error } = await supabase
       .from('conversations')
       .insert({
         user_id: userId,
@@ -561,7 +552,7 @@ class ChatFeaturesService {
    * Create new conversation with specific ID
    */
   async createConversationWithId(conversationId: string, userId: string, title: string, model: string) {
-    const { data, error } = await supabaseDB
+    const { data, error } = await supabase
       .from('conversations')
       .insert({
         id: conversationId,
@@ -583,7 +574,7 @@ class ChatFeaturesService {
     console.log('🔍 ChatFeaturesService: Getting conversations for user:', userId);
     
     try {
-      const { data, error } = await supabaseDB
+      const { data, error } = await supabase
         .from('conversations')
         .select('*')
         .eq('user_id', userId)
@@ -611,7 +602,7 @@ class ChatFeaturesService {
    * Update conversation title
    */
   async updateConversationTitle(conversationId: string, title: string): Promise<void> {
-    const { error } = await supabaseDB
+    const { error } = await supabase
       .from('conversations')
       .update({ title, updated_at: new Date().toISOString() })
       .eq('id', conversationId);
@@ -625,7 +616,7 @@ class ChatFeaturesService {
   async deleteConversation(conversationId: string): Promise<void> {
     try {
       // Delete stream_states if table exists (ignore 404 errors)
-      const { error: streamError } = await supabaseDB
+      const { error: streamError } = await supabase
         .from('stream_states')
         .delete()
         .eq('conversation_id', conversationId);
@@ -635,7 +626,7 @@ class ChatFeaturesService {
       }
 
       // Delete conversation_branches if table exists (ignore 404 errors)  
-      const { error: branchError } = await supabaseDB
+      const { error: branchError } = await supabase
         .from('conversation_branches')
         .delete()
         .eq('conversation_id', conversationId);
@@ -645,7 +636,7 @@ class ChatFeaturesService {
       }
 
       // Delete messages (this table should exist)
-      const { error: messageError } = await supabaseDB
+      const { error: messageError } = await supabase
         .from('messages')
         .delete()
         .eq('conversation_id', conversationId);
@@ -656,7 +647,7 @@ class ChatFeaturesService {
       }
 
       // Delete the conversation itself
-      const { error } = await supabaseDB
+      const { error } = await supabase
         .from('conversations')
         .delete()
         .eq('id', conversationId);
@@ -730,7 +721,7 @@ class ChatFeaturesService {
     
     try {
       // Insert message first
-      const { data, error } = await supabaseDB
+      const { data, error } = await supabase
         .from('messages')
         .insert(messageData)
         .select()
@@ -775,13 +766,13 @@ class ChatFeaturesService {
       
       // Check if auth is in a stable state before making database queries
       // This prevents queries during auth state transitions that corrupt the connection
-      const { data: { session }, error: sessionError } = await supabaseDB.auth.getSession();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) {
         console.warn('⚠️ Session error detected, skipping query to prevent connection corruption:', sessionError);
         return [];
       }
       
-      const { data, error } = await supabaseDB
+      const { data, error } = await supabase
         .from('messages')
         .select('*')
         .eq('conversation_id', conversationId)
@@ -819,7 +810,7 @@ class ChatFeaturesService {
     
     try {
       // Get current session for authentication
-      const { data: { session }, error: sessionError } = await supabaseDB.auth.getSession();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
       if (sessionError || !session) {
         console.log('No authentication for title generation, using fallback');
@@ -956,7 +947,7 @@ class ChatFeaturesService {
           if (messagesToDelete.length > 0) {
             const idsToDelete = messagesToDelete.map((msg: any) => msg.id);
             
-            const { error: deleteError } = await supabaseDB
+            const { error: deleteError } = await supabase
               .from('messages')
               .delete()
               .in('id', idsToDelete);

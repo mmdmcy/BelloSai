@@ -37,7 +37,7 @@ const customStorage = {
   addEventListener: () => {}
 }
 
-// Main Supabase client for auth operations
+// Create the Supabase client with disabled cross-tab sync
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: false, // Disable auto-refresh to prevent connection corruption
@@ -62,53 +62,6 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     }
   }
 })
-
-// Create a separate database-only client that's completely isolated from auth corruption
-export const supabaseDB = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false, // Don't persist sessions for the DB client
-    detectSessionInUrl: false,
-    storage: {
-      // Isolated storage that never syncs with the main auth client
-      getItem: () => null,
-      setItem: () => {},
-      removeItem: () => {}
-    },
-    storageKey: 'sb-db-only-isolated', // Completely different storage key
-    flowType: 'pkce'
-  },
-  global: {
-    headers: {
-      'x-client-info': 'bellosai-db',
-      'x-app-version': '1.0.0'
-    }
-  },
-  db: {
-    schema: 'public'
-  }
-})
-
-console.log('🔧 Supabase clients created - Main for auth, DB-only for queries')
-
-// Helper function to get authenticated headers for the DB client
-export const getAuthenticatedHeaders = async () => {
-  try {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.access_token) {
-      return {
-        'Authorization': `Bearer ${session.access_token}`,
-        'Content-Type': 'application/json'
-      }
-    }
-  } catch (error) {
-    console.log('⚠️ Could not get auth headers, using anon key')
-  }
-  return {
-    'apikey': supabaseAnonKey,
-    'Content-Type': 'application/json'
-  }
-}
 
 // Helper function to force session restoration
 export const forceSessionRestore = async () => {
