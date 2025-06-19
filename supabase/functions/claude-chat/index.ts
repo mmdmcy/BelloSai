@@ -18,14 +18,9 @@ Deno.serve(async (req) => {
     // Allow both authenticated and anonymous users
     let isAnonymous = false;
     if (!authHeader && !apiKey) {
-      console.log('❌ Missing authorization header or API key');
-      return new Response(
-        JSON.stringify({ error: 'Missing authorization header', code: 401 }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    }
-    
-    if (apiKey) {
+      console.log('⚠️ No auth headers provided - allowing as anonymous for debugging');
+      isAnonymous = true;
+    } else if (apiKey) {
       console.log('🔓 Anonymous user request accepted');
       isAnonymous = true;
     }
