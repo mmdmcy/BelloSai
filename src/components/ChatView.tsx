@@ -326,7 +326,7 @@ export default function ChatView({
             
             {/* Only show model info and actions when response is complete (not generating) */}
             {message.content && !(isLastAiMessage && isGenerating) && (
-              <div className="flex items-center justify-between px-2">
+              <div className="flex items-center justify-center px-2">
                 <div className="flex items-center space-x-3">
                   {message.model && (
                     <span 
@@ -340,7 +340,7 @@ export default function ChatView({
                     </span>
                   )}
                   
-                  {/* Action buttons next to model name */}
+                  {/* Action buttons always next to model name */}
                   <div className="flex items-center space-x-1">
                     <button 
                       className={`p-1.5 rounded-lg transition-colors ${

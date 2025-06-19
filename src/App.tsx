@@ -900,7 +900,7 @@ function App() {
             
             setMessages(prev => prev.map(msg => 
               msg.id === aiMessageId 
-                ? { ...msg, content: msg.content + chunk }
+                ? { ...msg, content: msg.content + chunk, model: modelToUse }
                 : msg
             ));
           },
@@ -920,41 +920,48 @@ function App() {
 
         console.log('💾 Saving messages to database...');
         
-        // Save messages to database with fire-and-forget for better performance
+        // Save messages to database - CRITICAL: Make this synchronous to ensure all messages are saved
         if (user && currentConvoId) {
-          const savePromise = (async () => {
+          try {
+            console.log('💾 Saving messages to database (synchronous)...');
+            
+            // First ensure conversation exists in database
+            console.log('🔄 Ensuring conversation exists in database...');
             try {
-              // First ensure conversation exists in database
-              console.log('🔄 Ensuring conversation exists in database...');
-              try {
-                const userConversations = await chatFeaturesService.getUserConversations(user.id);
-                const existingConvo = userConversations.find(conv => conv.id === currentConvoId);
-                if (!existingConvo) {
-                  console.log('📝 Creating new conversation in database...');
-                  await chatFeaturesService.createConversationWithId(currentConvoId, user.id, conversationTitle || 'New Conversation', modelToUse);
-                  console.log('✅ Conversation created in database');
-                }
-              } catch (convoError) {
-                console.log('📝 Creating conversation (error checking):', convoError);
-                try {
-                  await chatFeaturesService.createConversationWithId(currentConvoId, user.id, conversationTitle || 'New Conversation', modelToUse);
-                  console.log('✅ Conversation created in database');
-                } catch (createError) {
-                  console.error('❌ Failed to create conversation:', createError);
-                }
+              const userConversations = await chatFeaturesService.getUserConversations(user.id);
+              const existingConvo = userConversations.find(conv => conv.id === currentConvoId);
+              if (!existingConvo) {
+                console.log('📝 Creating new conversation in database...');
+                await chatFeaturesService.createConversationWithId(currentConvoId, user.id, conversationTitle || 'New Conversation', modelToUse);
+                console.log('✅ Conversation created in database');
               }
+            } catch (convoError) {
+              console.log('📝 Creating conversation (error checking):', convoError);
+              try {
+                await chatFeaturesService.createConversationWithId(currentConvoId, user.id, conversationTitle || 'New Conversation', modelToUse);
+                console.log('✅ Conversation created in database');
+              } catch (createError) {
+                console.error('❌ Failed to create conversation:', createError);
+                // Continue anyway - we can save messages without conversation
+              }
+            }
 
-              // Save user message (if not regenerating)
-              if (!regenerate && userMessageId) {
+            // Save user message (if not regenerating) - CRITICAL
+            if (!regenerate && userMessageId) {
+              try {
                 await chatFeaturesService.saveMessage(
                   currentConvoId,
                   'user',
                   content.trim()
                 );
                 console.log('✅ User message saved to database');
+              } catch (userSaveError) {
+                console.error('❌ CRITICAL: Failed to save user message:', userSaveError);
               }
+            }
 
-              // Save AI response
+            // Save AI response - CRITICAL
+            try {
               await chatFeaturesService.saveMessage(
                 currentConvoId,
                 'assistant',
@@ -962,9 +969,26 @@ function App() {
                 modelToUse
               );
               console.log('✅ AI response saved to database');
+            } catch (aiSaveError) {
+              console.error('❌ CRITICAL: Failed to save AI response:', aiSaveError);
+              // Retry once
+              try {
+                console.log('🔄 Retrying AI message save...');
+                await chatFeaturesService.saveMessage(
+                  currentConvoId,
+                  'assistant',
+                  fullResponse,
+                  modelToUse
+                );
+                console.log('✅ AI response saved to database (retry successful)');
+              } catch (retryError) {
+                console.error('❌ CRITICAL: AI message save retry failed:', retryError);
+              }
+            }
 
-              // Update conversation title if needed (background task)
-              if (conversationTitle === 'Untitled Conversation' || !conversationTitle) {
+            // Update conversation title if needed (background task)
+            if (conversationTitle === 'Untitled Conversation' || !conversationTitle) {
+              try {
                 const title = await chatFeaturesService.generateConversationTitle(
                   chatMessages.concat([{ type: 'ai', content: fullResponse }])
                     .map(msg => ({ role: msg.type === 'user' ? 'user' : 'assistant', content: msg.content }))
@@ -975,27 +999,31 @@ function App() {
                   await chatFeaturesService.updateConversationTitle(currentConvoId, title);
                   console.log('✅ Updated conversation title in database:', title);
                 }
+              } catch (titleError) {
+                console.warn('⚠️ Failed to update conversation title:', titleError);
               }
-
-              // Refresh conversations list
-              await loadConversations();
-              console.log('✅ Conversations list refreshed');
-            } catch (saveError) {
-              console.error('❌ Error saving messages:', saveError);
-              // Don't throw - this is fire-and-forget
             }
-          })();
-          
-          // Don't await the save operation - let it run in background
-          savePromise.catch(err => console.error('Background save error:', err));
+
+            // Refresh conversations list (background)
+            loadConversations().then(() => {
+              console.log('✅ Conversations list refreshed');
+            }).catch(err => {
+              console.warn('⚠️ Failed to refresh conversations:', err);
+            });
+            
+          } catch (saveError) {
+            console.error('❌ CRITICAL: Error in message saving process:', saveError);
+          }
         }
         
-        // Update with final response (ensure content is set correctly)
+        // Update with final response (ensure content and model are set correctly)
         setMessages(prev => prev.map(msg => 
           msg.id === aiMessageId 
             ? { ...msg, content: fullResponse, model: modelToUse }
             : msg
         ));
+        
+        console.log('✅ Final message update completed with model:', modelToUse);
 
       } catch (streamError) {
         console.error('❌ Streaming error:', streamError);
@@ -1144,12 +1172,13 @@ function App() {
       const conversationMessages = await chatFeaturesService.getConversationMessages(conversationId);
       
       if (conversationMessages && conversationMessages.length > 0) {
-        // Convert to Message format
+        // Convert to Message format with model information
         const messages: Message[] = conversationMessages.map((msg: any) => ({
           id: msg.id,
           type: (msg.role || msg.type) === 'user' ? 'user' : 'ai',
           content: msg.content,
-          timestamp: new Date(msg.created_at)
+          timestamp: new Date(msg.created_at),
+          model: msg.model // Include model information for AI messages
         }));
         
         console.log('✅ Loaded', messages.length, 'messages from database');
