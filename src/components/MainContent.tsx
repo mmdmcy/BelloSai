@@ -22,8 +22,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Sparkles, Compass, Code, GraduationCap, ChevronDown, ArrowUp } from 'lucide-react';
 import ActionButton from './ActionButton';
 import ModelSelector from './ModelSelector';
-import { CustomizationSettings } from '../App';
-import type { ModelInfo } from '../App';
+import { CustomizationSettings } from '../types/app';
+import type { ModelInfo } from '../types/app';
 import AnonymousUsageIndicator from './AnonymousUsageIndicator';
 
 interface MainContentProps {

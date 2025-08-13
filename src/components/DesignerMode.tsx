@@ -1,6 +1,8 @@
 import React, { useState, useRef } from 'react';
 import { X, RotateCcw, Save, Sun, Moon, Plus, Minus, ChevronUp, ChevronDown, GripVertical, Palette, Type, Eye, EyeOff, Move, Maximize2, Sparkles } from 'lucide-react';
-import { LayoutConfig, CustomizationSettings, AVAILABLE_THEMES, Theme } from '../App';
+import { CustomizationSettings, Theme } from '../types/app';
+import { AVAILABLE_THEMES } from '../theme/registry';
+import type { LayoutConfig } from '../lib/auth-integration';
 import { defaultLayoutWithAuth, layoutManager, ExtendedLayoutConfig } from '../lib/auth-integration';
 
 interface DesignerModeProps {

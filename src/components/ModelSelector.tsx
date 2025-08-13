@@ -7,8 +7,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Brain, Sparkles, Feather, Star, Lock } from 'lucide-react';
-import { CustomizationSettings } from '../App';
-import type { ModelInfo } from '../App';
+import { CustomizationSettings } from '../types/app';
+import type { ModelInfo } from '../types/app';
 
 interface ModelSelectorProps {
   selectedModel: string;
