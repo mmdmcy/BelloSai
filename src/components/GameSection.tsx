@@ -16,7 +16,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Trophy, Brain, Users, Zap, Sun, Moon, Play, Clock, Target, CheckCircle, XCircle, Star, Loader2 } from 'lucide-react';
-import { CustomizationSettings } from '../App';
+import { CustomizationSettings } from '../types/app';
 import { 
   generateAIFeudQuestion, 
   getAIGuess, 

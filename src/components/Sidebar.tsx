@@ -40,7 +40,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Trash2, RefreshCw } from 'lucide-react';
-import { CustomizationSettings } from '../App';
+import { CustomizationSettings } from '../types/app';
 
 interface SidebarProps {
   isDark: boolean;

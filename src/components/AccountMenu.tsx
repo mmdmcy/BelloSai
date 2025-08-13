@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, ChevronLeft, Palette, Type, Eye, EyeOff, Sparkles, Save, Check, RotateCcw, LogOut, Brush } from 'lucide-react';
-import { CustomizationSettings, AVAILABLE_THEMES } from '../App';
+import { CustomizationSettings } from '../types/app';
+import { AVAILABLE_THEMES } from '../theme/registry';
 import type { User } from '@supabase/supabase-js';
 import { useSubscription } from '../hooks/useSubscription';
 import { SUBSCRIPTION_PLANS } from '../lib/stripeService';

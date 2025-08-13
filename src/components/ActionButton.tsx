@@ -14,7 +14,7 @@
 
 import React from 'react';
 import { DivideIcon as LucideIcon } from 'lucide-react';
-import { CustomizationSettings } from '../App';
+import { CustomizationSettings } from '../types/app';
 
 interface ActionButtonProps {
   icon: LucideIcon;

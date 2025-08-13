@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { X, RotateCcw, Save, Sun, Moon, Move, Maximize2, Menu, User, LogIn, Sparkles } from 'lucide-react';
-import { CustomizationSettings, AVAILABLE_THEMES } from '../App';
+import { CustomizationSettings } from '../types/app';
+import { AVAILABLE_THEMES } from '../theme/registry';
 import { MobileLayoutConfig, defaultMobileLayout } from '../lib/auth-integration';
 import ThemeToggle from './ThemeToggle';
 

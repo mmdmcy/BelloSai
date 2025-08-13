@@ -6,7 +6,8 @@
  */
 
 import { supabase } from './supabase';
-import { AVAILABLE_MODELS, ModelInfo } from '../App';
+import type { ModelInfo } from '../types/app';
+import { AVAILABLE_MODELS, getModelProvider } from '../models/registry';
 
 export interface ChatMessage {
   type: 'user' | 'ai';
@@ -45,12 +46,7 @@ const SESSION_CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 /**
  * Get model provider based on model code
  */
-function getModelProvider(modelCode: string): ModelProvider {
-  const model = AVAILABLE_MODELS.find(m => m.code === modelCode);
-  if (model?.provider === 'Claude') return 'Claude';
-  if (model?.provider === 'Mistral') return 'Mistral';
-  return 'DeepSeek';
-}
+// moved to models/registry
 
 /**
  * Send messages to AI via Supabase Edge Function with optimized streaming
