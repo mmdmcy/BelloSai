@@ -144,7 +144,25 @@ export const AVAILABLE_THEMES: Theme[] = [
     shadows: true,
     glassEffect: false,
     retroMode: false
+  },
+  {
+    id: 'genie-dark',
+    name: 'Genie Dark',
+    description: 'Deep black UI with vibrant emerald accents (mobile-web parity)',
+    primaryColor: '#22c55e',
+    secondaryColor: '#86efac',
+    backgroundColor: '#0b0f0c',
+    textColor: '#e5e7eb',
+    accentColors: ['#22c55e', '#16a34a', '#86efac', '#14532d'],
+    gradientEnabled: false,
+    fontFamily: 'Inter, system-ui',
+    borderRadius: '0.875rem',
+    shadows: true,
+    glassEffect: false,
+    retroMode: false
   }
 ];
+
+
 
 
