@@ -142,7 +142,7 @@ export default function ChatSharing({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center gap-3">
-            <Share2 className="w-5 h-5 text-purple-500" />
+            <Share2 className="w-5 h-5 text-gray-900" />
             <h3 className="text-lg font-semibold">Share Conversation</h3>
           </div>
           <button
@@ -188,7 +188,7 @@ export default function ChatSharing({
                     isDark 
                       ? 'bg-gray-700 border-gray-600 text-white' 
                       : 'bg-white border-gray-300 text-gray-900'
-                  } focus:outline-none focus:ring-2 focus:ring-purple-500`}
+                  } focus:outline-none focus:ring-2 focus:ring-gray-400`}
                 >
                   <option value="">Never</option>
                   <option value="1">1 day</option>
@@ -202,7 +202,7 @@ export default function ChatSharing({
               <button
                 onClick={handleShare}
                 disabled={isSharing}
-                className="w-full py-3 px-4 bg-purple-500 text-white rounded-lg font-medium hover:bg-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full py-3 px-4 bg-gray-900 text-white rounded-lg font-medium hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                                     {isSharing ? 'Sharing...' : 'Share Conversation'}
               </button>

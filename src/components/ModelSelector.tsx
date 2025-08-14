@@ -69,10 +69,12 @@ export default function ModelSelector({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 text-white ${isOpen ? 'ring-2 ring-opacity-50' : ''}`}
+        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${isDark ? 'text-white' : 'text-gray-900'} ${isOpen ? 'ring-2 ring-opacity-50' : ''}`}
         style={{ 
           fontFamily: customization.fontFamily,
-          backgroundColor: customization.primaryColor,
+          background: customization.gradientEnabled 
+            ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+            : customization.primaryColor,
           '--tw-ring-color': customization.secondaryColor
         } as React.CSSProperties}
       >
@@ -86,7 +88,7 @@ export default function ModelSelector({
       {/* Dropdown Menu */}
       {isOpen && (
         <div 
-          className={`absolute bottom-full left-0 mb-2 min-w-64 rounded-lg border shadow-lg z-50 ${
+          className={`absolute bottom-full left-0 mb-2 min-w-64 rounded-xl border shadow-lg z-50 ${
             isDark 
               ? 'bg-gray-800 border-gray-600' 
               : 'bg-white border-gray-200'

@@ -86,9 +86,9 @@ export default function Success(props: SuccessPageProps) {
         // Wait until auth and processing are ready
   if (!isAuthReady || (isProcessing && !processingComplete)) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">
-          <Loader2 className="w-12 h-12 text-purple-600 animate-spin mx-auto mb-4" />
+          <Loader2 className="w-12 h-12 text-gray-900 animate-spin mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
             Processing your payment...
           </h2>
@@ -96,7 +96,7 @@ export default function Success(props: SuccessPageProps) {
             I'm confirming your subscription. This may take 5-10 seconds.
           </p>
           {retryCount > 0 && (
-            <p className="text-sm text-purple-600">
+            <p className="text-sm text-gray-900">
               Attempt {retryCount + 1} of 3...
             </p>
           )}
@@ -126,7 +126,7 @@ export default function Success(props: SuccessPageProps) {
                 setProcessingComplete(false);
                 processPayment();
               }}
-              className="w-full inline-flex items-center justify-center gap-2 bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors"
+              className="w-full inline-flex items-center justify-center gap-2 bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-black transition-colors"
             >
               <RefreshCw className="w-5 h-5" />
               Try again
@@ -187,7 +187,7 @@ export default function Success(props: SuccessPageProps) {
 
           <button
             onClick={() => window.location.href = '/'}
-            className="w-full inline-flex items-center justify-center gap-2 bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors"
+            className="w-full inline-flex items-center justify-center gap-2 bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-black transition-colors"
           >
             <Home className="w-5 h-5" />
             Start chatting

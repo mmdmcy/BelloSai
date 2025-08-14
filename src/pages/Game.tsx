@@ -610,7 +610,7 @@ Reply with ONLY your answer. No explanations.`;
 
   if (gameStatus === 'loading') {
     return (
-      <div className={`min-h-screen ${isDark ? 'bg-gray-900 text-white' : 'bg-purple-50 text-gray-900'}`}>
+      <div className={`min-h-screen ${isDark ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
         <div className="flex items-center justify-center h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
@@ -623,7 +623,7 @@ Reply with ONLY your answer. No explanations.`;
 
   if (!question) {
     return (
-      <div className={`min-h-screen ${isDark ? 'bg-gray-900 text-white' : 'bg-purple-50 text-gray-900'}`}>
+      <div className={`min-h-screen ${isDark ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
         <div className="flex items-center justify-center h-screen">
           <div className="text-center">
             <p>Failed to load question</p>
@@ -640,7 +640,7 @@ Reply with ONLY your answer. No explanations.`;
   }
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-gray-900 text-white' : 'bg-purple-50 text-gray-900'}`}>
+    <div className={`min-h-screen ${isDark ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
       {/* Header with Back Button */}
       <div className={`p-4 border-b ${isDark ? 'border-gray-700 bg-gray-800' : 'border-gray-200 bg-white'}`}>
         <div className="flex items-center justify-between max-w-4xl mx-auto">

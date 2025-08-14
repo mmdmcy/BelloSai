@@ -1322,7 +1322,7 @@ function App() {
           ? 'dark bg-gray-900' 
           : hasGlassEffect() 
             ? 'glass-bg' 
-            : 'bg-purple-50'
+            : 'bg-gray-50'
       }`}
       style={{ 
         fontFamily: customization.fontFamily,
@@ -1595,7 +1595,7 @@ function App() {
               }}
             >
               <div 
-                className={`flex-1 h-full flex flex-col ${isDark ? 'bg-gray-900' : 'bg-purple-50'}`}
+                className={`flex-1 h-full flex flex-col ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}
                 style={{
                   background: customization.gradientEnabled && !isDark 
                     ? `linear-gradient(135deg, ${customization.primaryColor}05, ${customization.secondaryColor}05)`
@@ -1607,7 +1607,7 @@ function App() {
                   <div className="w-full text-center" style={{ maxWidth: '95%' }}>
                     {/* Main Heading - Responsive text size */}
                     <h1 
-                      className={`text-2xl font-semibold mb-10 ${isDark ? 'text-white' : 'text-purple-800'}`}
+                      className={`text-2xl font-semibold mb-10 ${isDark ? 'text-white' : 'text-gray-900'}`}
                       style={{ 
                         fontFamily: customization.fontFamily,
                         color: isDark 
@@ -1620,16 +1620,16 @@ function App() {
 
                     {/* Action Buttons - Responsive layout */}
                     <div className="flex flex-wrap justify-center gap-2 mb-12">
-                      <div className={`px-4 py-2 rounded-lg border ${isDark ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-purple-200 bg-white text-purple-700'}`}>
+                      <div className={`px-4 py-2 rounded-lg border ${isDark ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-gray-200 bg-white text-gray-800'}`}>
                         ✨ Create
                       </div>
-                      <div className={`px-4 py-2 rounded-lg border ${isDark ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-purple-200 bg-white text-purple-700'}`}>
+                      <div className={`px-4 py-2 rounded-lg border ${isDark ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-gray-200 bg-white text-gray-800'}`}>
                         🧭 Explore
                       </div>
-                      <div className={`px-4 py-2 rounded-lg border ${isDark ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-purple-200 bg-white text-purple-700'}`}>
+                      <div className={`px-4 py-2 rounded-lg border ${isDark ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-gray-200 bg-white text-gray-800'}`}>
                         💻 Code
                       </div>
-                      <div className={`px-4 py-2 rounded-lg border ${isDark ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-purple-200 bg-white text-purple-700'}`}>
+                      <div className={`px-4 py-2 rounded-lg border ${isDark ? 'border-gray-600 bg-gray-700 text-gray-300' : 'border-gray-200 bg-white text-gray-800'}`}>
                         🎓 Learn
                       </div>
                     </div>
@@ -1644,7 +1644,7 @@ function App() {
                             className={`block w-full text-left px-4 py-3 rounded-xl transition-colors text-sm ${
                               isDark 
                                 ? 'text-gray-300 hover:bg-gray-700 hover:text-white' 
-                                : 'hover:text-purple-800'
+                                : 'hover:text-gray-900'
                             }`}
                             style={{ 
                               fontFamily: customization.fontFamily,
@@ -1995,7 +1995,7 @@ function App() {
               {/* Search Button - Detached and moved above sidebar */}
               {elementKey === 'searchButton' && (
                 <div 
-                  className={`h-full w-full ${isDark ? 'bg-gray-900' : 'bg-purple-50'} flex items-center justify-center px-2`}
+                  className={`h-full w-full ${isDark ? 'bg-gray-900' : 'bg-gray-50'} flex items-center justify-center px-2`}
                   style={{
                     background: customization.gradientEnabled && !isDark 
                       ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
@@ -2023,7 +2023,7 @@ function App() {
               {/* Account Panel - Detached */}
               {elementKey === 'accountPanel' && (
                 <div 
-                  className={`h-full w-full ${isDark ? 'bg-gray-900' : 'bg-purple-50'} flex items-center justify-center`}
+                  className={`h-full w-full ${isDark ? 'bg-gray-900' : 'bg-gray-50'} flex items-center justify-center`}
                   style={{
                     background: customization.gradientEnabled && !isDark 
                       ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
@@ -2105,7 +2105,7 @@ function App() {
                     ? 'glass-element' 
                     : isDark 
                       ? 'bg-gray-900' 
-                      : 'bg-purple-50'
+                      : 'bg-gray-50'
                 } p-4`}>
                   <div className="h-full flex items-end">
                     <div className="w-full">

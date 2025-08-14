@@ -36,7 +36,7 @@ export default function Pricing() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
+  <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -51,7 +51,7 @@ export default function Pricing() {
               </button>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
                 <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/>
                 </svg>
@@ -93,13 +93,13 @@ export default function Pricing() {
                 key={plan.id}
                 className={`relative bg-white rounded-2xl shadow-lg border-2 transition-all hover:shadow-xl ${
                   isPopular 
-                    ? 'border-purple-500 scale-105' 
+                    ? 'border-gray-900 scale-105' 
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
                 {isPopular && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-purple-500 text-white px-4 py-1 rounded-full text-sm font-medium">
+                    <span className="bg-gray-900 text-white px-4 py-1 rounded-full text-sm font-medium">
                       Meest Populair
                     </span>
                   </div>
@@ -109,13 +109,13 @@ export default function Pricing() {
                   {/* Plan Header */}
                   <div className="text-center mb-8">
                     <h3 className={`text-2xl font-bold ${
-                      isPopular ? 'text-purple-900' : 'text-gray-900'
+                      isPopular ? 'text-gray-900' : 'text-gray-900'
                     }`}>
                       {plan.name}
                     </h3>
                     <div className="mt-4">
                       <span className={`text-4xl font-bold ${
-                        isPopular ? 'text-purple-600' : 'text-gray-900'
+                        isPopular ? 'text-gray-900' : 'text-gray-900'
                       }`}>
                         {plan.price}
                       </span>
@@ -139,7 +139,7 @@ export default function Pricing() {
                     {plan.features.map((feature, index) => (
                       <li key={index} className="flex items-start gap-3">
                         <CheckCircle className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
-                          isPopular ? 'text-purple-500' : 'text-green-500'
+                          isPopular ? 'text-gray-900' : 'text-green-500'
                         }`} />
                         <span className="text-gray-700">{feature}</span>
                       </li>
@@ -165,7 +165,7 @@ export default function Pricing() {
                         disabled={actionLoading === plan.id || !plan.priceId}
                         className={`w-full py-3 px-6 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                           isPopular
-                            ? 'bg-purple-600 text-white hover:bg-purple-700 disabled:hover:bg-purple-600'
+                            ? 'bg-gray-900 text-white hover:bg-black disabled:hover:bg-gray-900'
                             : 'bg-gray-900 text-white hover:bg-gray-800 disabled:hover:bg-gray-900'
                         }`}
                       >
