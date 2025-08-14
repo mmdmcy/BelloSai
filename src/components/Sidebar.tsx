@@ -165,10 +165,8 @@ export default function Sidebar({
         className={`w-full h-full ${
           hasGlassEffect && !isDark 
             ? 'glass-sidebar' 
-            : isDark 
-              ? 'bg-gray-900' 
-              : 'bg-purple-50'
-        } flex flex-col items-center py-4 gap-4 neo-surface`}
+            : ''
+        } flex flex-col items-center py-4 gap-4 neo-surface ${isDark ? 'bg-gray-900' : 'bg-white'}`}
         style={{
           background: !hasGlassEffect && customization.gradientEnabled && !isDark 
             ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
@@ -178,10 +176,10 @@ export default function Sidebar({
         {/* Expand Button */}
         <button
           onClick={onToggleCollapse}
-          className={`p-2 rounded-lg transition-colors ${
+          className={`p-2 rounded-lg ios-pressable ${
             isDark 
               ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-              : 'bg-white text-gray-700 hover:bg-gray-100 border border-purple-200'
+              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
           }`}
           title="Expand Sidebar"
         >
@@ -194,13 +192,7 @@ export default function Sidebar({
   // Full sidebar layout - simplified when in detached mode
   return (
     <div 
-      className={`w-full h-full ${
-        hasGlassEffect && !isDark 
-          ? 'glass-sidebar' 
-          : isDark 
-            ? 'bg-gray-900' 
-            : 'bg-purple-50'
-      } flex flex-col`}
+      className={`w-full h-full ${hasGlassEffect && !isDark ? 'glass-sidebar' : ''} flex flex-col ${isDark ? 'bg-gray-900' : 'bg-white'}`}
       style={{
         background: !hasGlassEffect && customization.gradientEnabled && !isDark 
           ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
@@ -208,14 +200,10 @@ export default function Sidebar({
       }}
     >
       {/* Header Section - Only show collapse button in detached mode */}
-      <div className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-purple-100'} flex items-center justify-end`}>
+      <div className={`p-4 border-b ${isDark ? 'border-gray-800' : 'border-gray-100'} flex items-center justify-end ios-toolbar`}>
         <button
           onClick={onToggleCollapse}
-          className={`p-1.5 rounded-lg transition-colors ${
-            isDark 
-              ? 'text-gray-400 hover:bg-gray-700 hover:text-white' 
-              : 'text-gray-600 hover:bg-purple-100 hover:text-purple-700'
-          }`}
+          className={`p-1.5 rounded-lg ios-pressable ${isDark ? 'text-gray-200 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`}
           title="Collapse Sidebar"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -231,7 +219,7 @@ export default function Sidebar({
               isDark 
                 ? 'bg-blue-900/30 border-blue-700 text-blue-200' 
                 : 'bg-blue-50 border-blue-200 text-blue-800'
-            }`}
+              }`}
             onClick={() => {
               setShowRefreshPrompt(false);
               setWasTabHidden(false);
@@ -266,7 +254,7 @@ export default function Sidebar({
             {conversations.map((conversation) => (
               <div 
                 key={conversation.id}
-                className={`group relative rounded-lg mb-2 transition-colors ${
+                className={`group relative rounded-lg mb-2 transition-colors ios-pressable ${
                   currentConversationId === conversation.id
                     ? (isDark ? 'bg-gray-700' : 'bg-purple-50')
                     : (isDark ? 'hover:bg-gray-700' : 'hover:bg-purple-50')

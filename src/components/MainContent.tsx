@@ -184,7 +184,7 @@ export default function MainContent({
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
                 placeholder="Type your message here..."
-                className={`w-full px-6 py-4 pr-32 rounded-2xl resize-none focus:outline-none min-h-[60px] max-h-32 ${
+                className={`w-full px-6 py-4 pr-32 rounded-2xl ios-input resize-none focus:outline-none min-h-[60px] max-h-32 ${
                   hasGlassEffect && !isDark 
                     ? 'bg-transparent text-gray-800 placeholder-gray-600' 
                     : isDark 
@@ -211,14 +211,14 @@ export default function MainContent({
                 </div>
                 
                 {/* Send Button */}
-                                  <button 
+                  <button 
                     type="submit"
                     disabled={!inputValue.trim()}
                     className={`${
                       hasGlassEffect && !isDark 
                         ? 'glass-button-modern text-gray-800' 
                         : 'text-white'
-                    } p-2.5 rounded-xl transition-colors hover:opacity-90 disabled:opacity-50`}
+                    } p-2.5 rounded-xl ios-pressable hover:opacity-90 disabled:opacity-50`}
                     style={{ 
                       background: !hasGlassEffect 
                         ? (customization.gradientEnabled 
@@ -239,7 +239,7 @@ export default function MainContent({
 
   // Full main content layout with responsive scaling
   return (
-    <div 
+      <div 
       ref={containerRef}
       className={`flex-1 h-full flex flex-col ${
         hasGlassEffect && !isDark 
@@ -293,7 +293,7 @@ export default function MainContent({
                 <button
                   key={index}
                   onClick={() => handleQuestionClick(question)}
-                  className={`block w-full text-left px-6 py-3.5 rounded-xl transition-colors ${
+                  className={`block w-full text-left px-6 py-3.5 rounded-xl transition-colors ios-pressable ${
                     hasGlassEffect && !isDark
                       ? 'text-gray-700 hover:bg-white/30 hover:text-gray-800'
                       : isDark 
@@ -400,7 +400,7 @@ export default function MainContent({
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
                   placeholder="Type your message here..."
-                  className={`w-full px-6 py-4 pr-32 rounded-2xl resize-none focus:outline-none min-h-[60px] max-h-32 ${
+                  className={`w-full px-6 py-4 pr-32 rounded-2xl ios-input resize-none focus:outline-none min-h-[60px] max-h-32 ${
                     hasGlassEffect && !isDark 
                       ? 'bg-transparent text-gray-800 placeholder-gray-600' 
                       : isDark 
@@ -428,7 +428,7 @@ export default function MainContent({
                   <button 
                     type="submit"
                     disabled={!inputValue.trim()}
-                    className="text-white p-2.5 rounded-xl transition-colors hover:opacity-90 disabled:opacity-50"
+                    className="text-white p-2.5 rounded-xl ios-pressable hover:opacity-90 disabled:opacity-50"
                     style={{ 
                       background: customization.gradientEnabled 
                         ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`

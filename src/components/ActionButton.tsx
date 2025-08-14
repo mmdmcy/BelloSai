@@ -26,10 +26,10 @@ interface ActionButtonProps {
 export default function ActionButton({ icon: Icon, label, isDark, customization }: ActionButtonProps) {
   return (
     <button 
-      className={`flex items-center gap-2 px-5 py-2.5 rounded-full transition-colors ${
+      className={`flex items-center gap-2 px-5 py-2.5 rounded-full ios-pressable ${
         isDark 
-          ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white' 
-          : 'hover:text-purple-800'
+          ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' 
+          : ''
       }`}
       style={{ 
         fontFamily: customization.fontFamily,

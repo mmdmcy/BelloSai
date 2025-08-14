@@ -24,11 +24,7 @@ export default function ThemeToggle({ isDark, onToggle }: ThemeToggleProps) {
   return (
     <button
       onClick={onToggle}
-      className={`p-2.5 rounded-lg transition-colors ${
-        isDark 
-          ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-          : 'bg-white text-gray-800 hover:bg-gray-50 border border-gray-200'
-      }`}
+      className={`p-2.5 rounded-xl ios-toolbar ios-pressable ${isDark ? 'text-gray-100' : 'text-gray-800'}`}
       title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
     >
       {/* Show sun icon in dark mode (to switch to light), moon icon in light mode (to switch to dark) */}

@@ -485,7 +485,7 @@ export default function ChatView({
     } else {
       return (
         <div key={message.id} className="flex justify-start mb-6">
-          <div className="max-w-[85%] w-full neo-surface p-4 ${isDark ? 'card-surface-dark' : 'card-surface-light'}">
+          <div className={`max-w-[85%] w-full neo-surface p-4 ${isDark ? 'card-surface-dark' : 'card-surface-light'}`}>
             {/* Show reasoning indicator for R1 and Gemini 2.5 Pro when they haven't started generating content */}
             {shouldShowReasoning && (
               <div className="mb-3 flex items-center space-x-3">
@@ -617,7 +617,7 @@ export default function ChatView({
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
                 placeholder="Type your message here..."
-                className={`w-full px-4 py-3 pr-32 rounded-2xl resize-none focus:outline-none min-h-[60px] max-h-32 ${
+                className={`w-full px-4 py-3 pr-32 rounded-2xl ios-input resize-none focus:outline-none min-h-[60px] max-h-32 ${
                   isDark 
                     ? 'bg-gray-800 text-white placeholder-gray-400' 
                     : 'bg-white text-gray-900 placeholder-gray-500'
@@ -638,7 +638,7 @@ export default function ChatView({
                 <button 
                   type="submit"
                   disabled={!inputValue.trim() || isGenerating}
-                  className="text-white p-2.5 rounded-xl transition-all hover:opacity-90 disabled:opacity-50"
+                  className="text-white p-2.5 rounded-xl ios-pressable hover:opacity-90 disabled:opacity-50"
                   style={{ backgroundColor: customization.primaryColor }}
                 >
                   <ArrowUp className="w-4 h-4" />
@@ -689,7 +689,7 @@ export default function ChatView({
                   onChange={handleInputChange}
                   onKeyDown={handleKeyDown}
                   placeholder="Type your message here..."
-                  className={`w-full px-4 py-3 pr-32 rounded-2xl resize-none focus:outline-none min-h-[60px] max-h-32 ${
+                  className={`w-full px-4 py-3 pr-32 rounded-2xl ios-input resize-none focus:outline-none min-h-[60px] max-h-32 ${
                     isDark 
                       ? 'bg-gray-800 text-white placeholder-gray-400' 
                       : 'bg-white text-gray-900 placeholder-gray-500'
@@ -710,7 +710,7 @@ export default function ChatView({
                   <button 
                     type="submit"
                     disabled={!inputValue.trim() || isGenerating}
-                    className="text-white p-2.5 rounded-xl transition-all hover:opacity-90 disabled:opacity-50"
+                    className="text-white p-2.5 rounded-xl ios-pressable hover:opacity-90 disabled:opacity-50"
                     style={{ backgroundColor: customization.primaryColor }}
                   >
                     <ArrowUp className="w-4 h-4" />
