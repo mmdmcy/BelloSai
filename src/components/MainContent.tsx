@@ -391,7 +391,7 @@ export default function MainContent({
 
             <form onSubmit={handleSubmit}>
               {/* Message Input - Responsive sizing */}
-              <div className={`relative rounded-2xl border ${
+              <div className={`relative rounded-2xl border neo-surface ${
                 isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-purple-200'
               } shadow-sm`}>
                 <textarea

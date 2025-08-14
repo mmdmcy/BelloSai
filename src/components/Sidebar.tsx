@@ -168,7 +168,7 @@ export default function Sidebar({
             : isDark 
               ? 'bg-gray-900' 
               : 'bg-purple-50'
-        } flex flex-col items-center py-4 gap-4`}
+        } flex flex-col items-center py-4 gap-4 neo-surface`}
         style={{
           background: !hasGlassEffect && customization.gradientEnabled && !isDark 
             ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
