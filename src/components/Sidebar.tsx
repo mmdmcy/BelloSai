@@ -200,10 +200,10 @@ export default function Sidebar({
       }}
     >
       {/* Header Section - Only show collapse button in detached mode */}
-      <div className={`p-4 border-b ${isDark ? 'border-gray-800' : 'border-gray-100'} flex items-center justify-end ios-toolbar neo-header`}>
+      <div className={`p-3 border-b ${isDark ? 'border-gray-800' : 'border-gray-100'} flex items-center justify-end ${hasGlassEffect ? 'ios-toolbar' : ''}`}>
         <button
           onClick={onToggleCollapse}
-          className={`p-1.5 rounded-lg ios-pressable ${isDark ? 'text-gray-200 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`}
+          className={`p-1.5 rounded-md ${isDark ? 'text-gray-300 hover:bg-gray-800' : 'text-gray-600 hover:bg-gray-100'} transition-colors`}
           title="Collapse Sidebar"
         >
           <ChevronLeft className="w-4 h-4" />
