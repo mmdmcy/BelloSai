@@ -1844,11 +1844,12 @@ function App() {
               {/* Top Header Bar */}
               {elementKey === 'topBar' && (
                 <div 
-                  className={`h-full w-full text-white neo-header`}
+                  className="h-full w-full text-white"
                   style={{
                     background: customization.gradientEnabled 
                       ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                      : customization.primaryColor
+                      : customization.primaryColor,
+                    boxShadow: `0 2px 12px 0 ${customization.primaryColor}22`,
                   }}
                 />
               )}
