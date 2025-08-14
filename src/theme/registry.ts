@@ -176,6 +176,22 @@ export const AVAILABLE_THEMES: Theme[] = [
     shadows: true,
     glassEffect: false,
     retroMode: false
+  },
+  {
+    id: 'app-store-neo',
+    name: 'App Store Neo',
+    description: 'Modern Apple-style dark UI with emerald highlights and smooth pill surfaces',
+    primaryColor: '#10b981',
+    secondaryColor: '#22d3ee',
+    backgroundColor: 'linear-gradient(135deg, #0b1f1b 0%, #071611 55%, #05211a 100%)',
+    textColor: '#e5e7eb',
+    accentColors: ['#10b981', '#34d399', '#22d3ee', '#111827'],
+    gradientEnabled: true,
+    fontFamily: 'SF Pro Display, -apple-system, system-ui',
+    borderRadius: '1.25rem',
+    shadows: true,
+    glassEffect: false,
+    retroMode: false
   }
 ];
 
