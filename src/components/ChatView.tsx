@@ -472,7 +472,7 @@ export default function ChatView({
       return (
         <div key={message.id} className="flex justify-end mb-6">
           <div 
-            className="max-w-[80%] px-4 py-3 rounded-2xl text-white break-words neo-pill"
+            className="max-w-[82%] px-4 py-3 rounded-2xl text-white break-words neo-pill"
             style={{ 
               backgroundColor: customization.primaryColor,
               fontFamily: customization.fontFamily
@@ -485,7 +485,7 @@ export default function ChatView({
     } else {
       return (
         <div key={message.id} className="flex justify-start mb-6">
-          <div className={`max-w-[85%] w-full neo-surface p-4 ${isDark ? 'card-surface-dark' : 'card-surface-light'}`}>
+          <div className={`max-w-[88%] w-full neo-surface p-4 ${isDark ? 'card-surface-dark' : 'card-surface-light'}`}>
             {/* Show reasoning indicator for R1 and Gemini 2.5 Pro when they haven't started generating content */}
             {shouldShowReasoning && (
               <div className="mb-3 flex items-center space-x-3">
@@ -665,7 +665,7 @@ export default function ChatView({
         ref={scrollContainerRef}
         className="flex-1 overflow-y-auto px-4 py-6"
       >
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           {messages.map((message, index) => renderMessage(message, index))}
           <div ref={messagesEndRef} />
         </div>
@@ -674,7 +674,7 @@ export default function ChatView({
       {/* Message Input */}
       {!hideInput && (
         <div className="px-4 pb-6">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             {!isLoggedIn && onLoginClick && (
               <AnonymousUsageIndicator onLoginClick={onLoginClick} />
             )}
