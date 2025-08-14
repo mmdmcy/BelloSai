@@ -208,6 +208,38 @@ export const AVAILABLE_THEMES: Theme[] = [
     shadows: true,
     glassEffect: false,
     retroMode: false
+  },
+  {
+    id: 'midnight-flat',
+    name: 'Midnight Flat',
+    description: 'Minimal, flat dark theme with solid top bar and discrete borders',
+    primaryColor: '#202123',
+    secondaryColor: '#2f3134',
+    backgroundColor: '#0e0f10',
+    textColor: '#e5e7eb',
+    accentColors: ['#10a37f', '#8ab4f8', '#9ca3af'],
+    gradientEnabled: false,
+    fontFamily: 'Inter, system-ui',
+    borderRadius: '0.5rem',
+    shadows: true,
+    glassEffect: false,
+    retroMode: false
+  },
+  {
+    id: 'sonnet-elegant',
+    name: 'Sonnet Elegant',
+    description: 'Warm dark theme with elegant serif headings and subtle accents',
+    primaryColor: '#2a2b2e',
+    secondaryColor: '#3b3c40',
+    backgroundColor: '#0f0f0f',
+    textColor: '#e7e5e4',
+    accentColors: ['#e38b5b', '#7bd4c9', '#c4b5a5'],
+    gradientEnabled: false,
+    fontFamily: 'ui-serif, Georgia, Cambria, "Times New Roman", serif',
+    borderRadius: '0.875rem',
+    shadows: true,
+    glassEffect: false,
+    retroMode: false
   }
 ];
 
