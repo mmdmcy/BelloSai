@@ -160,6 +160,22 @@ export const AVAILABLE_THEMES: Theme[] = [
     shadows: true,
     glassEffect: false,
     retroMode: false
+  },
+  {
+    id: 'chatgpt-light',
+    name: 'ChatGPT Light',
+    description: 'Minimal white UI with subtle gray bubbles and clean typography',
+    primaryColor: '#111827',
+    secondaryColor: '#6b7280',
+    backgroundColor: '#ffffff',
+    textColor: '#111827',
+    accentColors: ['#0ea5e9', '#10a37f', '#9ca3af'],
+    gradientEnabled: false,
+    fontFamily: 'SF Pro Display, -apple-system, system-ui',
+    borderRadius: '1rem',
+    shadows: true,
+    glassEffect: false,
+    retroMode: false
   }
 ];
 
