@@ -162,8 +162,8 @@ export const AVAILABLE_THEMES: Theme[] = [
     retroMode: false
   },
   {
-    id: 'chatgpt-light',
-    name: 'ChatGPT Light',
+    id: 'aurora-light',
+    name: 'Aurora Light',
     description: 'Minimal white UI with subtle gray bubbles and clean typography',
     primaryColor: '#111827',
     secondaryColor: '#6b7280',
@@ -189,6 +189,22 @@ export const AVAILABLE_THEMES: Theme[] = [
     gradientEnabled: true,
     fontFamily: 'SF Pro Display, -apple-system, system-ui',
     borderRadius: '1.25rem',
+    shadows: true,
+    glassEffect: false,
+    retroMode: false
+  },
+  {
+    id: 'obsidian-dark',
+    name: 'Obsidian Dark',
+    description: 'Flat dark UI with solid header bar and subtle grays like the screenshot',
+    primaryColor: '#202123',
+    secondaryColor: '#3f4043',
+    backgroundColor: '#0e0f10',
+    textColor: '#e5e7eb',
+    accentColors: ['#6b7280', '#9ca3af', '#60a5fa'],
+    gradientEnabled: false,
+    fontFamily: 'Inter, system-ui',
+    borderRadius: '0.5rem',
     shadows: true,
     glassEffect: false,
     retroMode: false
