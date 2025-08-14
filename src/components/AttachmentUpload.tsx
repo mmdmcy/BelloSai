@@ -201,7 +201,7 @@ export default function AttachmentUpload({
         className={`
           relative border-2 border-dashed rounded-lg p-6 text-center transition-colors cursor-pointer
           ${isDragOver 
-            ? (isDark ? 'border-purple-400 bg-purple-900/20' : 'border-purple-500 bg-purple-50')
+            ? (isDark ? 'border-gray-400 bg-gray-900/20' : 'border-gray-400 bg-gray-50')
             : (isDark ? 'border-gray-600 hover:border-gray-500' : 'border-gray-300 hover:border-gray-400')
           }
           ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
@@ -262,7 +262,7 @@ export default function AttachmentUpload({
                     <>
                       <div className={`w-16 h-2 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}>
                         <div
-                          className="h-full bg-purple-500 rounded-full transition-all duration-300"
+                          className="h-full bg-gray-900 rounded-full transition-all duration-300"
                           style={{ width: `${uploadingFile.progress}%` }}
                         />
                       </div>

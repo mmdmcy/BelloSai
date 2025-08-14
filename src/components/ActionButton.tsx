@@ -28,18 +28,18 @@ export default function ActionButton({ icon: Icon, label, isDark, customization 
     <button 
       className={`flex items-center gap-2 px-5 py-2.5 rounded-full ios-pressable ${
         isDark 
-          ? 'bg-gray-700 text-gray-200 hover:bg-gray-600' 
-          : ''
-      }`}
+          ? 'bg-gray-800 text-gray-100 hover:bg-gray-700' 
+          : 'bg-white text-gray-800 border border-gray-200 hover:bg-gray-50'
+      } shadow-sm`}
       style={{ 
         fontFamily: customization.fontFamily,
         // Apply custom colors and gradients for light mode
         background: isDark 
           ? undefined 
           : customization.gradientEnabled
-            ? `linear-gradient(135deg, ${customization.primaryColor}20, ${customization.secondaryColor}10)`
-            : customization.primaryColor + '20',
-        color: isDark ? undefined : customization.primaryColor
+            ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}08)`
+            : undefined,
+        color: isDark ? undefined : 'inherit'
       }}
       // Dynamic hover effects for light mode
       onMouseEnter={(e) => {

@@ -73,7 +73,7 @@ const AnonymousUsageIndicator: React.FC<AnonymousUsageIndicatorProps> = ({
             <div className="text-center">
               <button
                 onClick={onLoginClick}
-                className="inline-flex items-center gap-1 text-xs text-purple-600 hover:text-purple-700 font-medium"
+              className="inline-flex items-center gap-1 text-xs text-gray-700 hover:text-gray-900 font-medium"
               >
                 <Sparkles className="w-3 h-3" />
                 Or upgrade to Pro for unlimited messages

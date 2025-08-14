@@ -281,9 +281,9 @@ const MarkdownContent: React.FC<{
             }
 
             return (
-              <div className={`rounded-lg overflow-hidden mb-4 ${
+              <div className={`rounded-xl overflow-hidden mb-4 ${
                 isDark ? 'bg-gray-900' : 'bg-gray-50'
-              } border ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+              } border ${isDark ? 'border-gray-700' : 'border-gray-200'} neo-surface`}>
                 <div className="flex items-center justify-between px-4 py-2 bg-gray-800 text-white">
                   <span className="text-sm font-medium">
                     {language !== 'text' ? language.toUpperCase() : 'Code'}
@@ -638,7 +638,7 @@ export default function ChatView({
                 <button 
                   type="submit"
                   disabled={!inputValue.trim() || isGenerating}
-                  className="text-white p-2.5 rounded-xl ios-pressable hover:opacity-90 disabled:opacity-50"
+                     className="text-white p-2.5 rounded-xl ios-pressable hover:opacity-90 disabled:opacity-50"
                   style={{ backgroundColor: customization.primaryColor }}
                 >
                   <ArrowUp className="w-4 h-4" />
@@ -710,7 +710,7 @@ export default function ChatView({
                   <button 
                     type="submit"
                     disabled={!inputValue.trim() || isGenerating}
-                    className="text-white p-2.5 rounded-xl ios-pressable hover:opacity-90 disabled:opacity-50"
+                     className="text-white p-2.5 rounded-xl ios-pressable hover:opacity-90 disabled:opacity-50"
                     style={{ backgroundColor: customization.primaryColor }}
                   >
                     <ArrowUp className="w-4 h-4" />

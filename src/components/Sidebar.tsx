@@ -192,7 +192,7 @@ export default function Sidebar({
   // Full sidebar layout - simplified when in detached mode
   return (
     <div 
-      className={`w-full h-full ${hasGlassEffect && !isDark ? 'glass-sidebar' : ''} flex flex-col ${isDark ? 'bg-gray-900' : 'bg-white'}`}
+      className={`w-full h-full ${hasGlassEffect && !isDark ? 'glass-sidebar' : ''} flex flex-col ${isDark ? 'bg-gray-900' : 'bg-white'} neo-surface`}
       style={{
         background: !hasGlassEffect && customization.gradientEnabled && !isDark 
           ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
@@ -200,7 +200,7 @@ export default function Sidebar({
       }}
     >
       {/* Header Section - Only show collapse button in detached mode */}
-      <div className={`p-4 border-b ${isDark ? 'border-gray-800' : 'border-gray-100'} flex items-center justify-end ios-toolbar`}>
+      <div className={`p-4 border-b ${isDark ? 'border-gray-800' : 'border-gray-100'} flex items-center justify-end ios-toolbar neo-header`}>
         <button
           onClick={onToggleCollapse}
           className={`p-1.5 rounded-lg ios-pressable ${isDark ? 'text-gray-200 hover:bg-gray-700' : 'text-gray-700 hover:bg-gray-100'}`}
@@ -254,11 +254,11 @@ export default function Sidebar({
             {conversations.map((conversation) => (
               <div 
                 key={conversation.id}
-                className={`group relative rounded-lg mb-2 transition-colors ios-pressable ${
+                className={`group relative rounded-xl mb-2 transition-colors ios-pressable ${
                   currentConversationId === conversation.id
-                    ? (isDark ? 'bg-gray-700' : 'bg-purple-50')
-                    : (isDark ? 'hover:bg-gray-700' : 'hover:bg-purple-50')
-                }`}
+                    ? (isDark ? 'bg-gray-800' : 'bg-gray-100')
+                    : (isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-50')
+                } border ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
                 style={{ 
                   background: currentConversationId === conversation.id
                     ? (isDark 
@@ -271,10 +271,10 @@ export default function Sidebar({
               >
                 <button 
                   onClick={() => onConversationSelect?.(conversation.id)}
-                  className={`w-full text-left px-3 py-2 pr-10 transition-colors ${
+                   className={`w-full text-left px-3 py-2 pr-10 transition-colors ${
                     currentConversationId === conversation.id
-                      ? (isDark ? 'text-white' : 'text-purple-800')
-                      : (isDark ? 'text-gray-300 hover:text-white' : 'hover:text-purple-800')
+                      ? (isDark ? 'text-white' : 'text-gray-900')
+                      : (isDark ? 'text-gray-300 hover:text-white' : 'hover:text-gray-900')
                   }`}
                   style={{ 
                     fontFamily: customization.fontFamily,

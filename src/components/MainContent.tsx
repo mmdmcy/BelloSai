@@ -246,7 +246,7 @@ export default function MainContent({
           ? 'bg-transparent' 
           : isDark 
             ? 'bg-gray-900' 
-            : 'bg-purple-50'
+            : 'bg-gray-50'
       }`}
       style={{
         background: !hasGlassEffect && customization.gradientEnabled && !isDark 
@@ -264,7 +264,7 @@ export default function MainContent({
                 ? 'text-gray-800' 
                 : isDark 
                   ? 'text-white' 
-                  : 'text-purple-800'
+                  : 'text-gray-900'
             }`}
             style={{ 
               fontFamily: customization.fontFamily,
