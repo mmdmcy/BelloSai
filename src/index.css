@@ -40,6 +40,20 @@
     height: 1px;
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
   }
+  .neo-header {
+    border-radius: 1.25rem;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+    position: relative;
+    overflow: hidden;
+  }
+  .neo-header::after {
+    content: '';
+    position: absolute;
+    inset: -20% -10% auto -10%;
+    height: 120%;
+    background: radial-gradient(1200px 300px at 50% -10%, rgba(255,255,255,0.06), transparent 60%);
+    pointer-events: none;
+  }
 
   .glass-effect {
     backdrop-filter: blur(20px);
