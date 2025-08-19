@@ -40,8 +40,8 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
         .from('user_token_balances')
         .select('light_credits, medium_credits, heavy_credits')
         .eq('user_id', user.id)
-        .single();
-      if (error) throw error;
+        .maybeSingle();
+      if (error && error.code !== 'PGRST116') throw error;
       const next = {
         light: data?.light_credits ?? 0,
         medium: data?.medium_credits ?? 0,

@@ -1,136 +1,166 @@
 import React from 'react';
-import { Sparkles, ShieldCheck, TrendingUp, Zap, CheckCircle, Star } from 'lucide-react';
+import { Sparkles, Zap, Cpu, ShieldCheck, TerminalSquare, Rocket, ArrowRight } from 'lucide-react';
 
 export default function Welcome() {
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-b from-white via-purple-50/40 to-indigo-50/30">
-      {/* Animated background grid */}
-      <div className="pointer-events-none absolute inset-0 opacity-40" aria-hidden>
-        <div className="absolute inset-0" style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(124,58,237,0.15) 1px, transparent 1px)`,
-          backgroundSize: '28px 28px'
-        }} />
-        <div className="absolute -top-40 -left-20 w-[800px] h-[800px] bg-gradient-to-br from-purple-200/50 to-indigo-200/50 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute -bottom-40 -right-20 w-[700px] h-[700px] bg-gradient-to-br from-indigo-200/40 to-purple-200/40 rounded-full blur-3xl animate-pulse" />
+    <div className="min-h-screen relative overflow-hidden bg-[#0b0b10] text-white">
+      {/* Animated background: moving gradients + subtle grid + particles */}
+      <style>{`
+        @keyframes floatSlow { 0%{transform:translateY(0)} 50%{transform:translateY(-10px)} 100%{transform:translateY(0)} }
+        @keyframes pulseGlow { 0%,100%{opacity:.25; filter:blur(80px)} 50%{opacity:.45; filter:blur(100px)} }
+        @keyframes drift {
+          0% {transform: translate(0,0) rotate(0deg)}
+          50% {transform: translate(20px,-20px) rotate(10deg)}
+          100% {transform: translate(0,0) rotate(0deg)}
+        }
+        @keyframes shine { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
+        .glass { backdrop-filter: blur(14px); background: linear-gradient( to bottom right, rgba(255,255,255,0.08), rgba(255,255,255,0.03) ); border: 1px solid rgba(255,255,255,0.08); }
+        .grid-overlay { background-image: linear-gradient(rgba(255,255,255,0.04) 1px,transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px); background-size: 28px 28px; }
+        .card3d { transform-style: preserve-3d; perspective: 1200px; }
+        .tilt { transform: rotateX(8deg) rotateY(-12deg); transition: transform .35s ease, box-shadow .35s ease; }
+        .tilt:hover { transform: rotateX(2deg) rotateY(-4deg) translateY(-4px); box-shadow: 0 30px 120px rgba(124,58,237,.25); }
+      `}</style>
+
+      {/* background layers */}
+      <div className="absolute inset-0 grid-overlay opacity-40" aria-hidden />
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute -top-40 -left-32 w-[900px] h-[900px] bg-gradient-to-br from-purple-700/40 via-fuchsia-500/30 to-indigo-700/40 rounded-full animate-pulseGlow" style={{ animation: 'pulseGlow 8s ease-in-out infinite' }} />
+        <div className="absolute -bottom-48 -right-24 w-[800px] h-[800px] bg-gradient-to-tr from-indigo-700/40 via-purple-600/30 to-fuchsia-500/40 rounded-full" style={{ animation: 'pulseGlow 10s ease-in-out infinite' }} />
       </div>
 
-      {/* Hero */}
-      <section className="relative max-w-7xl mx-auto px-6 py-16 md:py-24 text-center">
-        <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-xs font-semibold">
-          <Sparkles className="w-3.5 h-3.5" /> Meet BelloSai
-        </span>
-        <h1 className="mt-4 text-4xl md:text-6xl font-extrabold tracking-tight text-gray-900">
-          An AI chatbot that puts <span className="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">you</span> in control
-        </h1>
-        <p className="mt-4 max-w-3xl mx-auto text-gray-600 text-base md:text-lg">
-          Multiple top models, streaming responses, and simple pay‑as‑you‑go credits. No subscriptions. No lock‑in.
-        </p>
-        <div className="mt-8 flex items-center justify-center gap-3">
-          <a href="/pricing" className="px-5 py-3 rounded-xl bg-purple-600 text-white font-semibold shadow-lg hover:shadow-xl hover:bg-purple-700 transition-all">Buy credits</a>
-          <a href="/" className="px-5 py-3 rounded-xl border border-gray-300 text-gray-700 bg-white hover:bg-gray-50 font-semibold transition">Start chatting</a>
+      {/* NAV */}
+      <header className="relative z-10 max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-indigo-600 shadow-lg flex items-center justify-center">
+            <Cpu className="w-5 h-5 text-white" />
+          </div>
+          <span className="font-semibold tracking-tight">BelloSai</span>
         </div>
+        <nav className="hidden md:flex items-center gap-6 text-sm text-white/80">
+          <a className="hover:text-white transition" href="/pricing">Pricing</a>
+          <a className="hover:text-white transition" href="/models">Models</a>
+          <a className="hover:text-white transition" href="/">App</a>
+          <a className="hover:text-white transition" href="/welcome#why">Why BelloSai</a>
+        </nav>
+        <a href="/" className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-sm transition">Open App</a>
+      </header>
 
-        {/* 3D-ish card visual */}
-        <div className="mt-12 flex items-center justify-center">
-          <div className="[transform-style:preserve-3d] [perspective:1000px]">
-            <div className="w-72 h-44 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 shadow-xl transition-transform hover:rotate-x-6 hover:-rotate-y-6 duration-300"></div>
+      {/* HERO */}
+      <section className="relative z-10 max-w-7xl mx-auto px-6 pt-6 pb-10 md:pb-16">
+        <div className="text-center">
+          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/10 text-xs text-white/80">
+            <Sparkles className="w-3.5 h-3.5" /> Pay‑as‑you‑go • Multi‑model • Streaming
+          </span>
+          <h1 className="mt-5 text-4xl md:text-6xl font-extrabold tracking-tight">
+            Chat with multiple <span className="bg-gradient-to-r from-purple-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent animate-[shine_8s_ease_infinite]">AI models</span>
+          </h1>
+          <p className="mt-4 max-w-3xl mx-auto text-white/70 text-base md:text-lg">
+            BelloSai lets you choose Qwen, Mistral, Groq and more in one place. Buy credits once, keep them forever. No subscriptions.
+          </p>
+          <div className="mt-8 flex items-center justify-center gap-3">
+            <a href="/pricing" className="group px-5 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 shadow-[0_10px_40px_rgba(124,58,237,.35)] hover:shadow-[0_14px_60px_rgba(124,58,237,.55)] font-semibold transition">
+              Get Credits <ArrowRight className="inline w-4 h-4 ml-1 translate-x-0 group-hover:translate-x-0.5 transition" />
+            </a>
+            <a href="/" className="px-5 py-3 rounded-xl glass hover:bg-white/10 font-semibold text-white transition border border-white/10">Start Chatting</a>
           </div>
         </div>
-      </section>
 
-      {/* Why BelloSai */}
-      <section className="max-w-7xl mx-auto px-6 py-12 md:py-16">
-        <div className="grid md:grid-cols-3 gap-6">
-          <div className="rounded-2xl bg-white/90 backdrop-blur p-6 shadow-md">
-            <Zap className="w-6 h-6 text-purple-600" />
-            <h3 className="mt-3 font-semibold text-gray-900">Fast & responsive</h3>
-            <p className="mt-2 text-sm text-gray-600">Optimized streaming routes deliver answers quickly so you stay in flow.</p>
-          </div>
-          <div className="rounded-2xl bg-white/90 backdrop-blur p-6 shadow-md">
-            <ShieldCheck className="w-6 h-6 text-purple-600" />
-            <h3 className="mt-3 font-semibold text-gray-900">Simple, sustainable</h3>
-            <p className="mt-2 text-sm text-gray-600">Buy credits once and keep them. Clear tiers aligned to actual model costs.</p>
-          </div>
-          <div className="rounded-2xl bg-white/90 backdrop-blur p-6 shadow-md">
-            <TrendingUp className="w-6 h-6 text-purple-600" />
-            <h3 className="mt-3 font-semibold text-gray-900">Choice of models</h3>
-            <p className="mt-2 text-sm text-gray-600">Pick Qwen, Mistral, Groq and more—choose what fits your task and budget.</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Comparison */}
-      <section className="max-w-7xl mx-auto px-6 py-12">
-        <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 text-center">How we stack up</h2>
-        <p className="text-gray-600 text-sm md:text-base text-center mt-2">Transparent, flexible, and fast—without lock‑ins.</p>
-        <div className="mt-8 overflow-x-auto">
-          <table className="w-full min-w-[800px] text-left border-separate border-spacing-y-2">
-            <thead>
-              <tr>
-                {['Feature','BelloSai','Typical Subscriptions','Single‑Model Apps'].map(h => (
-                  <th key={h} className="px-4 py-2 text-xs uppercase tracking-wider text-gray-500">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {[{
-                feature:'Pricing', bs:'Pay‑as‑you‑go (keep credits)', sub:'Recurring monthly fees', single:'Per‑token/paywall'
-              },{
-                feature:'Models', bs:'Multiple providers, tiers', sub:'1‑2 models', single:'Usually 1'
-              },{
-                feature:'Speed', bs:'Optimized streaming', sub:'Varies', single:'Varies'
-              },{
-                feature:'Limits', bs:'Clear tier credits', sub:'Hidden caps', single:'Opaque'
-              }].map((row,i)=> (
-                <tr key={i} className="bg-white/90 backdrop-blur shadow-sm rounded-2xl">
-                  <td className="px-4 py-3 font-medium text-gray-900">{row.feature}</td>
-                  <td className="px-4 py-3 text-gray-900"><span className="inline-flex items-center gap-1 text-green-700"><CheckCircle className="w-4 h-4" /> {row.bs}</span></td>
-                  <td className="px-4 py-3 text-gray-600">{row.sub}</td>
-                  <td className="px-4 py-3 text-gray-600">{row.single}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Illustrative bar chart */}
-        <div className="mt-10 rounded-2xl bg-white/90 backdrop-blur p-6 shadow-md">
-          <div className="text-sm text-gray-600 mb-4">Illustrative cost efficiency (more bar = more usable messages per €)</div>
-          <div className="space-y-3">
-            {[{label:'BelloSai (Bundles)',w:'85%'},{label:'Typical Subscription',w:'55%'},{label:'Single‑Model App',w:'45%'}].map(b => (
-              <div key={b.label}>
-                <div className="flex items-center justify-between text-xs text-gray-700 mb-1">
-                  <span>{b.label}</span><span>{b.w}</span>
+        {/* 3D tilt preview card */}
+        <div className="mt-14 flex items-center justify-center">
+          <div className="card3d">
+            <div className="tilt relative w-[780px] max-w-[94vw] rounded-3xl p-6 md:p-8 glass border-white/10">
+              <div className="flex flex-wrap items-center gap-3 text-xs text-white/75">
+                <span className="px-2.5 py-1 rounded-lg bg-white/10 border border-white/10">Qwen</span>
+                <span className="px-2.5 py-1 rounded-lg bg-white/10 border border-white/10">Mistral</span>
+                <span className="px-2.5 py-1 rounded-lg bg-white/10 border border-white/10">Groq</span>
+                <span className="px-2.5 py-1 rounded-lg bg-white/10 border border-white/10">Claude‑compatible</span>
+              </div>
+              <div className="mt-5 grid md:grid-cols-3 gap-4">
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="text-white/80 text-xs">Tier</div>
+                  <div className="text-lg font-semibold">Light</div>
+                  <div className="mt-2 h-2 rounded-full bg-white/10"><div className="h-2 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 w-1/3" /></div>
                 </div>
-                <div className="h-2.5 w-full rounded-full bg-gray-200">
-                  <div className="h-full rounded-full bg-gradient-to-r from-purple-600 to-indigo-600" style={{ width: b.w }} />
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="text-white/80 text-xs">Tier</div>
+                  <div className="text-lg font-semibold">Medium</div>
+                  <div className="mt-2 h-2 rounded-full bg-white/10"><div className="h-2 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 w-2/3" /></div>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="text-white/80 text-xs">Tier</div>
+                  <div className="text-lg font-semibold">Heavy</div>
+                  <div className="mt-2 h-2 rounded-full bg-white/10"><div className="h-2 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 w-full" /></div>
                 </div>
               </div>
-            ))}
+              <div className="mt-5 flex items-center gap-3 text-white/70 text-sm">
+                <TerminalSquare className="w-4 h-4" /> Proper streaming, markdown, and code blocks out of the box.
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="max-w-7xl mx-auto px-6 py-12 md:py-16">
-        <div className="rounded-3xl bg-gradient-to-r from-purple-600 to-indigo-600 p-8 md:p-12 text-center text-white shadow-xl">
-          <h3 className="text-2xl md:text-3xl font-extrabold">Ready to try BelloSai?</h3>
-          <p className="mt-2 text-white/90">Pick a bundle or jump straight into a conversation.</p>
-          <div className="mt-6 flex items-center justify-center gap-3">
-            <a href="/pricing" className="px-5 py-3 rounded-xl bg-white text-purple-700 font-semibold shadow hover:shadow-md">See pricing</a>
-            <a href="/" className="px-5 py-3 rounded-xl border border-white/60 text-white font-semibold hover:bg-white/10">Start chatting</a>
+      {/* Why section */}
+      <section id="why" className="relative z-10 max-w-7xl mx-auto px-6 pb-20">
+        <div className="grid md:grid-cols-3 gap-6">
+          {[{
+            icon: <Zap className="w-6 h-6 text-purple-400" />, title:'Fast streaming', desc:'Snappy tokens with SSE and low‑latency routes.'
+          },{
+            icon: <ShieldCheck className="w-6 h-6 text-purple-400" />, title:'Clear pricing', desc:'Credits map to model tiers. No surprise usage.'
+          },{
+            icon: <Cpu className="w-6 h-6 text-purple-400" />, title:'Multiple models', desc:'Qwen, Mistral, Groq and more, one app.'
+          }].map((c) => (
+            <div key={c.title} className="rounded-3xl glass p-6 border border-white/10 hover:bg-white/[.08] transition group">
+              <div className="flex items-center gap-3">{c.icon}<h3 className="font-semibold">{c.title}</h3></div>
+              <p className="mt-2 text-sm text-white/70">{c.desc}</p>
+              <div className="mt-4 h-px bg-gradient-to-r from-purple-500/30 to-transparent" />
+            </div>
+          ))}
+        </div>
+
+        {/* Comparison table */}
+        <div className="mt-10 rounded-3xl glass p-6 border border-white/10">
+          <h3 className="text-lg font-semibold">Compared to typical tooling</h3>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[720px] text-left text-sm">
+              <thead className="text-white/70">
+                <tr>
+                  <th className="py-2 pr-4">Feature</th>
+                  <th className="py-2 pr-4">BelloSai</th>
+                  <th className="py-2 pr-4">Subscriptions</th>
+                  <th className="py-2">Single‑Model</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[{f:'Pricing',b:'One‑time bundles',s:'Monthly lock‑in',m:'Per‑token'},
+                  {f:'Models',b:'Multiple providers',s:'Limited',m:'One'},
+                  {f:'Streaming',b:'Yes',s:'Varies',m:'Varies'},
+                  {f:'Limits',b:'Tier credits',s:'Opaque caps',m:'Opaque'}].map((r) => (
+                  <tr key={r.f} className="border-t border-white/10">
+                    <td className="py-3 pr-4 text-white/80">{r.f}</td>
+                    <td className="py-3 pr-4"><span className="text-emerald-300">{r.b}</span></td>
+                    <td className="py-3 pr-4 text-white/70">{r.s}</td>
+                    <td className="py-3 text-white/70">{r.m}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <div className="mt-4 text-sm flex items-center justify-center gap-1 opacity-90">
-            <Star className="w-4 h-4" /> Speed, simplicity and choice
-          </div>
+        </div>
+
+        {/* CTA */}
+        <div className="mt-10 text-center">
+          <a href="/pricing" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 shadow-[0_10px_40px_rgba(124,58,237,.35)] hover:shadow-[0_14px_60px_rgba(124,58,237,.55)] font-semibold transition">
+            See Pricing <Rocket className="w-4 h-4" />
+          </a>
         </div>
       </section>
 
-      {/* SEO headings */}
+      {/* Hidden SEO headings for disambiguation */}
       <section className="sr-only">
-        <h1>BelloSai AI Chatbot – Pay‑as‑you‑go credits</h1>
-        <h2>AI chat assistant with multiple providers</h2>
-        <h3>No subscription AI, streaming responses</h3>
+        <h1>BelloSai AI chatbot – multi‑model streaming, pay‑as‑you‑go</h1>
+        <h2>AI assistant with Qwen, Mistral, Groq, Claude‑compatible routes</h2>
+        <h3>No subscriptions, credits never expire</h3>
       </section>
     </div>
   );

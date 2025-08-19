@@ -93,7 +93,7 @@ export default function Success(props: SuccessPageProps) {
             Processing your payment...
           </h2>
           <p className="text-gray-600 mb-4">
-            I'm confirming your subscription. This may take 5-10 seconds.
+            Confirming your payment. This may take a few seconds.
           </p>
           {retryCount > 0 && (
             <p className="text-sm text-gray-900">
@@ -156,32 +156,22 @@ export default function Success(props: SuccessPageProps) {
         </h1>
         
         <p className="text-gray-600 mb-2">
-          Welcome to BelloSai Pro!
+          Thanks for your purchase!
         </p>
         
-        {hasActiveSubscription ? (
-          <p className="text-green-600 font-medium mb-8">
-            ✅ Your subscription is active and ready to use.
+        <div className="mb-8">
+          <p className="text-gray-700">
+            Your credits will appear shortly. If you don't see them after a minute, refresh balances in your Account panel.
           </p>
-        ) : (
-          <div className="mb-8">
-            <p className="text-orange-600 font-medium mb-2">
-              ⏳ Your subscription will be activated shortly.
-            </p>
-            <p className="text-sm text-gray-500">
-              It may take 1-2 minutes before all features are available.
-            </p>
-          </div>
-        )}
+        </div>
 
         <div className="space-y-4">
           <div className="bg-white rounded-lg p-4 text-left">
-            <h3 className="font-semibold text-gray-900 mb-2">What do you get now?</h3>
+            <h3 className="font-semibold text-gray-900 mb-2">What's included</h3>
             <ul className="text-sm text-gray-600 space-y-1">
-              <li>✅ Unlimited AI messages</li>
-              <li>✅ Access to all AI models</li>
-              <li>✅ Priority support</li>
-              <li>✅ Advanced features</li>
+              <li>✅ Credits for the bundle you selected</li>
+              <li>✅ Access to models in your bundle tier</li>
+              <li>✅ Keep unused credits (no expiry)</li>
             </ul>
           </div>
 
