@@ -83,7 +83,7 @@ export default function Pricing() {
                       onClick={async () => {
                         if (!user) { alert('Please log in to purchase a bundle.'); return }
                         setActionLoading(bundle.id)
-                        try { await createBundleCheckout(bundle.sku) } finally { setActionLoading(null) }
+                        try { await createBundleCheckout(bundle) } finally { setActionLoading(null) }
                       }}
                       disabled={actionLoading === bundle.id || !bundle.priceId}
                       className="w-full py-3 px-6 rounded-xl font-semibold transition-all bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 shadow-lg hover:shadow-xl"

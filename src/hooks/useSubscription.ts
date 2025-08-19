@@ -10,6 +10,7 @@ interface UseSubscriptionReturn {
   loading: boolean
   error: string | null
   createCheckoutSession: (priceId: string) => Promise<void>
+  createBundleCheckout: (bundle: any) => Promise<void>
   openCustomerPortal: () => Promise<void>
   cancelSubscription: () => Promise<boolean>
   reactivateSubscription: () => Promise<boolean>
@@ -108,6 +109,22 @@ export function useSubscription(): UseSubscriptionReturn {
     } catch (err) {
       console.error('Error creating checkout session:', err)
       setError(err instanceof Error ? err.message : 'Failed to create checkout session')
+      throw err
+    }
+  }, [user])
+
+  // Create bundle checkout
+  const createBundleCheckout = useCallback(async (bundle: any): Promise<void> => {
+    if (!user) {
+      setError('User not authenticated')
+      return
+    }
+    try {
+      setError(null)
+      await StripeService.createBundleCheckout(bundle)
+    } catch (err) {
+      console.error('Error creating bundle checkout session:', err)
+      setError(err instanceof Error ? err.message : 'Failed to start bundle checkout')
       throw err
     }
   }, [user])
@@ -215,6 +232,7 @@ export function useSubscription(): UseSubscriptionReturn {
     loading,
     error,
     createCheckoutSession,
+    createBundleCheckout,
     openCustomerPortal,
     cancelSubscription,
     reactivateSubscription,
