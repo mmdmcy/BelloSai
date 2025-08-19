@@ -47,7 +47,7 @@ interface AnonymousUsageStats {
 
 const STORAGE_KEY = 'bellosai-anonymous-usage';
 const BACKUP_STORAGE_KEY = 'bellosai-anon-backup'; // secondary storage
-const DAILY_LIMIT = 5;
+const DAILY_LIMIT = 3;
 
 class AnonymousUsageService {
   private stats: AnonymousUsageStats;
