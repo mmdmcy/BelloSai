@@ -42,7 +42,7 @@ export interface ModelCapability {
 export interface ModelInfo {
   name: string;
   code: string;
-  provider: 'DeepSeek' | 'Claude' | 'Mistral';
+  provider: 'DeepSeek' | 'Claude' | 'Mistral' | 'Groq';
   capabilities: string[];
   description?: string;
   premium?: boolean;

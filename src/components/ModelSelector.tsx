@@ -23,12 +23,14 @@ const PROVIDER_ICON: Record<string, any> = {
   DeepSeek: () => <span className="text-base">🐋</span>, // Whale emoji for DeepSeek
   Claude: Feather,
   Mistral: Star,
+  Groq: Sparkles,
 };
 
 const PROVIDER_COLOR: Record<string, string> = {
   DeepSeek: '#2563eb', // blue
   Claude: '#fbbf24', // yellow/orange
   Mistral: '#ef4444', // red
+  Groq: '#10b981', // emerald
 };
 
 export default function ModelSelector({ 
