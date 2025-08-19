@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { TOKEN_BUNDLES } from '../lib/stripeService';
+import { TOKEN_BUNDLES, SUBSCRIPTION_PLANS, StripeService } from '../lib/stripeService';
 import { ArrowLeft, Sparkles, BadgeDollarSign, Star, ArrowRight, LogIn } from 'lucide-react';
 import { StripeService } from '../lib/stripeService';
 
@@ -67,10 +67,42 @@ export default function Pricing() {
           <p className={`text-sm md:text-base mt-2 ${isLight ? 'text-gray-600' : 'text-white/70'}`}>No subscriptions. Instant access. Keep unused credits forever.</p>
         </div>
 
-        {/* One-time Token Bundles */}
+        {/* Subscriptions */}
         <div className="mb-16">
-          <h2 className={`text-3xl font-extrabold text-center mb-3 ${isLight ? 'text-gray-900' : ''}`}>Pay‑as‑you‑go Bundles</h2>
-          <p className={`${isLight ? 'text-gray-600' : 'text-white/70'} text-center mb-10`}>More messages for less. Medium includes Light; Heavy includes Medium + Light.</p>
+          <h2 className={`text-3xl font-extrabold text-center mb-3 ${isLight ? 'text-gray-900' : ''}`}>Monthly Plans</h2>
+          <p className={`${isLight ? 'text-gray-600' : 'text-white/70'} text-center mb-10`}>Competitive, flexible, and fair caps. Buy add‑on packs anytime.</p>
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {Object.values(SUBSCRIPTION_PLANS).map((plan) => (
+              <div key={plan.id} className={`relative rounded-3xl ${isLight ? 'border border-gray-200 bg-white' : 'glass border border-white/10'} shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1`}>
+                <div className="p-8">
+                  <div className="text-center mb-6">
+                    <h3 className="text-2xl font-extrabold">{plan.name}</h3>
+                    <div className="mt-3 text-4xl font-extrabold">{plan.price}<span className="text-base font-medium">/mo</span></div>
+                    <ul className={`${isLight ? 'text-gray-600' : 'text-white/70'} mt-3 text-sm space-y-1`}>
+                      {plan.features.map(f => (<li key={f}>• {f}</li>))}
+                    </ul>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (!user) { alert('Please log in to subscribe.'); return }
+                      setActionLoading(plan.id)
+                      try { await StripeService.createCheckoutSession(plan.priceId) } catch(e){ console.error(e); alert('Failed to start checkout. Please try again.'); } finally { setActionLoading(null) }
+                    }}
+                    disabled={actionLoading === plan.id || !plan.priceId}
+                    className="group w-full py-3 px-6 rounded-xl font-semibold transition-all bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-[0_14px_60px_rgba(124,58,237,.55)] disabled:opacity-50 shadow-[0_10px_40px_rgba(124,58,237,.35)]"
+                  >
+                    {actionLoading === plan.id ? 'Processing…' : (!plan.priceId ? 'Coming Soon' : 'Subscribe')} <ArrowRight className="inline w-4 h-4 ml-1 translate-x-0 group-hover:translate-x-0.5 transition" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* One-time Token Bundles (Top-ups) */}
+        <div className="mb-16">
+          <h2 className={`text-3xl font-extrabold text-center mb-3 ${isLight ? 'text-gray-900' : ''}`}>Add‑on Top‑ups</h2>
+          <p className={`${isLight ? 'text-gray-600' : 'text-white/70'} text-center mb-10`}>Out of messages? Buy top‑ups that never expire.</p>
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {TOKEN_BUNDLES.map((bundle) => {
               const highlight = bundle.sku === 'MEDIUM' ? 'Most Popular' : (bundle.sku === 'HEAVY' ? 'Best Value' : null);

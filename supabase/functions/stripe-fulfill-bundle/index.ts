@@ -75,6 +75,7 @@ serve(async (req) => {
       .eq('checkout_session_id', session.id)
       .maybeSingle()
 
+    let didInsertOrder = false
     if (!existingOrder) {
       // Insert order record
       await supabaseAdmin
@@ -89,6 +90,7 @@ serve(async (req) => {
           payment_status: session.payment_status,
           status: 'completed',
         })
+      didInsertOrder = true
     }
 
     // Map bundle SKU -> credits
@@ -105,16 +107,18 @@ serve(async (req) => {
       return new Response('Unknown bundle SKU', { status: 400, headers: { 'Access-Control-Allow-Origin': '*' } })
     }
 
-    // Credit tokens via RPC (idempotency via session order row)
-    const { error: creditErr } = await supabaseAdmin.rpc('credit_tokens', {
-      p_user_id: user.id,
-      p_light: light,
-      p_medium: medium,
-      p_heavy: heavy,
-    })
-    if (creditErr) {
-      console.error('credit_tokens failed:', creditErr)
-      return new Response('Failed to credit tokens', { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } })
+    // Only credit when we just inserted the order (prevents double-credit when webhook already handled it)
+    if (didInsertOrder) {
+      const { error: creditErr } = await supabaseAdmin.rpc('credit_tokens', {
+        p_user_id: user.id,
+        p_light: light,
+        p_medium: medium,
+        p_heavy: heavy,
+      })
+      if (creditErr) {
+        console.error('credit_tokens failed:', creditErr)
+        return new Response('Failed to credit tokens', { status: 500, headers: { 'Access-Control-Allow-Origin': '*' } })
+      }
     }
 
     return new Response(JSON.stringify({ success: true, credited: { light, medium, heavy } }), {

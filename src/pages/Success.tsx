@@ -78,6 +78,13 @@ export default function Success(props: SuccessPageProps) {
       // 3) Poll for balances to appear
       const balances = await pollTokenBalances();
       if (balances) {
+        try {
+          localStorage.setItem('bellosai-token-balances', JSON.stringify({
+            light: balances.light_credits || 0,
+            medium: balances.medium_credits || 0,
+            heavy: balances.heavy_credits || 0,
+          }));
+        } catch {}
         setProcessingComplete(true);
         return;
       }
