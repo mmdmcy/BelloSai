@@ -60,14 +60,22 @@ const customStorage = {
   addEventListener: () => {}
 }
 
-// Create the Supabase client with disabled cross-tab sync
+// Derive the correct storage key from the Supabase URL (avoids mismatches across envs)
+let derivedStorageKey = 'sb-auth-token';
+try {
+  const host = new URL(supabaseUrl).host; // e.g. uxqrdnotdkcwfwcifajf.supabase.co
+  const ref = host.split('.')[0];
+  if (ref) derivedStorageKey = `sb-${ref}-auth-token`;
+} catch {}
+
+// Create the Supabase client with disabled cross-tab sync, persistent session, and auto refresh
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false, // Disable URL session detection to prevent auth state changes
+    detectSessionInUrl: true,
     storage: customStorage,
-    storageKey: 'sb-uxqrdnotdkcwfwcifajf-auth-token', // Use the standard Supabase storage key
+    storageKey: derivedStorageKey,
     flowType: 'pkce'
   },
   global: {
