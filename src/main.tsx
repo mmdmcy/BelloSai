@@ -8,6 +8,7 @@ import Game from './pages/Game.tsx';
 import Success from './pages/Success.tsx';
 import Pricing from './pages/Pricing.tsx';
 import Models from './pages/Models.tsx';
+import Welcome from './pages/Welcome.tsx';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
@@ -21,6 +22,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/success" element={<Success />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/models" element={<Models />} />
+          <Route path="/welcome" element={<Welcome />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
