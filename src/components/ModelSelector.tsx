@@ -25,6 +25,7 @@ const PROVIDER_ICON: Record<string, any> = {
   Claude: Feather,
   Mistral: Star,
   Groq: Sparkles,
+  Qwen: Brain,
 };
 
 const PROVIDER_COLOR: Record<string, string> = {
@@ -32,6 +33,7 @@ const PROVIDER_COLOR: Record<string, string> = {
   Claude: '#fbbf24', // yellow/orange
   Mistral: '#ef4444', // red
   Groq: '#10b981', // emerald
+  Qwen: '#8b5cf6', // violet
 };
 
 const CAPABILITY_ICON: Record<string, any> = {
@@ -139,13 +141,14 @@ export default function ModelSelector({
               const ModelProviderIcon = PROVIDER_ICON[model.provider];
               const providerColor = PROVIDER_COLOR[model.provider];
               const isPremium = model.premium;
-              const isDisabled = isPremium && !hasActiveSubscription;
+              const isUnsupported = model.capabilities.some(c => ['embedding','ocr','voice','multimodal'].includes(c)) && model.forChat === false || model.capabilities.some(c => ['embedding','ocr','voice','multimodal'].includes(c));
+              const isDisabled = (isPremium && !hasActiveSubscription) || isUnsupported;
               return (
                 <button
                   key={model.code}
                   className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 ${
                     isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
-                  } ${isSelected ? (isDark ? 'bg-gray-700' : 'bg-purple-50') : ''} ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  } ${isSelected ? (isDark ? 'bg-gray-700' : 'bg-purple-50') : ''} ${isDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                   onClick={() => !isDisabled && handleModelSelect(model.code)}
                   disabled={isDisabled}
                 >
@@ -172,6 +175,9 @@ export default function ModelSelector({
                       style={{ backgroundColor: providerColor }}
                     />
                   )}
+                  {isUnsupported && (
+                    <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-gray-600 text-white opacity-80">Unsupported</span>
+                  )}
                   {/* Favorite toggle */}
                   <button
                     type="button"
@@ -184,7 +190,7 @@ export default function ModelSelector({
             })}
 
             {/* Grouped by provider */}
-            {['Mistral','DeepSeek','Claude','Groq'].map((prov) => (
+            {['Mistral','DeepSeek','Claude','Groq','Qwen'].map((prov) => (
               <div key={prov}>
                 <div className="px-3 py-2 text-xs opacity-70">{prov}</div>
                 {availableModels.filter(m => m.provider === (prov as any) && !favorites.includes(m.code)).map((model) => {
@@ -192,13 +198,14 @@ export default function ModelSelector({
                   const ModelProviderIcon = PROVIDER_ICON[model.provider];
                   const providerColor = PROVIDER_COLOR[model.provider];
                   const isPremium = model.premium;
-                  const isDisabled = isPremium && !hasActiveSubscription;
+                  const isUnsupported = model.capabilities.some(c => ['embedding','ocr','voice','multimodal'].includes(c)) && model.forChat === false || model.capabilities.some(c => ['embedding','ocr','voice','multimodal'].includes(c));
+                  const isDisabled = (isPremium && !hasActiveSubscription) || isUnsupported;
                   return (
                     <button
                       key={model.code}
                       className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 ${
                         isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
-                      } ${isSelected ? (isDark ? 'bg-gray-700' : 'bg-purple-50') : ''} ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      } ${isSelected ? (isDark ? 'bg-gray-700' : 'bg-purple-50') : ''} ${isDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                       onClick={() => !isDisabled && handleModelSelect(model.code)}
                       disabled={isDisabled}
                     >
@@ -221,6 +228,9 @@ export default function ModelSelector({
                         className={`ml-2 text-xs px-2 py-0.5 rounded ${favorites.includes(model.code) ? 'bg-yellow-500 text-white' : (isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700')}`}
                         aria-label="Toggle favorite"
                       >★</button>
+                      {isUnsupported && (
+                        <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-gray-600 text-white opacity-80">Unsupported</span>
+                      )}
                     </button>
                   );
                 })}
