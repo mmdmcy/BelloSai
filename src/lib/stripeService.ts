@@ -194,9 +194,16 @@ export class StripeService {
    * Create a checkout session for a one-time token bundle
    */
   static async createBundleCheckout(bundle: TokenBundle): Promise<void> {
+    // Ensure we have a fresh session token
     const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.access_token) throw new Error('User not authenticated')
-    const response = await fetch(
+    if (!session?.access_token) throw new Error('Please log in to purchase')
+
+    // Timeout guard to avoid "hangs forever"
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Checkout request timed out')), 12000)
+    })
+
+    const fetchPromise = fetch(
       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`,
       {
         method: 'POST',
@@ -213,11 +220,14 @@ export class StripeService {
         })
       }
     )
+
+    const response = await Promise.race([fetchPromise, timeoutPromise]) as Response
     if (!response.ok) {
-      const errorText = await response.text()
+      const errorText = await response.text().catch(() => '')
       throw new Error(`Failed to create bundle checkout session: ${response.status} ${errorText}`)
     }
     const { url } = await response.json()
+    if (!url) throw new Error('Checkout URL missing from response')
     window.location.assign(url)
   }
 

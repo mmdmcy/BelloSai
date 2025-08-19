@@ -2,8 +2,10 @@ import React from 'react';
 import { Sparkles, Zap, Cpu, ShieldCheck, TerminalSquare, Rocket, ArrowRight } from 'lucide-react';
 
 export default function Welcome() {
+  const prefersLight = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+  const isLight = prefersLight;
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#0b0b10] text-white">
+    <div className={`min-h-screen relative overflow-hidden ${isLight ? 'bg-white text-gray-900' : 'bg-[#0b0b10] text-white'}`}>
       {/* Animated background: moving gradients + subtle grid + particles */}
       <style>{`
         @keyframes floatSlow { 0%{transform:translateY(0)} 50%{transform:translateY(-10px)} 100%{transform:translateY(0)} }
@@ -22,7 +24,7 @@ export default function Welcome() {
       `}</style>
 
       {/* background layers */}
-      <div className="absolute inset-0 grid-overlay opacity-40" aria-hidden />
+      <div className={`absolute inset-0 ${isLight ? '' : 'grid-overlay opacity-40'}`} aria-hidden />
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -top-40 -left-32 w-[900px] h-[900px] bg-gradient-to-br from-purple-700/40 via-fuchsia-500/30 to-indigo-700/40 rounded-full animate-pulseGlow" style={{ animation: 'pulseGlow 8s ease-in-out infinite' }} />
         <div className="absolute -bottom-48 -right-24 w-[800px] h-[800px] bg-gradient-to-tr from-indigo-700/40 via-purple-600/30 to-fuchsia-500/40 rounded-full" style={{ animation: 'pulseGlow 10s ease-in-out infinite' }} />
@@ -42,7 +44,7 @@ export default function Welcome() {
           <a className="hover:text-white transition" href="/">App</a>
           <a className="hover:text-white transition" href="/welcome#why">Why BelloSai</a>
         </nav>
-        <a href="/" className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-sm transition">Open App</a>
+        <a href="/" className={`px-4 py-2 rounded-xl ${isLight ? 'bg-gray-900 text-white hover:bg-black border border-gray-900' : 'bg-white/10 hover:bg-white/15 border border-white/10'} text-sm transition`}>Open App</a>
       </header>
 
       {/* HERO */}
@@ -54,14 +56,14 @@ export default function Welcome() {
           <h1 className="mt-5 text-4xl md:text-6xl font-extrabold tracking-tight">
             Chat with multiple <span className="bg-gradient-to-r from-purple-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent animate-[shine_8s_ease_infinite]">AI models</span>
           </h1>
-          <p className="mt-4 max-w-3xl mx-auto text-white/70 text-base md:text-lg">
+          <p className={`mt-4 max-w-3xl mx-auto ${isLight ? 'text-gray-600' : 'text-white/70'} text-base md:text-lg`}>
             BelloSai lets you choose Qwen, Mistral, Groq and more in one place. Buy credits once, keep them forever. No subscriptions.
           </p>
           <div className="mt-8 flex items-center justify-center gap-3">
-            <a href="/pricing" className="group px-5 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 shadow-[0_10px_40px_rgba(124,58,237,.35)] hover:shadow-[0_14px_60px_rgba(124,58,237,.55)] font-semibold transition">
+            <a href="/pricing" className={`group px-5 py-3 rounded-xl ${isLight ? 'bg-gray-900 text-white hover:bg-black shadow' : 'bg-gradient-to-r from-purple-600 to-indigo-600 shadow-[0_10px_40px_rgba(124,58,237,.35)] hover:shadow-[0_14px_60px_rgba(124,58,237,.55)]'} font-semibold transition`}>
               Get Credits <ArrowRight className="inline w-4 h-4 ml-1 translate-x-0 group-hover:translate-x-0.5 transition" />
             </a>
-            <a href="/" className="px-5 py-3 rounded-xl glass hover:bg-white/10 font-semibold text-white transition border border-white/10">Start Chatting</a>
+            <a href="/" className={`px-5 py-3 rounded-xl ${isLight ? 'bg-white border border-gray-300 text-gray-900 hover:bg-gray-50' : 'glass hover:bg-white/10 text-white border border-white/10'} font-semibold transition`}>Start Chatting</a>
           </div>
         </div>
 
