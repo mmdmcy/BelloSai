@@ -668,9 +668,10 @@ class ChatFeaturesService {
     }
     
     try {
-      // Remove control characters that can break JSON parsing
+      // Remove control characters except newlines (\n, \r) and tabs (\t)
+      // Preserve formatting for code blocks in history
       let sanitized = content
-        .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control chars
+        .replace(/[\u0000-\u0009\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '')
         .replace(/\uFEFF/g, '') // Remove BOM
         .trim(); // Remove extra whitespace
       

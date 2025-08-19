@@ -142,7 +142,8 @@ const preprocessLegacyContent = (content: string): string => {
       // Keep the preface text before the language token (if any)
       const prefixEnd = content.toLowerCase().lastIndexOf(langToken);
       const prefix = prefixEnd > 0 ? content.slice(0, prefixEnd).trimEnd() + '\n\n' : '';
-      return `${prefix}\n\n\`\`\`${langToken}\n${rest}\n\`\`\``.replace(/\\`\\`\\`/g, '```');
+      const fenced = ['```', langToken, '\n', rest, '\n```'].join('');
+      return `${prefix}${fenced}`;
     }
   }
 

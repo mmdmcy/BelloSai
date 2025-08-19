@@ -213,7 +213,7 @@ export default function Sidebar({
       {/* Chat History Section */}
       <div className="px-4 pb-4 flex-1 overflow-y-auto">
         {/* Refresh Prompt - shown when user returns after alt-tabbing (only for logged in users) */}
-        {showRefreshPrompt && isLoggedIn && (
+        {false && showRefreshPrompt && isLoggedIn && (
           <div 
             className={`mb-4 p-3 rounded-lg border cursor-pointer hover:opacity-80 transition-opacity ${
               isDark 
