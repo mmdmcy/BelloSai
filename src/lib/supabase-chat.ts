@@ -7,7 +7,7 @@
 
 import { supabase } from './supabase';
 import type { ModelInfo } from '../types/app';
-import { AVAILABLE_MODELS, getModelProvider } from '../models/registry';
+import { AVAILABLE_MODELS, getModelProvider, getModelTier } from '../models/registry';
 
 export interface ChatMessage {
   type: 'user' | 'ai';
@@ -152,6 +152,23 @@ export async function sendChatMessage(
       console.log('🔓 No session found - proceeding as anonymous user');
       // Add anon key for anonymous users
       authHeaders['apikey'] = import.meta.env.VITE_SUPABASE_ANON_KEY;
+    }
+
+    // If user is logged in, attempt to debit a token up-front
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const desiredTier = getModelTier(modelCode);
+        const { data: debitedTier, error: debitErr } = await supabase.rpc('debit_token_with_fallback', { p_user_id: user.id, p_desired_tier: desiredTier });
+        if (debitErr) {
+          console.warn('Token debit failed:', debitErr);
+        } else if (!debitedTier) {
+          throw new Error('You are out of credits. Please purchase a bundle on the Pricing page.');
+        }
+      }
+    } catch (debitError) {
+      console.warn('Debit pre-check:', debitError);
+      // If not authenticated, continue; anonymous users can proceed if your policy allows
     }
 
     // Choose appropriate edge function

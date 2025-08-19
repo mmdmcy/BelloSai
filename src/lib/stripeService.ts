@@ -50,6 +50,16 @@ export interface SubscriptionPlan {
   interval: 'month' | 'year'
 }
 
+export interface TokenBundle {
+  sku: 'LIGHT' | 'MEDIUM' | 'HEAVY'
+  id: string
+  name: string
+  price: string
+  description: string
+  credits: { light: number; medium: number; heavy: number }
+  priceId: string
+}
+
 export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
   FREE: {
     id: 'free',
@@ -76,6 +86,36 @@ export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
     interval: 'year'
   }
 }
+
+export const TOKEN_BUNDLES: TokenBundle[] = [
+  {
+    sku: 'LIGHT',
+    id: 'bundle_light',
+    name: 'Light Bundle',
+    price: '€4.99',
+    description: 'Great for casual chats with light-tier models',
+    credits: { light: 300, medium: 0, heavy: 0 },
+    priceId: 'price_1RxjjbBzQy7WGhPxljmWOmd3'
+  },
+  {
+    sku: 'MEDIUM',
+    id: 'bundle_medium',
+    name: 'Medium Bundle',
+    price: '€9.99',
+    description: 'Best value: includes Medium + Light credits',
+    credits: { light: 300, medium: 200, heavy: 0 },
+    priceId: 'price_1Rxjk7BzQy7WGhPx92T9dbzA'
+  },
+  {
+    sku: 'HEAVY',
+    id: 'bundle_heavy',
+    name: 'Heavy Bundle',
+    price: '€19.99',
+    description: 'All-in: Heavy + Medium + Light credits',
+    credits: { light: 500, medium: 300, heavy: 150 },
+    priceId: 'price_1RxjkUBzQy7WGhPxcHxiNtSs'
+  },
+]
 
 export class StripeService {
   /**
@@ -148,6 +188,37 @@ export class StripeService {
       console.error('❌ [StripeService] Error creating checkout session:', error)
       throw error
     }
+  }
+
+  /**
+   * Create a checkout session for a one-time token bundle
+   */
+  static async createBundleCheckout(bundle: TokenBundle): Promise<void> {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) throw new Error('User not authenticated')
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          mode: 'payment',
+          price_id: bundle.priceId,
+          bundle_sku: bundle.sku,
+          success_url: `${window.location.origin}/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${window.location.origin}/pricing`
+        })
+      }
+    )
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Failed to create bundle checkout session: ${response.status} ${errorText}`)
+    }
+    const { url } = await response.json()
+    window.location.assign(url)
   }
 
   /**

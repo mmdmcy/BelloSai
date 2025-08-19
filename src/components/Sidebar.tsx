@@ -192,7 +192,7 @@ export default function Sidebar({
   // Full sidebar layout - simplified when in detached mode
   return (
     <div 
-      className={`w-full h-full ${hasGlassEffect && !isDark ? 'glass-sidebar' : ''} flex flex-col ${isDark ? 'bg-gray-900' : 'bg-white'} neo-surface`}
+      className={`w-full h-full ${hasGlassEffect && !isDark ? 'glass-sidebar' : ''} flex flex-col ${isDark ? 'bg-gray-900' : 'bg-white'}`}
       style={{
         background: !hasGlassEffect && customization.gradientEnabled && !isDark 
           ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
