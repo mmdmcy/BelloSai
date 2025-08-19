@@ -35,7 +35,8 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     premium: false,
     forChat: true,
     inputPricePerMTokens: 0.4,
-    outputPricePerMTokens: 2
+    outputPricePerMTokens: 2,
+    supportsWebSearch: true
   },
   {
     name: 'Mistral Small 3.1',
@@ -47,7 +48,8 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     premium: false,
     forChat: true,
     inputPricePerMTokens: 0.1,
-    outputPricePerMTokens: 0.3
+    outputPricePerMTokens: 0.3,
+    supportsWebSearch: true
   },
   {
     name: 'Codestral',
@@ -59,12 +61,13 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     premium: false,
     forChat: true,
     inputPricePerMTokens: 0.2,
-    outputPricePerMTokens: 0.6
+    outputPricePerMTokens: 0.6,
+    supportsWebSearch: false
   },
   // New Mistral family additions
-  { name: 'Magistral Medium', code: 'magistral-medium-latest', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'reasoning', 'agentic'], description: 'Frontier-class reasoning model for enterprise use.', premium: false, forChat: true, inputPricePerMTokens: 2, outputPricePerMTokens: 5 },
+  { name: 'Magistral Medium', code: 'magistral-medium-latest', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'reasoning', 'agentic'], description: 'Frontier-class reasoning model for enterprise use.', premium: false, forChat: true, inputPricePerMTokens: 2, outputPricePerMTokens: 5, supportsWebSearch: true },
   { name: 'Devstral Medium', code: 'devstral-medium-2507', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'code', 'agentic'], description: 'Advanced coding agents: multi-file edits, tool use.', premium: false, forChat: true },
-  { name: 'Mistral Large', code: 'mistral-large-latest', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'reasoning', 'multimodal', 'agentic'], description: 'Large model for complex multilingual reasoning.', premium: false, forChat: true, inputPricePerMTokens: 2, outputPricePerMTokens: 6 },
+  { name: 'Mistral Large', code: 'mistral-large-latest', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'reasoning', 'multimodal', 'agentic'], description: 'Large model for complex multilingual reasoning.', premium: false, forChat: true, inputPricePerMTokens: 2, outputPricePerMTokens: 6, supportsWebSearch: true },
   { name: 'Pixtral Large', code: 'pixtral-large-latest', provider: 'Mistral', source: 'Mistral', capabilities: ['multimodal', 'text', 'reasoning'], description: 'Vision-capable large model with frontier reasoning.', premium: false, forChat: true, inputPricePerMTokens: 2, outputPricePerMTokens: 6 },
   { name: 'Pixtral 12B', code: 'pixtral-12b', provider: 'Mistral', source: 'Mistral', capabilities: ['multimodal', 'text', 'lightweight'], description: '12B vision-capable small model.', premium: false, forChat: true, inputPricePerMTokens: 0.15, outputPricePerMTokens: 0.15 },
   { name: 'Mistral NeMo', code: 'mistral-nemo', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'code', 'lightweight'], description: 'Code-focused open-weight model, strong multilingual.', premium: false, forChat: true },
@@ -130,7 +133,8 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     premium: false,
     forChat: true,
     inputPricePerMTokens: 1.6,
-    outputPricePerMTokens: 6.4
+    outputPricePerMTokens: 6.4,
+    supportsWebSearch: true
   },
   {
     name: 'Qwen Plus',
@@ -143,7 +147,8 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     forChat: true,
     inputPricePerMTokens: 0.4,
     outputPricePerMTokens: 1.2,
-    pricingNotes: 'Tiered by input length; thinking mode output up to $4/M.'
+    pricingNotes: 'Tiered by input length; thinking mode output up to $4/M.',
+    supportsWebSearch: true
   },
   {
     name: 'Qwen Flash',
@@ -156,7 +161,8 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     forChat: true,
     inputPricePerMTokens: 0.05,
     outputPricePerMTokens: 0.4,
-    pricingNotes: 'Tiered by input length; up to 1M context.'
+    pricingNotes: 'Tiered by input length; up to 1M context.',
+    supportsWebSearch: true
   },
   {
     name: 'Qwen Turbo',
@@ -169,7 +175,8 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     forChat: true,
     inputPricePerMTokens: 0.05,
     outputPricePerMTokens: 0.2,
-    pricingNotes: 'Thinking mode output around $0.5/M.'
+    pricingNotes: 'Thinking mode output around $0.5/M.',
+    supportsWebSearch: true
   },
   {
     name: 'QwQ Plus (Reasoning)',
@@ -181,7 +188,8 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     premium: false,
     forChat: true,
     inputPricePerMTokens: 0.8,
-    outputPricePerMTokens: 2.4
+    outputPricePerMTokens: 2.4,
+    supportsWebSearch: true
   },
   {
     name: 'Qwen VL Plus',
@@ -207,7 +215,8 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     premium: false,
     forChat: true,
     inputPricePerMTokens: 0.7,
-    outputPricePerMTokens: 8.4
+    outputPricePerMTokens: 8.4,
+    supportsWebSearch: true
   },
   {
     name: 'Qwen3 235B Instruct (2507)',
@@ -219,7 +228,8 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     premium: false,
     forChat: true,
     inputPricePerMTokens: 0.7,
-    outputPricePerMTokens: 2.8
+    outputPricePerMTokens: 2.8,
+    supportsWebSearch: true
   },
   {
     name: 'Qwen3 30B Thinking (2507)',
@@ -231,7 +241,8 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     premium: false,
     forChat: true,
     inputPricePerMTokens: 0.2,
-    outputPricePerMTokens: 2.4
+    outputPricePerMTokens: 2.4,
+    supportsWebSearch: true
   },
   {
     name: 'Qwen3 30B Instruct (2507)',
@@ -242,7 +253,8 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     description: 'Qwen3 30B non-thinking snapshot (Jul 2025).',
     premium: false,
     forChat: true,
-    pricingNotes: 'Output price not specified in provided sheet; refer to Model Studio.'
+    pricingNotes: 'Output price not specified in provided sheet; refer to Model Studio.',
+    supportsWebSearch: true
   },
   // Qwen3 Coder
   {
@@ -254,7 +266,8 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     description: 'Qwen3 code model (tiered pricing; cache discounts).',
     premium: false,
     forChat: true,
-    pricingNotes: 'Tiered; cached input up to 75% off during promo.'
+    pricingNotes: 'Tiered; cached input up to 75% off during promo.',
+    supportsWebSearch: true
   },
   {
     name: 'Qwen3 Coder Flash',
@@ -264,7 +277,8 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     capabilities: ['text', 'code', 'lightweight'],
     description: 'Qwen3 coder flash (tiered pricing).',
     premium: false,
-    forChat: true
+    forChat: true,
+    supportsWebSearch: true
   }
 ];
 

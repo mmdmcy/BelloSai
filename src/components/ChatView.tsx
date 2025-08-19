@@ -723,6 +723,7 @@ export default function ChatView({
                     customization={customization}
                   />
                   
+                  <div className="flex items-center gap-2">
                   <button 
                     type="submit"
                     disabled={!inputValue.trim() || isGenerating}
@@ -731,6 +732,20 @@ export default function ChatView({
                   >
                     <ArrowUp className="w-4 h-4" />
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        const cur = localStorage.getItem('bellosai-web-search') === 'true';
+                        localStorage.setItem('bellosai-web-search', (!cur).toString());
+                      } catch {}
+                    }}
+                    className={`p-2.5 rounded-xl border ${isDark ? 'border-gray-600 text-gray-200' : 'border-gray-300 text-gray-700'} hover:bg-gray-100`}
+                    title="Toggle Web Search"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+                  </button>
+                  </div>
                 </div>
               </div>
             </form>

@@ -51,6 +51,7 @@ export interface ModelInfo {
   inputPricePerMTokens?: number; // USD
   outputPricePerMTokens?: number; // USD
   pricingNotes?: string;
+  supportsWebSearch?: boolean;
 }
 
 export const MODEL_CAPABILITIES: Record<string, ModelCapability> = {

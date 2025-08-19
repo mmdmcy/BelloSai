@@ -166,6 +166,10 @@ export async function sendChatMessage(
     console.log('📡 Request payload:', { messages, model: modelCode, conversationId });
     
     console.log('🚀 About to make fetch request...');
+    // Read optional web search toggle from localStorage (set by UI)
+    let enableWebSearch = false;
+    try { if (typeof window !== 'undefined') { enableWebSearch = localStorage.getItem('bellosai-web-search') === 'true'; } } catch {}
+
     const response = await fetch(url, {
       method: 'POST',
       headers: { ...authHeaders },
@@ -177,7 +181,8 @@ export async function sendChatMessage(
             String(msg.content || '').replace(/[\u0000-\u001F\u007F-\u009F]/g, '').trim()
         })),
         model: modelCode,
-        conversationId
+        conversationId,
+        webSearch: enableWebSearch
       })
     });
     console.log('✅ Fetch request completed, got response');
