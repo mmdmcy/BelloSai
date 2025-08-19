@@ -36,17 +36,11 @@ export default function Pricing() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Hero Section */}
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-sm font-medium mb-4">
-            <Sparkles className="w-4 h-4" />
-            One-time credits. Yours to use, anytime.
-          </div>
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Flexible AI credits for every need</h1>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            Light, Medium, and Heavy bundles designed to fit your usage. No recurring fees, no lock-in—just buy and chat.
-          </p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Above the fold: focus on the three panels */}
+        <div className="mb-6 text-center">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900">Choose your credits</h1>
+          <p className="text-sm md:text-base text-gray-600 mt-2">No subscriptions. Instant access. Keep unused credits forever.</p>
         </div>
 
         {/* One-time Token Bundles */}
@@ -109,44 +103,19 @@ export default function Pricing() {
 
         {/* Subscriptions removed — bundles only */}
 
-        {/* FAQ or Additional Info */}
-        <div className="mt-16 text-center">
-          <h3 className="text-2xl font-bold text-gray-900 mb-6">
-            Frequently Asked Questions
-          </h3>
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            <div className="text-left">
-              <h4 className="font-semibold text-gray-900 mb-2">
-                What do credits mean?
-              </h4>
-              <p className="text-gray-600">
-                Each message to a model deducts one credit of its tier. Medium bundles also include Light credits; Heavy bundles include Medium and Light.
-              </p>
-            </div>
-            <div className="text-left">
-              <h4 className="font-semibold text-gray-900 mb-2">
-                What happens to my data if I cancel?
-              </h4>
-              <p className="text-gray-600">
-                Your chat history and account are preserved. You can buy bundles any time—no subscription required.
-              </p>
-            </div>
-            <div className="text-left">
-              <h4 className="font-semibold text-gray-900 mb-2">
-                What payment methods do you accept?
-              </h4>
-              <p className="text-gray-600">
-                We accept all major credit cards, SEPA transfers and other local payment methods via Stripe.
-              </p>
-            </div>
-            <div className="text-left">
-              <h4 className="font-semibold text-gray-900 mb-2">
-                Can I get a refund?
-              </h4>
-              <p className="text-gray-600">
-                Refunds depend on Stripe’s policy and our terms. Contact support if you have any issues.
-              </p>
-            </div>
+        {/* Selling points below the fold */}
+        <div className="mt-12 grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          <div className="rounded-2xl bg-white/80 backdrop-blur p-6 shadow-md">
+            <h4 className="font-semibold text-gray-900 mb-2">Access many top models</h4>
+            <p className="text-gray-600 text-sm">Chat with Qwen, Mistral, Groq, Claude-compatible routes and more. Light/Medium/Heavy tiers map to real API costs.</p>
+          </div>
+          <div className="rounded-2xl bg-white/80 backdrop-blur p-6 shadow-md">
+            <h4 className="font-semibold text-gray-900 mb-2">No lock-in, keep credits</h4>
+            <p className="text-gray-600 text-sm">Buy once, use any time. Credits don’t expire, and you can upgrade later.</p>
+          </div>
+          <div className="rounded-2xl bg-white/80 backdrop-blur p-6 shadow-md">
+            <h4 className="font-semibold text-gray-900 mb-2">Great value</h4>
+            <p className="text-gray-600 text-sm">We optimize costs so you can send as many messages as possible while we keep it sustainable.</p>
           </div>
         </div>
 
