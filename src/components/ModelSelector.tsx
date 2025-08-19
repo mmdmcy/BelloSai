@@ -72,11 +72,11 @@ export default function ModelSelector({
   });
   const [query, setQuery] = useState('');
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
-  const [activeTab, setActiveTab] = useState<'provider' | 'all' | 'favorites'>('provider');
+  const [activeTab, setActiveTab] = useState<'tiers' | 'provider' | 'all' | 'favorites'>('tiers');
   const [compact, setCompact] = useState<boolean>(true);
 
-  // Derive token-gating info from balances stored in AccountMenu fetch
-  const [tokenBalances, setTokenBalances] = useState<{light:number;medium:number;heavy:number}>({light:0,medium:0,heavy:0});
+  // Derive token balances from Account page (persisted locally)
+  const [tokenBalances, setTokenBalances] = useState<{ light: number; medium: number; heavy: number }>({ light: 0, medium: 0, heavy: 0 });
   useEffect(() => {
     try {
       const raw = localStorage.getItem('bellosai-token-balances');
@@ -84,8 +84,7 @@ export default function ModelSelector({
     } catch {}
   }, []);
 
-  const getTier = (model: ModelInfo): 'light'|'medium'|'heavy' => {
-    // Basic heuristics aligned with registry getModelTier
+  const getTier = (model: ModelInfo): 'light' | 'medium' | 'heavy' => {
     const maxCost = Math.max(model.inputPricePerMTokens || 0, model.outputPricePerMTokens || 0);
     if (model.premium || maxCost >= 2) return 'heavy';
     if (maxCost >= 0.15) return 'medium';
@@ -120,7 +119,11 @@ export default function ModelSelector({
     };
   }, []);
 
-  const handleModelSelect = (modelCode: string) => {
+  const handleModelSelect = (modelCode: string, gated?: boolean) => {
+    if (gated) {
+      try { window.location.assign('/pricing'); } catch { window.location.href = '/pricing'; }
+      return;
+    }
     onModelChange(modelCode);
     setIsOpen(false);
   };
@@ -139,7 +142,7 @@ export default function ModelSelector({
   const renderRow = (model: ModelInfo, isSelected: boolean, isDisabled: boolean, providerColor: string) => {
     const ModelProviderIcon = PROVIDER_ICON[model.provider];
     const tier = getTier(model);
-    const tierBadge = tier === 'heavy' ? 'H' : tier === 'medium' ? 'M' : 'L';
+    const tierBadge = model.free ? 'Free' : (tier === 'heavy' ? 'H' : tier === 'medium' ? 'M' : 'L');
     const canUseFree = model.free === true;
     const hasTokens = tier === 'light' ? tokenBalances.light > 0 : tier === 'medium' ? tokenBalances.medium > 0 || tokenBalances.heavy > 0 : tokenBalances.heavy > 0;
     const gated = !canUseFree && !hasTokens;
@@ -150,7 +153,7 @@ export default function ModelSelector({
         className={`w-full flex items-center ${compact ? 'gap-2 px-3 py-2' : 'gap-3 px-4 py-3'} text-left ${
           isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
         } ${isSelected ? (isDark ? 'bg-gray-700' : 'bg-purple-50') : ''} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
-        onClick={() => !disabled && handleModelSelect(model.code)}
+        onClick={() => handleModelSelect(model.code, gated)}
         disabled={disabled}
       >
         <ModelProviderIcon className="w-4 h-4" style={{ color: providerColor }} />
@@ -232,7 +235,7 @@ export default function ModelSelector({
             />
             <div className="mt-2 flex items-center justify-between">
               <div className="flex items-center gap-1">
-                {(['provider','all','favorites'] as const).map(tab => (
+                {(['tiers','provider','all','favorites'] as const).map(tab => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -264,6 +267,37 @@ export default function ModelSelector({
             </div>
           </div>
           <div className="py-1 max-h-96 overflow-y-auto">
+            {activeTab === 'tiers' && (
+              <>
+                {(['free','light','medium','heavy'] as const).map((tierKey) => {
+                  const group = filtered.filter(m => {
+                    if (tierKey === 'free') return m.free === true;
+                    const cost = Math.max(m.inputPricePerMTokens || 0, m.outputPricePerMTokens || 0);
+                    const t = (m.premium || cost >= 2) ? 'heavy' : (cost >= 0.15 ? 'medium' : 'light');
+                    return t === tierKey && !m.free;
+                  });
+                  if (group.length === 0) return null;
+                  return (
+                    <div key={tierKey}>
+                      <div className={`px-3 py-1 text-[11px] uppercase tracking-wider ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{tierKey}</div>
+                      {group.map(model => {
+                        const isSelected = model.code === selectedModel;
+                        const providerColor = PROVIDER_COLOR[model.provider];
+                        const isPremium = model.premium;
+                        const unsupported = isUnsupportedModel(model);
+                        const tier = getTier(model);
+                        const canUseFree = model.free === true;
+                        const hasTokens = tier === 'light' ? tokenBalances.light > 0 : tier === 'medium' ? tokenBalances.medium > 0 || tokenBalances.heavy > 0 : tokenBalances.heavy > 0;
+                        const gated = !canUseFree && !hasTokens;
+                        const disabled = (isPremium && !hasActiveSubscription) || unsupported || gated;
+                        return renderRow(model, isSelected, disabled, providerColor);
+                      })}
+                    </div>
+                  );
+                })}
+              </>
+            )}
+
             {activeTab === 'favorites' && (
               <>
                 {filtered.filter(m => favorites.includes(m.code)).length === 0 && (
