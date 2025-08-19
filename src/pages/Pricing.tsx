@@ -51,13 +51,13 @@ export default function Pricing() {
 
         {/* One-time Token Bundles */}
         <div className="mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 text-center mb-6">Pay‑as‑you‑go Bundles</h2>
-          <p className="text-gray-600 text-center mb-10">Medium includes Light credits; Heavy includes Medium + Light.</p>
+          <h2 className="text-3xl font-extrabold text-gray-900 text-center mb-3">Pay‑as‑you‑go Bundles</h2>
+          <p className="text-gray-600 text-center mb-10">More messages for less. Medium includes Light; Heavy includes Medium + Light.</p>
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {TOKEN_BUNDLES.map((bundle) => {
               const highlight = bundle.id === 'medium' ? 'Most Popular' : (bundle.id === 'heavy' ? 'Best Value' : null);
               return (
-                <div key={bundle.id} className="relative rounded-3xl border border-purple-200/60 bg-white/80 backdrop-blur shadow-xl hover:shadow-2xl transition-all">
+                <div key={bundle.id} className="relative rounded-3xl border border-purple-200/60 bg-white/80 backdrop-blur shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
                   {highlight && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                       <span className="inline-flex items-center gap-1 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
@@ -67,7 +67,7 @@ export default function Pricing() {
                   )}
                   <div className="p-8">
                     <div className="text-center mb-6">
-                      <h3 className="text-2xl font-bold text-gray-900">{bundle.name}</h3>
+                      <h3 className="text-2xl font-extrabold text-gray-900">{bundle.name}</h3>
                       <div className="mt-3 text-4xl font-extrabold text-gray-900">{bundle.price}</div>
                       <p className="mt-3 text-gray-600">{bundle.description}</p>
                     </div>
@@ -92,13 +92,14 @@ export default function Pricing() {
                         try { await createBundleCheckout(bundle.sku) } finally { setActionLoading(null) }
                       }}
                       disabled={actionLoading === bundle.id || !bundle.priceId}
-                      className="w-full py-3 px-6 rounded-xl font-medium transition-colors bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50"
+                      className="w-full py-3 px-6 rounded-xl font-semibold transition-all bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 shadow-lg hover:shadow-xl"
                     >
                       {actionLoading === bundle.id ? 'Processing…' : (!bundle.priceId ? 'Coming Soon' : 'Buy Bundle')}
                     </button>
-                    <p className="mt-3 text-xs text-gray-500 flex items-center justify-center gap-1">
-                      <BadgeDollarSign className="w-4 h-4" /> Light/Medium/Heavy correspond to model tiers.
-                    </p>
+                    <div className="mt-3 text-xs text-gray-600 flex items-center justify-center gap-2">
+                      <BadgeDollarSign className="w-4 h-4 text-purple-600" />
+                      <span>Use credits on {bundle.id==='light'?'Light':'Light+Medium'}{bundle.id==='heavy'?'+Heavy':''} models. No expiry.</span>
+                    </div>
                   </div>
                 </div>
               );

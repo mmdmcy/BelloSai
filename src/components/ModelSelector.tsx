@@ -73,7 +73,24 @@ export default function ModelSelector({
   const [query, setQuery] = useState('');
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [activeTab, setActiveTab] = useState<'provider' | 'all' | 'favorites'>('provider');
-  const [compact, setCompact] = useState<boolean>(false);
+  const [compact, setCompact] = useState<boolean>(true);
+
+  // Derive token-gating info from balances stored in AccountMenu fetch
+  const [tokenBalances, setTokenBalances] = useState<{light:number;medium:number;heavy:number}>({light:0,medium:0,heavy:0});
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('bellosai-token-balances');
+      if (raw) setTokenBalances(JSON.parse(raw));
+    } catch {}
+  }, []);
+
+  const getTier = (model: ModelInfo): 'light'|'medium'|'heavy' => {
+    // Basic heuristics aligned with registry getModelTier
+    const maxCost = Math.max(model.inputPricePerMTokens || 0, model.outputPricePerMTokens || 0);
+    if (model.premium || maxCost >= 2) return 'heavy';
+    if (maxCost >= 0.15) return 'medium';
+    return 'light';
+  };
 
   const isUnsupportedModel = (model: ModelInfo) => {
     const unsupportedCaps = ['embedding','ocr','voice','multimodal'];
@@ -121,18 +138,24 @@ export default function ModelSelector({
 
   const renderRow = (model: ModelInfo, isSelected: boolean, isDisabled: boolean, providerColor: string) => {
     const ModelProviderIcon = PROVIDER_ICON[model.provider];
+    const tier = getTier(model);
+    const tierBadge = tier === 'heavy' ? 'H' : tier === 'medium' ? 'M' : 'L';
+    const canUseFree = model.free === true;
+    const hasTokens = tier === 'light' ? tokenBalances.light > 0 : tier === 'medium' ? tokenBalances.medium > 0 || tokenBalances.heavy > 0 : tokenBalances.heavy > 0;
+    const gated = !canUseFree && !hasTokens;
+    const disabled = isDisabled || gated;
     return (
       <button
         key={model.code}
-        className={`w-full flex items-center ${compact ? 'gap-2 px-3 py-2' : 'gap-3 px-4 py-3'} text-left hover:bg-gray-50 ${
+        className={`w-full flex items-center ${compact ? 'gap-2 px-3 py-2' : 'gap-3 px-4 py-3'} text-left ${
           isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
-        } ${isSelected ? (isDark ? 'bg-gray-700' : 'bg-purple-50') : ''} ${isDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
-        onClick={() => !isDisabled && handleModelSelect(model.code)}
-        disabled={isDisabled}
+        } ${isSelected ? (isDark ? 'bg-gray-700' : 'bg-purple-50') : ''} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+        onClick={() => !disabled && handleModelSelect(model.code)}
+        disabled={disabled}
       >
         <ModelProviderIcon className="w-4 h-4" style={{ color: providerColor }} />
         <div className="flex-1 min-w-0">
-          <div className={`text-sm truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{model.name}</div>
+          <div className={`text-sm truncate ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>{model.name}</div>
           {!compact && model.description && (
             <div className={`text-xs truncate ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>{model.description}</div>
           )}
@@ -140,11 +163,14 @@ export default function ModelSelector({
         <span className="ml-2 flex items-center gap-1">
           {model.capabilities.slice(0, compact ? 3 : 5).map(cap => {
             const IconComp = CAPABILITY_ICON[cap] || FileText;
-            return <IconComp key={cap} className="w-3.5 h-3.5 opacity-70" />
+            return <IconComp key={cap} className={`w-3.5 h-3.5 ${isDark ? 'text-gray-200' : 'text-gray-700'} opacity-80`} />
           })}
           {model.supportsWebSearch && (
-            <Search className="w-3.5 h-3.5 opacity-70" />
+            <Search className={`w-3.5 h-3.5 ${isDark ? 'text-gray-200' : 'text-gray-700'} opacity-80`} />
           )}
+        </span>
+        <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${tier==='heavy' ? 'bg-red-500/20 text-red-600' : tier==='medium' ? 'bg-yellow-500/20 text-yellow-700' : 'bg-green-500/20 text-green-700'}`} title={`${tier.toUpperCase()} tier`}>
+          {tierBadge}
         </span>
         {(model.inputPricePerMTokens || model.outputPricePerMTokens) && (
           <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'}`}>
@@ -158,7 +184,7 @@ export default function ModelSelector({
           className={`ml-2 text-xs px-2 py-0.5 rounded ${favorites.includes(model.code) ? 'bg-yellow-500 text-white' : (isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700')}`}
           aria-label="Toggle favorite"
         >★</button>
-        {isUnsupportedModel(model) && (
+        {(isUnsupportedModel(model) || gated) && (
           <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-gray-600 text-white opacity-80">In development</span>
         )}
       </button>
@@ -197,7 +223,7 @@ export default function ModelSelector({
           }`}
         >
           {/* Search + Tabs + Compact */}
-          <div className="p-2 border-b border-gray-200 sticky top-0 bg-inherit">
+          <div className={`p-2 border-b sticky top-0 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
             <input
               value={query}
               onChange={e => setQuery(e.target.value)}
