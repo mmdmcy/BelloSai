@@ -33,12 +33,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     console.log('🔧 AuthProvider: Setting up auth listener')
     
-    // Get initial session and ensure recovery from persisted storage before rendering
+    // Get initial session with a short retry to avoid race conditions on page load
     ;(async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      console.log('🔧 AuthProvider: Initial session loaded:', !!session)
-      setSession(session)
-      setUser(session?.user ?? null)
+      let sess = null as any;
+      for (let i = 0; i < 2; i++) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) { sess = session; break; }
+        await new Promise(r => setTimeout(r, 400));
+      }
+      console.log('🔧 AuthProvider: Initial session loaded:', !!sess)
+      setSession(sess)
+      setUser(sess?.user ?? null)
       setLoading(false)
       setIsAuthReady(true)
     })()

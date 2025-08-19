@@ -18,6 +18,22 @@ export const AVAILABLE_THEMES: Theme[] = [
     retroMode: false
   },
   {
+    id: 'glass-night',
+    name: 'Glass Night',
+    description: 'Dark glassmorphism with purple/indigo accents matching the /welcome look',
+    primaryColor: '#7c3aed',
+    secondaryColor: '#6366f1',
+    backgroundColor: '#0b0b10',
+    textColor: '#e5e7eb',
+    accentColors: ['#7c3aed', '#6366f1', '#a78bfa'],
+    gradientEnabled: true,
+    fontFamily: 'Inter, system-ui',
+    borderRadius: '1.25rem',
+    shadows: true,
+    glassEffect: true,
+    retroMode: false
+  },
+  {
     id: 'glassmorphism',
     name: 'Glassmorphism',
     description: 'Elegant glass effects with modern translucent design',
