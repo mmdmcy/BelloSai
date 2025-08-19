@@ -1245,10 +1245,11 @@ function App() {
 
   const { hasActiveSubscription } = useSubscription();
 
-  // Filter models based on subscription
-  const filteredModels = hasActiveSubscription
+  // Filter models based on subscription and chat capability
+  const filteredModels = (hasActiveSubscription
     ? AVAILABLE_MODELS
-    : AVAILABLE_MODELS.filter(m => !m.premium);
+    : AVAILABLE_MODELS.filter(m => !m.premium))
+    .filter(m => m.forChat !== false);
 
   // Render designer mode if active
   if (isDesignerMode) {
