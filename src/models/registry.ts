@@ -293,6 +293,34 @@ export function getModelProvider(modelCode: string): ModelProvider {
   return 'DeepSeek';
 }
 
+export type ModelTier = 'light' | 'medium' | 'heavy';
+
+// Classify models into Light/Medium/Heavy based on price hints and name heuristics.
+export function getModelTier(modelCode: string): ModelTier {
+  const model = AVAILABLE_MODELS.find(m => m.code === modelCode);
+  if (!model) return 'light';
+
+  const input = typeof model.inputPricePerMTokens === 'number' ? model.inputPricePerMTokens : 0;
+  const output = typeof model.outputPricePerMTokens === 'number' ? model.outputPricePerMTokens : 0;
+  const maxCost = Math.max(input, output);
+
+  // Strong signals
+  if (model.premium) return 'heavy';
+  if (maxCost >= 2) return 'heavy';
+  if (maxCost >= 0.15) return 'medium';
+
+  // Heuristics when prices are missing
+  const name = (model.name || '').toLowerCase();
+  const code = (model.code || '').toLowerCase();
+  const heavyHints = ['large', '235b', '120b'];
+  const mediumHints = ['medium', 'mixtral', 'devstral', 'codestral'];
+
+  if (heavyHints.some(h => name.includes(h) || code.includes(h))) return 'heavy';
+  if (mediumHints.some(h => name.includes(h) || code.includes(h))) return 'medium';
+
+  return 'light';
+}
+
 
 
 
