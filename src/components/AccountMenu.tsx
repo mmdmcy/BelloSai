@@ -271,39 +271,7 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
         </div>
       </div>
 
-      {/* Current Subscription Info - Show if subscribed */}
-      {hasActiveSubscription && subscription && (
-        <div className={`p-6 rounded-lg border ${isDark ? 'bg-green-900/20 border-green-700' : 'bg-green-50 border-green-200'}`}>
-          <div className="flex justify-between items-start mb-4">
-            <h3 className={`text-lg font-semibold ${isDark ? 'text-green-300' : 'text-green-800'}`}>
-              Pro Subscription Active
-            </h3>
-            <span className={`text-sm px-3 py-1 rounded-full ${isDark ? 'bg-green-800 text-green-200' : 'bg-green-200 text-green-800'}`}>
-              {subscription.subscription_status}
-            </span>
-          </div>
-          
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>Plan:</span>
-              <span className={isDark ? 'text-white' : 'text-gray-900'}>Pro Monthly</span>
-            </div>
-            {subscription.current_period_end && (
-              <div className="flex justify-between">
-                <span className={isDark ? 'text-gray-300' : 'text-gray-700'}>Next billing:</span>
-                <span className={isDark ? 'text-white' : 'text-gray-900'}>
-                  {new Date(subscription.current_period_end * 1000).toLocaleDateString()}
-                </span>
-              </div>
-            )}
-            {subscription.cancel_at_period_end && (
-              <div className={`text-sm p-3 rounded-lg ${isDark ? 'bg-yellow-900/20 text-yellow-300' : 'bg-yellow-50 text-yellow-800'}`}>
-                Your subscription will cancel at the end of the current billing period.
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Subscription section removed (bundles-only model) */}
 
       {/* Subscription Sync Section - Always show when logged in */}
       {user && (
