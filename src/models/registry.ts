@@ -195,6 +195,76 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     inputPricePerMTokens: 0.21,
     outputPricePerMTokens: 0.63,
     pricingNotes: 'Image/video tokens billed; up to 16k tokens per image.'
+  },
+  // Qwen3 snapshot models (chat)
+  {
+    name: 'Qwen3 235B Thinking (2507)',
+    code: 'qwen3-235b-a22b-thinking-2507',
+    provider: 'Qwen',
+    source: 'Alibaba Cloud',
+    capabilities: ['text', 'reasoning', 'agentic'],
+    description: 'Qwen3 thinking-only snapshot (Jul 2025).',
+    premium: false,
+    forChat: true,
+    inputPricePerMTokens: 0.7,
+    outputPricePerMTokens: 8.4
+  },
+  {
+    name: 'Qwen3 235B Instruct (2507)',
+    code: 'qwen3-235b-a22b-instruct-2507',
+    provider: 'Qwen',
+    source: 'Alibaba Cloud',
+    capabilities: ['text'],
+    description: 'Qwen3 non-thinking snapshot (Jul 2025).',
+    premium: false,
+    forChat: true,
+    inputPricePerMTokens: 0.7,
+    outputPricePerMTokens: 2.8
+  },
+  {
+    name: 'Qwen3 30B Thinking (2507)',
+    code: 'qwen3-30b-a3b-thinking-2507',
+    provider: 'Qwen',
+    source: 'Alibaba Cloud',
+    capabilities: ['text', 'reasoning'],
+    description: 'Qwen3 30B thinking-only snapshot (Jul 2025).',
+    premium: false,
+    forChat: true,
+    inputPricePerMTokens: 0.2,
+    outputPricePerMTokens: 2.4
+  },
+  {
+    name: 'Qwen3 30B Instruct (2507)',
+    code: 'qwen3-30b-a3b-instruct-2507',
+    provider: 'Qwen',
+    source: 'Alibaba Cloud',
+    capabilities: ['text'],
+    description: 'Qwen3 30B non-thinking snapshot (Jul 2025).',
+    premium: false,
+    forChat: true,
+    pricingNotes: 'Output price not specified in provided sheet; refer to Model Studio.'
+  },
+  // Qwen3 Coder
+  {
+    name: 'Qwen3 Coder Plus',
+    code: 'qwen3-coder-plus',
+    provider: 'Qwen',
+    source: 'Alibaba Cloud',
+    capabilities: ['text', 'code', 'agentic'],
+    description: 'Qwen3 code model (tiered pricing; cache discounts).',
+    premium: false,
+    forChat: true,
+    pricingNotes: 'Tiered; cached input up to 75% off during promo.'
+  },
+  {
+    name: 'Qwen3 Coder Flash',
+    code: 'qwen3-coder-flash',
+    provider: 'Qwen',
+    source: 'Alibaba Cloud',
+    capabilities: ['text', 'code', 'lightweight'],
+    description: 'Qwen3 coder flash (tiered pricing).',
+    premium: false,
+    forChat: true
   }
 ];
 
