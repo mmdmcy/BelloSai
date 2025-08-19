@@ -72,6 +72,35 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       }
     }
 
+    // Credit subscription counters for subscriptions
+    if (mode === 'subscription' && session.subscription && supabaseUserId) {
+      const sub = await stripe.subscriptions.retrieve(session.subscription as string)
+      const priceId = sub.items.data[0]?.price?.id || ''
+      const periodEnd = new Date(sub.current_period_end * 1000).toISOString()
+      const planLite = Deno.env.get('STRIPE_PRICE_SUB_LITE') || ''
+      const planPro = Deno.env.get('STRIPE_PRICE_SUB_PRO') || ''
+      const planElite = Deno.env.get('STRIPE_PRICE_SUB_ELITE') || ''
+
+      let standard = 0, premium = 0, heavy = 0
+      if (priceId === planLite) {
+        standard = 4000; premium = 20; heavy = 0
+      } else if (priceId === planPro) {
+        standard = 5000; premium = 150; heavy = 0
+      } else if (priceId === planElite) {
+        standard = 8000; premium = 200; heavy = 200
+      }
+      if (standard + premium + heavy > 0) {
+        const { error } = await supabaseClient.rpc('credit_subscription_counters', {
+          p_user_id: supabaseUserId,
+          p_standard: standard,
+          p_premium: premium,
+          p_heavy: heavy,
+          p_period_end: periodEnd
+        })
+        if (error) console.error('Failed to credit subscription counters:', error)
+      }
+    }
+
     console.log('Checkout completed processed successfully')
   } catch (error) {
     console.error('Error processing checkout completed:', error)

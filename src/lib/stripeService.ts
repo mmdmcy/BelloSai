@@ -61,29 +61,29 @@ export interface TokenBundle {
 }
 
 export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
-  FREE: {
-    id: 'free',
-    name: 'Free Trial',
-    price: '€0',
-    features: ['20 AI messages', 'Basic chat functionality'],
-    priceId: '',
+  LITE: {
+    id: 'lite',
+    name: 'Lite',
+    price: '€8.99',
+    features: ['1500 Standard messages', '100 Premium messages'],
+    priceId: import.meta.env.VITE_STRIPE_PRICE_SUB_LITE || 'price_1RxudDBzQy7WGhPxAyHDM7RM',
     interval: 'month'
   },
-  MONTHLY: {
-    id: 'monthly',
-    name: 'BelloSai Pro Monthly',
-    price: '€6.99',
-    features: ['Unlimited AI messages', 'All AI models', 'Priority support', 'Advanced features'],
-    priceId: 'price_1RZtB0BzQy7WGhPxMJcDPPTK',
+  PRO: {
+    id: 'pro',
+    name: 'Pro',
+    price: '€14.99',
+    features: ['5000 Standard', '150 Premium'],
+    priceId: import.meta.env.VITE_STRIPE_PRICE_SUB_PRO || 'price_1RxudaBzQy7WGhPxk2oaYpXS',
     interval: 'month'
   },
-  YEARLY: {
-    id: 'yearly',
-    name: 'BelloSai Pro Yearly',
-    price: '€69.99',
-    features: ['Everything in monthly', 'Save over 15%', 'Annual discount'],
-    priceId: '', // Add this when you create a yearly price
-    interval: 'year'
+  ELITE: {
+    id: 'elite',
+    name: 'Elite',
+    price: '€24.99',
+    features: ['8000 Standard', '200 Premium', '200 Heavy'],
+    priceId: import.meta.env.VITE_STRIPE_PRICE_SUB_ELITE || 'price_1RxueXBzQy7WGhPxuodYSeBj',
+    interval: 'month'
   }
 }
 
@@ -94,7 +94,7 @@ export const TOKEN_BUNDLES: TokenBundle[] = [
     name: 'Light Bundle',
     price: '€4.99',
     description: 'Great for casual chats with light-tier models',
-    credits: { light: 300, medium: 0, heavy: 0 },
+    credits: { light: 1500, medium: 0, heavy: 0 },
     priceId: 'price_1RxjjbBzQy7WGhPxljmWOmd3'
   },
   {
@@ -103,7 +103,7 @@ export const TOKEN_BUNDLES: TokenBundle[] = [
     name: 'Medium Bundle',
     price: '€9.99',
     description: 'Best value: includes Medium + Light credits',
-    credits: { light: 300, medium: 200, heavy: 0 },
+    credits: { light: 1500, medium: 600, heavy: 0 },
     priceId: 'price_1Rxjk7BzQy7WGhPx92T9dbzA'
   },
   {
@@ -112,7 +112,7 @@ export const TOKEN_BUNDLES: TokenBundle[] = [
     name: 'Heavy Bundle',
     price: '€19.99',
     description: 'All-in: Heavy + Medium + Light credits',
-    credits: { light: 500, medium: 300, heavy: 150 },
+    credits: { light: 3000, medium: 1200, heavy: 400 },
     priceId: 'price_1RxjkUBzQy7WGhPxcHxiNtSs'
   },
 ]
