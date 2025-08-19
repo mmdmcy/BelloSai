@@ -42,12 +42,15 @@ export interface ModelCapability {
 export interface ModelInfo {
   name: string;
   code: string;
-  provider: 'DeepSeek' | 'Claude' | 'Mistral' | 'Groq';
+  provider: 'DeepSeek' | 'Claude' | 'Mistral' | 'Groq' | 'Qwen';
   source?: string; // e.g., Meta, OpenAI, Mistral
   capabilities: string[];
   description?: string;
   premium?: boolean;
   forChat?: boolean; // filter flag for chat selector visibility
+  inputPricePerMTokens?: number; // USD
+  outputPricePerMTokens?: number; // USD
+  pricingNotes?: string;
 }
 
 export const MODEL_CAPABILITIES: Record<string, ModelCapability> = {

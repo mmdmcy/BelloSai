@@ -33,7 +33,9 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     capabilities: ['text', 'reasoning', 'multimodal', 'agentic'],
     description: 'State-of-the-art performance. Multimodal, coding, function-calling.',
     premium: false,
-    forChat: true
+    forChat: true,
+    inputPricePerMTokens: 0.4,
+    outputPricePerMTokens: 2
   },
   {
     name: 'Mistral Small 3.1',
@@ -43,7 +45,9 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     capabilities: ['text', 'reasoning', 'multimodal', 'lightweight'],
     description: 'SOTA small model. Multimodal. Multilingual. Apache 2.0.',
     premium: false,
-    forChat: true
+    forChat: true,
+    inputPricePerMTokens: 0.1,
+    outputPricePerMTokens: 0.3
   },
   {
     name: 'Codestral',
@@ -53,24 +57,26 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     capabilities: ['text', 'code', 'agentic'],
     description: 'Coding specialist. Fast, proficient in 80+ languages. FIM support.',
     premium: false,
-    forChat: true
+    forChat: true,
+    inputPricePerMTokens: 0.2,
+    outputPricePerMTokens: 0.6
   },
   // New Mistral family additions
-  { name: 'Magistral Medium', code: 'magistral-medium-latest', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'reasoning', 'agentic'], description: 'Frontier-class reasoning model for enterprise use.', premium: false, forChat: true },
+  { name: 'Magistral Medium', code: 'magistral-medium-latest', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'reasoning', 'agentic'], description: 'Frontier-class reasoning model for enterprise use.', premium: false, forChat: true, inputPricePerMTokens: 2, outputPricePerMTokens: 5 },
   { name: 'Devstral Medium', code: 'devstral-medium-2507', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'code', 'agentic'], description: 'Advanced coding agents: multi-file edits, tool use.', premium: false, forChat: true },
-  { name: 'Mistral Large', code: 'mistral-large-latest', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'reasoning', 'multimodal', 'agentic'], description: 'Large model for complex multilingual reasoning.', premium: false, forChat: true },
-  { name: 'Pixtral Large', code: 'pixtral-large-latest', provider: 'Mistral', source: 'Mistral', capabilities: ['multimodal', 'text', 'reasoning'], description: 'Vision-capable large model with frontier reasoning.', premium: false, forChat: true },
-  { name: 'Pixtral 12B', code: 'pixtral-12b', provider: 'Mistral', source: 'Mistral', capabilities: ['multimodal', 'text', 'lightweight'], description: '12B vision-capable small model.', premium: false, forChat: true },
+  { name: 'Mistral Large', code: 'mistral-large-latest', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'reasoning', 'multimodal', 'agentic'], description: 'Large model for complex multilingual reasoning.', premium: false, forChat: true, inputPricePerMTokens: 2, outputPricePerMTokens: 6 },
+  { name: 'Pixtral Large', code: 'pixtral-large-latest', provider: 'Mistral', source: 'Mistral', capabilities: ['multimodal', 'text', 'reasoning'], description: 'Vision-capable large model with frontier reasoning.', premium: false, forChat: true, inputPricePerMTokens: 2, outputPricePerMTokens: 6 },
+  { name: 'Pixtral 12B', code: 'pixtral-12b', provider: 'Mistral', source: 'Mistral', capabilities: ['multimodal', 'text', 'lightweight'], description: '12B vision-capable small model.', premium: false, forChat: true, inputPricePerMTokens: 0.15, outputPricePerMTokens: 0.15 },
   { name: 'Mistral NeMo', code: 'mistral-nemo', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'code', 'lightweight'], description: 'Code-focused open-weight model, strong multilingual.', premium: false, forChat: true },
   { name: 'Mistral Saba', code: 'mistral-saba-latest', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'reasoning'], description: 'Region-specialized text model (ME/SA languages).', premium: false, forChat: true },
-  { name: 'Open Mistral 7B', code: 'open-mistral-7b', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'lightweight'], description: '7B transformer, fast and customizable.', premium: false, forChat: true },
-  { name: 'Open Mixtral 8x7B', code: 'open-mixtral-8x7b', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'reasoning'], description: 'Sparse MoE, strong general performance.', premium: false, forChat: true },
-  { name: 'Open Mixtral 8x22B', code: 'open-mixtral-8x22b', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'reasoning'], description: 'Most performant open model; strong function calling.', premium: false, forChat: true },
+  { name: 'Open Mistral 7B', code: 'open-mistral-7b', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'lightweight'], description: '7B transformer, fast and customizable.', premium: false, forChat: true, inputPricePerMTokens: 0.25, outputPricePerMTokens: 0.25 },
+  { name: 'Open Mixtral 8x7B', code: 'open-mixtral-8x7b', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'reasoning'], description: 'Sparse MoE, strong general performance.', premium: false, forChat: true, inputPricePerMTokens: 0.7, outputPricePerMTokens: 0.7 },
+  { name: 'Open Mixtral 8x22B', code: 'open-mixtral-8x22b', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'reasoning'], description: 'Most performant open model; strong function calling.', premium: false, forChat: true, inputPricePerMTokens: 2, outputPricePerMTokens: 6 },
   { name: 'Ministral 8B', code: 'ministral-8b-latest', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'lightweight'], description: 'Edge-focused 8B model.', premium: false, forChat: true },
   { name: 'Ministral 3B', code: 'ministral-3b-latest', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'lightweight'], description: 'Most efficient edge model.', premium: false, forChat: true },
   { name: 'Magistral Small', code: 'magistral-small-latest', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'reasoning', 'lightweight'], description: 'Small reasoning model, multilingual domain reasoning.', premium: false, forChat: true },
   { name: 'Devstral Small', code: 'devstral-small-latest', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'code', 'agentic', 'lightweight'], description: 'Open coding model for agents; tools and edits.', premium: false, forChat: true },
-  { name: 'Mistral Small 3.2', code: 'mistral-small-2506', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'multimodal', 'lightweight'], description: 'Updated small multimodal model (June 2025).', premium: false, forChat: true },
+  { name: 'Mistral Small 3.2', code: 'mistral-small-2506', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'multimodal', 'lightweight'], description: 'Updated small multimodal model (June 2025).', premium: false, forChat: true, inputPricePerMTokens: 0.1, outputPricePerMTokens: 0.3 },
   { name: 'Mistral Small 3.1', code: 'mistral-small-2503', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'multimodal', 'lightweight'], description: 'Small multimodal model (Mar 2025).', premium: false, forChat: true },
   { name: 'Mistral Small 3', code: 'mistral-small-2501', provider: 'Mistral', source: 'Mistral', capabilities: ['text', 'lightweight'], description: 'Small model (Jan 2025).', premium: false, forChat: true },
   { name: 'Mistral OCR', code: 'mistral-ocr-latest', provider: 'Mistral', source: 'Mistral', capabilities: ['ocr', 'multimodal', 'text'], description: 'Document understanding OCR API.', premium: false, forChat: false },
@@ -112,15 +118,94 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     description: 'Flagship open-weight MoE 120B with strong reasoning and coding.',
     premium: true
   }
+  ,
+  // Qwen (Alibaba Cloud) - best & cheapest latest chat models
+  {
+    name: 'Qwen Max',
+    code: 'qwen-max',
+    provider: 'Qwen',
+    source: 'Alibaba Cloud',
+    capabilities: ['text', 'reasoning', 'agentic'],
+    description: 'Flagship Qwen for complex, multi-step tasks.',
+    premium: false,
+    forChat: true,
+    inputPricePerMTokens: 1.6,
+    outputPricePerMTokens: 6.4
+  },
+  {
+    name: 'Qwen Plus',
+    code: 'qwen-plus',
+    provider: 'Qwen',
+    source: 'Alibaba Cloud',
+    capabilities: ['text', 'reasoning', 'agentic'],
+    description: 'Balanced performance, speed, and price. Supports thinking and non-thinking modes.',
+    premium: false,
+    forChat: true,
+    inputPricePerMTokens: 0.4,
+    outputPricePerMTokens: 1.2,
+    pricingNotes: 'Tiered by input length; thinking mode output up to $4/M.'
+  },
+  {
+    name: 'Qwen Flash',
+    code: 'qwen-flash',
+    provider: 'Qwen',
+    source: 'Alibaba Cloud',
+    capabilities: ['text', 'lightweight'],
+    description: 'Fastest and most price-efficient for simple jobs.',
+    premium: false,
+    forChat: true,
+    inputPricePerMTokens: 0.05,
+    outputPricePerMTokens: 0.4,
+    pricingNotes: 'Tiered by input length; up to 1M context.'
+  },
+  {
+    name: 'Qwen Turbo',
+    code: 'qwen-turbo',
+    provider: 'Qwen',
+    source: 'Alibaba Cloud',
+    capabilities: ['text', 'lightweight'],
+    description: 'Cost-effective general model (superseded by Flash for newest).',
+    premium: false,
+    forChat: true,
+    inputPricePerMTokens: 0.05,
+    outputPricePerMTokens: 0.2,
+    pricingNotes: 'Thinking mode output around $0.5/M.'
+  },
+  {
+    name: 'QwQ Plus (Reasoning)',
+    code: 'qwq-plus',
+    provider: 'Qwen',
+    source: 'Alibaba Cloud',
+    capabilities: ['text', 'reasoning'],
+    description: 'Reinforcement-learned reasoning model with strong math/code.',
+    premium: false,
+    forChat: true,
+    inputPricePerMTokens: 0.8,
+    outputPricePerMTokens: 2.4
+  },
+  {
+    name: 'Qwen VL Plus',
+    code: 'qwen-vl-plus',
+    provider: 'Qwen',
+    source: 'Alibaba Cloud',
+    capabilities: ['text', 'multimodal', 'ocr'],
+    description: 'Multimodal visual understanding with OCR; supports images.',
+    premium: false,
+    forChat: true,
+    inputPricePerMTokens: 0.21,
+    outputPricePerMTokens: 0.63,
+    pricingNotes: 'Image/video tokens billed; up to 16k tokens per image.'
+  }
 ];
 
-export type ModelProvider = 'DeepSeek' | 'Claude' | 'Mistral' | 'Groq';
+export type ModelProvider = 'DeepSeek' | 'Claude' | 'Mistral' | 'Groq' | 'Qwen';
 
 export function getModelProvider(modelCode: string): ModelProvider {
   const model = AVAILABLE_MODELS.find(m => m.code === modelCode);
   if (model?.provider === 'Claude') return 'Claude';
   if (model?.provider === 'Mistral') return 'Mistral';
   if (model?.provider === 'Groq') return 'Groq';
+  if (model?.provider === 'Qwen') return 'Qwen';
   return 'DeepSeek';
 }
 
