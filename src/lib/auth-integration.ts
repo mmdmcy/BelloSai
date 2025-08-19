@@ -54,7 +54,8 @@ export interface MobileLayoutConfig {
 
 // Default layout with authentication buttons
 export const defaultLayoutWithAuth: ExtendedLayoutConfig = {
-  sidebar: { x: 0, y: 5, width: 3, height: 9, zIndex: 1 },
+  // Sidebar expanded by one Y unit downwards by default
+  sidebar: { x: 0, y: 5, width: 3, height: 10, zIndex: 1 },
   mainContent: { x: 5, y: 1, width: 10, height: 12, zIndex: 1 },
   themeToggle: { x: 17, y: 0, width: 1, height: 1, zIndex: 4 },
   topBar: { x: 0, y: 0, width: 20, height: 1, zIndex: 2 },

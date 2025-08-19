@@ -1,12 +1,12 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../hooks/useSubscription';
-import { SUBSCRIPTION_PLANS } from '../lib/stripeService';
+import { SUBSCRIPTION_PLANS, TOKEN_BUNDLES } from '../lib/stripeService';
 import { CheckCircle, ArrowLeft, Loader2 } from 'lucide-react';
 
 export default function Pricing() {
   const { user } = useAuth();
-  const { hasActiveSubscription, createCheckoutSession, loading } = useSubscription();
+  const { hasActiveSubscription, createCheckoutSession, createBundleCheckout, loading } = useSubscription();
   const [actionLoading, setActionLoading] = React.useState<string | null>(null);
 
   const handleSelectPlan = async (priceId: string, planId: string) => {
@@ -66,12 +66,8 @@ export default function Pricing() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Hero Section */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            Kies je perfecte plan
-          </h1>
-          <p className="text-xl text-gray-600 mb-8">
-            Unlock de volledige kracht van BelloSai met onbeperkte AI conversaties
-          </p>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">Choose your package</h1>
+          <p className="text-xl text-gray-600 mb-8">Buy once, use anytime. No subscriptions required.</p>
 
           {hasActiveSubscription && (
             <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-full">
@@ -81,7 +77,42 @@ export default function Pricing() {
           )}
         </div>
 
-        {/* Pricing Cards */}
+        {/* One-time Token Bundles */}
+        <div className="mb-16">
+          <h2 className="text-3xl font-bold text-gray-900 text-center mb-6">Pay-as-you-go Bundles</h2>
+          <p className="text-gray-600 text-center mb-10">Buy once, use anytime. Medium includes Light credits; Heavy includes Medium + Light.</p>
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {TOKEN_BUNDLES.map((bundle) => (
+              <div key={bundle.id} className="relative bg-white rounded-2xl shadow-lg border-2 border-gray-200 hover:border-gray-300 transition-all">
+                <div className="p-8">
+                  <div className="text-center mb-6">
+                    <h3 className="text-2xl font-bold text-gray-900">{bundle.name}</h3>
+                    <div className="mt-3 text-4xl font-bold text-gray-900">{bundle.price}</div>
+                    <p className="mt-2 text-gray-600">{bundle.description}</p>
+                  </div>
+                  <ul className="space-y-2 text-gray-700 mb-6 text-sm">
+                    <li>Light credits: {bundle.credits.light}</li>
+                    <li>Medium credits: {bundle.credits.medium}</li>
+                    <li>Heavy credits: {bundle.credits.heavy}</li>
+                  </ul>
+                  <button
+                    onClick={async () => {
+                      if (!user) { alert('Please log in to purchase a bundle.'); return }
+                      setActionLoading(bundle.id)
+                      try { await createBundleCheckout(bundle.sku) } finally { setActionLoading(null) }
+                    }}
+                    disabled={actionLoading === bundle.id || !bundle.priceId}
+                    className="w-full py-3 px-6 rounded-lg font-medium transition-colors bg-gray-900 text-white hover:bg-black disabled:opacity-50"
+                  >
+                    {actionLoading === bundle.id ? 'Processing…' : (!bundle.priceId ? 'Coming Soon' : 'Buy Bundle')}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Legacy Subscriptions (optional) */}
         <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {Object.values(SUBSCRIPTION_PLANS).map((plan) => {
             const isPopular = plan.id === 'monthly';
@@ -196,10 +227,10 @@ export default function Pricing() {
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             <div className="text-left">
               <h4 className="font-semibold text-gray-900 mb-2">
-                                  Can I cancel my subscription at any time?
+                What do credits mean?
               </h4>
               <p className="text-gray-600">
-                                  Yes, you can cancel your subscription at any time. You retain access to Pro features until the end of your billing period.
+                Each message to a model deducts one credit of its tier. Medium bundles also include Light credits; Heavy bundles include Medium and Light.
               </p>
             </div>
             <div className="text-left">
@@ -207,7 +238,7 @@ export default function Pricing() {
                 What happens to my data if I cancel?
               </h4>
               <p className="text-gray-600">
-                Your chat history and account are preserved. You can always upgrade to Pro again whenever you want.
+                Your chat history and account are preserved. You can buy bundles any time—no subscription required.
               </p>
             </div>
             <div className="text-left">
@@ -220,10 +251,10 @@ export default function Pricing() {
             </div>
             <div className="text-left">
               <h4 className="font-semibold text-gray-900 mb-2">
-                Is there a free trial?
+                Can I get a refund?
               </h4>
               <p className="text-gray-600">
-                Yes! You can try BelloSai for free with 20 messages per month. No credit card required.
+                Refunds depend on Stripe’s policy and our terms. Contact support if you have any issues.
               </p>
             </div>
           </div>

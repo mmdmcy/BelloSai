@@ -170,7 +170,7 @@ serve(async (req) => {
 
     // If session has a subscription, sync it to our database
     let subscriptionActive = false
-    if (session.subscription) {
+    if (session.mode === 'subscription' && session.subscription) {
       try {
         const subscription = await syncSubscriptionFromSession(session)
         subscriptionActive = subscription.status === 'active'
@@ -185,7 +185,7 @@ serve(async (req) => {
       subscriptionActive,
       message: subscriptionActive 
         ? 'Subscription is active' 
-        : 'Payment completed, subscription being activated'
+        : 'Payment completed'
     }), {
       headers: { 
         'Content-Type': 'application/json',

@@ -15,11 +15,16 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
   console.log('Processing checkout completed:', session.id)
 
   try {
-    // Get the subscription
-    const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
-    
-    // Sync subscription to database
-    await syncSubscription(subscription)
+    // Identify if this is subscription or one-time bundle
+    const mode = session.mode
+    const customerId = session.customer as string
+    const supabaseUserId = (session.metadata?.supabase_user_id || '') as string
+    const bundleSku = (session.metadata?.bundle_sku || '') as string
+
+    if (mode === 'subscription' && session.subscription) {
+      const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+      await syncSubscription(subscription)
+    }
 
     // Create order record
     await supabaseClient
@@ -27,13 +32,45 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
       .insert({
         checkout_session_id: session.id,
         payment_intent_id: session.payment_intent as string,
-        customer_id: session.customer as string,
+        customer_id: customerId,
         amount_subtotal: session.amount_subtotal || 0,
         amount_total: session.amount_total || 0,
         currency: session.currency || 'eur',
         payment_status: session.payment_status,
         status: 'completed',
       })
+
+    // Credit tokens for one-time bundles
+    if (mode === 'payment' && supabaseUserId && bundleSku) {
+      // Map bundle SKU -> credits; prices set in Stripe dashboard
+      let light = 0, medium = 0, heavy = 0
+      if (bundleSku === 'LIGHT') {
+        light = 300
+      } else if (bundleSku === 'MEDIUM') {
+        // Includes light as well
+        light = 300
+        medium = 200
+      } else if (bundleSku === 'HEAVY') {
+        // Includes medium + light
+        light = 500
+        medium = 300
+        heavy = 150
+      }
+
+      if (light + medium + heavy > 0) {
+        const { error: creditErr } = await supabaseClient.rpc('credit_tokens', {
+          p_user_id: supabaseUserId,
+          p_light: light,
+          p_medium: medium,
+          p_heavy: heavy,
+        })
+        if (creditErr) {
+          console.error('Failed to credit tokens:', creditErr)
+        } else {
+          console.log('Credited tokens for bundle', { bundleSku, light, medium, heavy })
+        }
+      }
+    }
 
     console.log('Checkout completed processed successfully')
   } catch (error) {

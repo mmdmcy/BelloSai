@@ -12,9 +12,11 @@ const supabaseClient = createClient(
 )
 
 interface CheckoutRequest {
-  price_id: string
+  price_id?: string
   success_url: string
   cancel_url: string
+  mode?: 'subscription' | 'payment'
+  bundle_sku?: 'LIGHT' | 'MEDIUM' | 'HEAVY'
 }
 
 async function getOrCreateCustomer(user: any): Promise<string> {
@@ -82,36 +84,39 @@ serve(async (req) => {
     }
 
     // Parse request body
-    const { price_id, success_url, cancel_url }: CheckoutRequest = await req.json()
+    const { price_id, success_url, cancel_url, mode = 'subscription', bundle_sku }: CheckoutRequest = await req.json()
 
-    if (!price_id || !success_url || !cancel_url) {
+    if (!success_url || !cancel_url) {
       return new Response('Missing required fields', { status: 400 })
     }
 
     // Get or create Stripe customer
     const customerId = await getOrCreateCustomer(user)
 
-    // Create checkout session
-    const session = await stripe.checkout.sessions.create({
+    // Create checkout session (supports subscriptions and one-time bundles)
+    const params: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
-      line_items: [
-        {
-          price: price_id,
-          quantity: 1,
-        },
-      ],
-      mode: 'subscription',
+      mode: mode,
       success_url,
       cancel_url,
-      subscription_data: {
-        metadata: {
-          supabase_user_id: user.id,
-        },
-      },
+      line_items: [],
       metadata: {
         supabase_user_id: user.id,
+        bundle_sku: bundle_sku || ''
       },
-    })
+    }
+
+    if (mode === 'subscription') {
+      if (!price_id) return new Response('Missing price_id for subscription', { status: 400 })
+      params.line_items = [{ price: price_id, quantity: 1 }]
+      params.subscription_data = { metadata: { supabase_user_id: user.id } }
+    } else {
+      // One-time bundles use preconfigured Prices in Stripe; front-end will send a price_id per SKU
+      if (!price_id || !bundle_sku) return new Response('Missing price_id or bundle_sku for payment', { status: 400 })
+      params.line_items = [{ price: price_id, quantity: 1 }]
+    }
+
+    const session = await stripe.checkout.sessions.create(params)
 
     return new Response(
       JSON.stringify({ url: session.url }),

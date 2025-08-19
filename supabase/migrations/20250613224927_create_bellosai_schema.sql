@@ -5,9 +5,23 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Create custom types/enums
-CREATE TYPE subscription_tier AS ENUM ('free', 'pro', 'enterprise');
-CREATE TYPE message_type AS ENUM ('user', 'ai');
-CREATE TYPE subscription_status AS ENUM ('active', 'inactive', 'cancelled', 'past_due');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'subscription_tier') THEN
+    CREATE TYPE subscription_tier AS ENUM ('free', 'pro', 'enterprise');
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'message_type') THEN
+    CREATE TYPE message_type AS ENUM ('user', 'ai');
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'subscription_status') THEN
+    CREATE TYPE subscription_status AS ENUM ('active', 'inactive', 'cancelled', 'past_due');
+  END IF;
+END $$;
 
 -- Users table (extends Supabase auth.users)
 CREATE TABLE public.users (
