@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useSubscription } from '../hooks/useSubscription';
 import { CheckCircle, Home, Loader2, RefreshCw } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 interface SuccessPageProps {}
 
@@ -10,11 +10,36 @@ export default function Success(props: SuccessPageProps) {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('session_id');
   const { user, isAuthReady } = useAuth();
-  const { refreshSubscription, hasActiveSubscription, loading } = useSubscription();
   const [isProcessing, setIsProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [processingComplete, setProcessingComplete] = useState(false);
+  const [credited, setCredited] = useState<{ light: number; medium: number; heavy: number } | null>(null);
+
+  const pollTokenBalances = useCallback(async (maxAttempts = 20, delayMs = 3000) => {
+    if (!user) return null;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const { data, error } = await supabase
+        .from('user_token_balances')
+        .select('light_credits, medium_credits, heavy_credits')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (!error && data) {
+        const total = (data.light_credits || 0) + (data.medium_credits || 0) + (data.heavy_credits || 0);
+        if (total > 0) {
+          setCredited({
+            light: data.light_credits || 0,
+            medium: data.medium_credits || 0,
+            heavy: data.heavy_credits || 0,
+          });
+          return data;
+        }
+      }
+      // wait
+      await new Promise(r => setTimeout(r, delayMs));
+    }
+    return null;
+  }, [user]);
 
   const processPayment = useCallback(async () => {
     if (!sessionId || !user || !isAuthReady || processingComplete) {
@@ -25,7 +50,7 @@ export default function Success(props: SuccessPageProps) {
       setIsProcessing(true);
       setError(null);
 
-      // Stap 1: Probeer direct session verificatie via Stripe API
+      // 1) Verify session (works for both subscription and one-time payments)
       console.log('Verifying payment session...');
       const { StripeService } = await import('../lib/stripeService');
       
@@ -33,30 +58,17 @@ export default function Success(props: SuccessPageProps) {
       console.log('Session verification result:', verifyResult);
 
       if (verifyResult.success) {
-        // Session was succesvol geverifieerd
-        if (verifyResult.subscriptionActive) {
-          // Subscription is already active
-          await refreshSubscription();
+        // 2) For one-time bundles, webhook credits tokens. Poll balances until they appear
+        const balances = await pollTokenBalances();
+        if (balances) {
           setProcessingComplete(true);
           return;
-        } else {
-          // Payment successful but subscription not yet active
-          console.log('Payment successful, waiting for subscription activation...');
         }
       }
 
-      // Stap 2: Wacht voor webhook verwerking als directe verificatie niet volledig lukte
-      console.log('Waiting for webhook processing...');
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Stap 3: Refresh subscription data
-      console.log('Refreshing subscription data...');
-      await refreshSubscription();
-      
-      // Stap 4: Extra controle na refresh
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setProcessingComplete(true);
+      // If credits didn’t appear yet, show soft error with retry option
+      setProcessingComplete(false);
+      throw new Error('Credits not visible yet');
     } catch (err) {
       console.error('Error processing payment success:', err);
       
@@ -68,11 +80,11 @@ export default function Success(props: SuccessPageProps) {
         return;
       }
       
-      setError('There was a problem processing your payment. Your payment was likely successful, but it may take some time before your subscription is activated.');
+      setError('Payment succeeded, but credits are not visible yet. This can take a minute. You can retry below.');
     } finally {
       setIsProcessing(false);
     }
-  }, [sessionId, user, isAuthReady, refreshSubscription, retryCount, processingComplete]);
+  }, [sessionId, user, isAuthReady, pollTokenBalances, retryCount, processingComplete]);
 
   useEffect(() => {
     processPayment();
@@ -163,6 +175,11 @@ export default function Success(props: SuccessPageProps) {
           <p className="text-gray-700">
             Your credits will appear shortly. If you don't see them after a minute, refresh balances in your Account panel.
           </p>
+          {credited && (
+            <div className="mt-3 text-sm text-gray-700">
+              Added credits — Light: {credited.light}, Medium: {credited.medium}, Heavy: {credited.heavy}
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">
@@ -184,9 +201,7 @@ export default function Success(props: SuccessPageProps) {
           </button>
         </div>
 
-        <p className="text-xs text-gray-500 mt-6">
-          You can manage your subscription via your account settings.
-        </p>
+        <p className="text-xs text-gray-500 mt-6">Payments are one-time purchases of credits. No subscriptions.</p>
       </div>
     </div>
   );
