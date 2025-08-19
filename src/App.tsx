@@ -1426,6 +1426,8 @@ function App() {
                     ? (customization.primaryColor !== '#7c3aed' ? customization.primaryColor : undefined)
                     : customization.primaryColor 
                 }}
+                title="BelloSai – AI chatbot with pay‑as‑you‑go credits, multiple top models, and fast streaming responses"
+                aria-label="BelloSai – AI chatbot with pay‑as‑you‑go credits, multiple top models, and fast streaming responses"
               >
                 BelloSai
               </h1>
