@@ -63,7 +63,7 @@ const customStorage = {
 // Create the Supabase client with disabled cross-tab sync
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
-    autoRefreshToken: false, // Disable auto-refresh to prevent connection corruption
+    autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false, // Disable URL session detection to prevent auth state changes
     storage: customStorage,

@@ -1,61 +1,34 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useSubscription } from '../hooks/useSubscription';
-import { SUBSCRIPTION_PLANS, TOKEN_BUNDLES } from '../lib/stripeService';
-import { CheckCircle, ArrowLeft, Loader2 } from 'lucide-react';
+import { TOKEN_BUNDLES } from '../lib/stripeService';
+import { ArrowLeft, Sparkles, BadgeDollarSign, Star } from 'lucide-react';
 
 export default function Pricing() {
   const { user } = useAuth();
-  const { hasActiveSubscription, createCheckoutSession, createBundleCheckout, loading } = useSubscription();
+  const { createBundleCheckout, loading } = useSubscription();
   const [actionLoading, setActionLoading] = React.useState<string | null>(null);
-
-  const handleSelectPlan = async (priceId: string, planId: string) => {
-    if (!user) {
-      alert('You must log in first to choose a subscription.');
-      return;
-    }
-
-    if (!priceId) {
-      alert('Dit plan is nog niet beschikbaar.');
-      return;
-    }
-
-    setActionLoading(planId);
-    try {
-      await createCheckoutSession(priceId);
-    } catch (error) {
-      console.error('Error creating checkout session:', error);
-      alert('Er ging iets mis bij het starten van de checkout. Probeer het opnieuw.');
-    } finally {
-      setActionLoading(null);
-    }
-  };
 
   const handleBackToHome = () => {
     window.location.href = '/';
   };
 
   return (
-  <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+  <div className="min-h-screen bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white/70 backdrop-blur border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center gap-4">
               <button
                 onClick={handleBackToHome}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+                className="flex items-center gap-2 text-gray-700 hover:text-gray-900 transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
                 Back to BelloSai
               </button>
             </div>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/>
-                </svg>
-              </div>
               <span className="text-xl font-bold text-gray-900">BelloSai</span>
             </div>
           </div>
@@ -66,158 +39,74 @@ export default function Pricing() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Hero Section */}
         <div className="text-center mb-16">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">Choose your package</h1>
-          <p className="text-xl text-gray-600 mb-8">Buy once, use anytime. No subscriptions required.</p>
-
-          {hasActiveSubscription && (
-            <div className="inline-flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-full">
-              <CheckCircle className="w-5 h-5" />
-              You already have an active Pro subscription
-            </div>
-          )}
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-sm font-medium mb-4">
+            <Sparkles className="w-4 h-4" />
+            One-time credits. Yours to use, anytime.
+          </div>
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">Flexible AI credits for every need</h1>
+          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+            Light, Medium, and Heavy bundles designed to fit your usage. No recurring fees, no lock-in—just buy and chat.
+          </p>
         </div>
 
         {/* One-time Token Bundles */}
         <div className="mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 text-center mb-6">Pay-as-you-go Bundles</h2>
-          <p className="text-gray-600 text-center mb-10">Buy once, use anytime. Medium includes Light credits; Heavy includes Medium + Light.</p>
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {TOKEN_BUNDLES.map((bundle) => (
-              <div key={bundle.id} className="relative bg-white rounded-2xl shadow-lg border-2 border-gray-200 hover:border-gray-300 transition-all">
-                <div className="p-8">
-                  <div className="text-center mb-6">
-                    <h3 className="text-2xl font-bold text-gray-900">{bundle.name}</h3>
-                    <div className="mt-3 text-4xl font-bold text-gray-900">{bundle.price}</div>
-                    <p className="mt-2 text-gray-600">{bundle.description}</p>
+          <h2 className="text-3xl font-bold text-gray-900 text-center mb-6">Pay‑as‑you‑go Bundles</h2>
+          <p className="text-gray-600 text-center mb-10">Medium includes Light credits; Heavy includes Medium + Light.</p>
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {TOKEN_BUNDLES.map((bundle) => {
+              const highlight = bundle.id === 'medium' ? 'Most Popular' : (bundle.id === 'heavy' ? 'Best Value' : null);
+              return (
+                <div key={bundle.id} className="relative rounded-3xl border border-purple-200/60 bg-white/80 backdrop-blur shadow-xl hover:shadow-2xl transition-all">
+                  {highlight && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <span className="inline-flex items-center gap-1 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                        <Star className="w-3.5 h-3.5" /> {highlight}
+                      </span>
+                    </div>
+                  )}
+                  <div className="p-8">
+                    <div className="text-center mb-6">
+                      <h3 className="text-2xl font-bold text-gray-900">{bundle.name}</h3>
+                      <div className="mt-3 text-4xl font-extrabold text-gray-900">{bundle.price}</div>
+                      <p className="mt-3 text-gray-600">{bundle.description}</p>
+                    </div>
+                    <div className="grid grid-cols-3 gap-3 mb-6">
+                      <div className="rounded-lg bg-gray-50 p-3 text-center">
+                        <p className="text-xs text-gray-500">Light</p>
+                        <p className="text-lg font-semibold text-gray-900">{bundle.credits.light}</p>
+                      </div>
+                      <div className="rounded-lg bg-gray-50 p-3 text-center">
+                        <p className="text-xs text-gray-500">Medium</p>
+                        <p className="text-lg font-semibold text-gray-900">{bundle.credits.medium}</p>
+                      </div>
+                      <div className="rounded-lg bg-gray-50 p-3 text-center">
+                        <p className="text-xs text-gray-500">Heavy</p>
+                        <p className="text-lg font-semibold text-gray-900">{bundle.credits.heavy}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        if (!user) { alert('Please log in to purchase a bundle.'); return }
+                        setActionLoading(bundle.id)
+                        try { await createBundleCheckout(bundle.sku) } finally { setActionLoading(null) }
+                      }}
+                      disabled={actionLoading === bundle.id || !bundle.priceId}
+                      className="w-full py-3 px-6 rounded-xl font-medium transition-colors bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50"
+                    >
+                      {actionLoading === bundle.id ? 'Processing…' : (!bundle.priceId ? 'Coming Soon' : 'Buy Bundle')}
+                    </button>
+                    <p className="mt-3 text-xs text-gray-500 flex items-center justify-center gap-1">
+                      <BadgeDollarSign className="w-4 h-4" /> Light/Medium/Heavy correspond to model tiers.
+                    </p>
                   </div>
-                  <ul className="space-y-2 text-gray-700 mb-6 text-sm">
-                    <li>Light credits: {bundle.credits.light}</li>
-                    <li>Medium credits: {bundle.credits.medium}</li>
-                    <li>Heavy credits: {bundle.credits.heavy}</li>
-                  </ul>
-                  <button
-                    onClick={async () => {
-                      if (!user) { alert('Please log in to purchase a bundle.'); return }
-                      setActionLoading(bundle.id)
-                      try { await createBundleCheckout(bundle.sku) } finally { setActionLoading(null) }
-                    }}
-                    disabled={actionLoading === bundle.id || !bundle.priceId}
-                    className="w-full py-3 px-6 rounded-lg font-medium transition-colors bg-gray-900 text-white hover:bg-black disabled:opacity-50"
-                  >
-                    {actionLoading === bundle.id ? 'Processing…' : (!bundle.priceId ? 'Coming Soon' : 'Buy Bundle')}
-                  </button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
-        {/* Legacy Subscriptions (optional) */}
-        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {Object.values(SUBSCRIPTION_PLANS).map((plan) => {
-            const isPopular = plan.id === 'monthly';
-            const isFree = plan.id === 'free';
-            const isYearly = plan.id === 'yearly';
-
-            return (
-              <div
-                key={plan.id}
-                className={`relative bg-white rounded-2xl shadow-lg border-2 transition-all hover:shadow-xl ${
-                  isPopular 
-                    ? 'border-gray-900 scale-105' 
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                {isPopular && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-gray-900 text-white px-4 py-1 rounded-full text-sm font-medium">
-                      Meest Populair
-                    </span>
-                  </div>
-                )}
-
-                <div className="p-8">
-                  {/* Plan Header */}
-                  <div className="text-center mb-8">
-                    <h3 className={`text-2xl font-bold ${
-                      isPopular ? 'text-gray-900' : 'text-gray-900'
-                    }`}>
-                      {plan.name}
-                    </h3>
-                    <div className="mt-4">
-                      <span className={`text-4xl font-bold ${
-                        isPopular ? 'text-gray-900' : 'text-gray-900'
-                      }`}>
-                        {plan.price}
-                      </span>
-                      {!isFree && (
-                        <span className="text-gray-600 ml-2">
-                          /{plan.interval === 'month' ? 'month' : 'year'}
-                        </span>
-                      )}
-                    </div>
-                    {isYearly && (
-                      <div className="mt-2">
-                        <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-sm">
-                          Save over 15%
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Features */}
-                  <ul className="space-y-4 mb-8">
-                    {plan.features.map((feature, index) => (
-                      <li key={index} className="flex items-start gap-3">
-                        <CheckCircle className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
-                          isPopular ? 'text-gray-900' : 'text-green-500'
-                        }`} />
-                        <span className="text-gray-700">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  {/* CTA Button */}
-                  <div className="text-center">
-                    {isFree ? (
-                      <button
-                        onClick={handleBackToHome}
-                        className="w-full py-3 px-6 border-2 border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-                      >
-                        Try Free
-                      </button>
-                    ) : hasActiveSubscription ? (
-                      <div className="w-full py-3 px-6 bg-gray-100 text-gray-500 rounded-lg font-medium text-center">
-                        Current Plan
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => handleSelectPlan(plan.priceId, plan.id)}
-                        disabled={actionLoading === plan.id || !plan.priceId}
-                        className={`w-full py-3 px-6 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                          isPopular
-                            ? 'bg-gray-900 text-white hover:bg-black disabled:hover:bg-gray-900'
-                            : 'bg-gray-900 text-white hover:bg-gray-800 disabled:hover:bg-gray-900'
-                        }`}
-                      >
-                        {actionLoading === plan.id ? (
-                          <div className="flex items-center justify-center gap-2">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Loading...
-                          </div>
-                        ) : !plan.priceId && !isFree ? (
-                          'Coming Soon'
-                        ) : (
-                          'Choose This Plan'
-                        )}
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        {/* Subscriptions removed — bundles only */}
 
         {/* FAQ or Additional Info */}
         <div className="mt-16 text-center">
