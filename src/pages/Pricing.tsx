@@ -1,11 +1,13 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { TOKEN_BUNDLES } from '../lib/stripeService';
-import { ArrowLeft, Sparkles, BadgeDollarSign, Star, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Sparkles, BadgeDollarSign, Star, ArrowRight, LogIn } from 'lucide-react';
 import { StripeService } from '../lib/stripeService';
 
 export default function Pricing() {
   const { user } = useAuth();
+  const prefersLight = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
+  const isLight = prefersLight;
   const [actionLoading, setActionLoading] = React.useState<string | null>(null);
 
   const handleBackToHome = () => {
@@ -13,7 +15,7 @@ export default function Pricing() {
   };
 
   return (
-  <div className="min-h-screen relative overflow-hidden bg-[#0b0b10] text-white">
+  <div className={`min-h-screen relative overflow-hidden ${isLight ? 'bg-white text-gray-900' : 'bg-[#0b0b10] text-white'}`}>
       <style>{`
         @keyframes pulseGlow { 0%,100%{opacity:.25; filter:blur(80px)} 50%{opacity:.45; filter:blur(100px)} }
         .glass { backdrop-filter: blur(14px); background: linear-gradient( to bottom right, rgba(255,255,255,0.08), rgba(255,255,255,0.03) ); border: 1px solid rgba(255,255,255,0.08); }
@@ -23,20 +25,33 @@ export default function Pricing() {
         <div className="absolute -bottom-48 -right-24 w-[800px] h-[800px] bg-gradient-to-tr from-indigo-700/40 via-purple-600/30 to-fuchsia-500/40 rounded-full" style={{ animation: 'pulseGlow 10s ease-in-out infinite' }} />
       </div>
       {/* Header */}
-      <div className="bg-transparent border-b border-white/10">
+      <div className={`bg-transparent border-b ${isLight ? 'border-gray-200' : 'border-white/10'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div className="flex items-center gap-4">
               <button
                 onClick={handleBackToHome}
-                className="flex items-center gap-2 text-white/80 hover:text-white transition-colors"
+                className={`flex items-center gap-2 ${isLight ? 'text-gray-600 hover:text-gray-900' : 'text-white/80 hover:text-white'} transition-colors`}
               >
                 <ArrowLeft className="w-5 h-5" />
                 Back to BelloSai
               </button>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xl font-bold">BelloSai</span>
+            <div className="flex items-center gap-3">
+              {!user && (
+                <a
+                  href="/auth"
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition ${isLight ? 'bg-gray-900 text-white hover:bg-black' : 'bg-white/10 hover:bg-white/15 border border-white/10'}`}
+                >
+                  <span className="inline-flex items-center gap-2"><LogIn className="w-4 h-4"/> Log in</span>
+                </a>
+              )}
+              <a
+                href="/"
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition ${isLight ? 'bg-white border border-gray-200 hover:bg-gray-50' : 'bg-white/10 hover:bg-white/15 border border-white/10'}`}
+              >
+                Open App
+              </a>
             </div>
           </div>
         </div>
@@ -49,16 +64,16 @@ export default function Pricing() {
             <Sparkles className="w-3.5 h-3.5" /> Pick your bundle
           </span>
           <h1 className="mt-3 text-3xl md:text-4xl font-extrabold">Choose your credits</h1>
-          <p className="text-sm md:text-base text-white/70 mt-2">No subscriptions. Instant access. Keep unused credits forever.</p>
+          <p className={`text-sm md:text-base mt-2 ${isLight ? 'text-gray-600' : 'text-white/70'}`}>No subscriptions. Instant access. Keep unused credits forever.</p>
         </div>
 
         {/* One-time Token Bundles */}
         <div className="mb-16">
-          <h2 className="text-3xl font-extrabold text-gray-900 text-center mb-3">Pay‑as‑you‑go Bundles</h2>
-          <p className="text-gray-600 text-center mb-10">More messages for less. Medium includes Light; Heavy includes Medium + Light.</p>
+          <h2 className={`text-3xl font-extrabold text-center mb-3 ${isLight ? 'text-gray-900' : ''}`}>Pay‑as‑you‑go Bundles</h2>
+          <p className={`${isLight ? 'text-gray-600' : 'text-white/70'} text-center mb-10`}>More messages for less. Medium includes Light; Heavy includes Medium + Light.</p>
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {TOKEN_BUNDLES.map((bundle) => {
-              const highlight = bundle.id === 'medium' ? 'Most Popular' : (bundle.id === 'heavy' ? 'Best Value' : null);
+              const highlight = bundle.sku === 'MEDIUM' ? 'Most Popular' : (bundle.sku === 'HEAVY' ? 'Best Value' : null);
               return (
                 <div key={bundle.id} className="relative rounded-3xl glass border border-white/10 shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
                   {highlight && (
@@ -75,18 +90,12 @@ export default function Pricing() {
                       <p className="mt-3 text-white/70">{bundle.description}</p>
                     </div>
                     <div className="grid grid-cols-3 gap-3 mb-6">
-                      <div className="rounded-lg bg-gray-50 p-3 text-center">
-                        <p className="text-xs text-gray-800">Light</p>
-                        <p className="text-lg font-semibold text-gray-900">{bundle.credits.light}</p>
-                      </div>
-                      <div className="rounded-lg bg-gray-50 p-3 text-center">
-                        <p className="text-xs text-gray-800">Medium</p>
-                        <p className="text-lg font-semibold text-gray-900">{bundle.credits.medium}</p>
-                      </div>
-                      <div className="rounded-lg bg-gray-50 p-3 text-center">
-                        <p className="text-xs text-gray-800">Heavy</p>
-                        <p className="text-lg font-semibold text-gray-900">{bundle.credits.heavy}</p>
-                      </div>
+                      {(['light','medium','heavy'] as const).map((tier) => (
+                        <div key={tier} className={`${isLight ? 'bg-gray-50' : 'bg-white/5 border border-white/10'} rounded-lg p-3 text-center`}>
+                          <p className={`${isLight ? 'text-gray-800' : 'text-white/80'} text-xs capitalize`}>{tier}</p>
+                          <p className={`${isLight ? 'text-gray-900' : 'text-white'} text-lg font-semibold`}>{bundle.credits[tier]}</p>
+                        </div>
+                      ))}
                     </div>
                     <button
                       onClick={async () => {

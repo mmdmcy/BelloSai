@@ -199,11 +199,11 @@ function App() {
     return {
       showQuestions: true,
       primaryColor: '#7c3aed',
-      secondaryColor: '#a855f7',
+      secondaryColor: '#6366f1',
       fontFamily: 'Inter',
-      gradientEnabled: false,
-      gradientColors: ['#7c3aed', '#a855f7'],
-      selectedTheme: 'default'
+      gradientEnabled: true,
+      gradientColors: ['#7c3aed', '#6366f1'],
+      selectedTheme: 'glass-night'
     };
   });
 
