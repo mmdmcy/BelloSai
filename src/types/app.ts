@@ -52,6 +52,7 @@ export interface ModelInfo {
   outputPricePerMTokens?: number; // USD
   pricingNotes?: string;
   supportsWebSearch?: boolean;
+  free?: boolean; // free-to-use without tokens (limited messages)
 }
 
 export const MODEL_CAPABILITIES: Record<string, ModelCapability> = {

@@ -30,6 +30,34 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
   const [lightCredits, setLightCredits] = useState<number>(0);
   const [mediumCredits, setMediumCredits] = useState<number>(0);
   const [heavyCredits, setHeavyCredits] = useState<number>(0);
+
+  const fetchTokenBalances = async () => {
+    if (!user) return;
+    try {
+      setTokenLoading(true);
+      setTokenError(null);
+      const { data, error } = await supabase
+        .from('user_token_balances')
+        .select('light_credits, medium_credits, heavy_credits')
+        .eq('user_id', user.id)
+        .single();
+      if (error) throw error;
+      const next = {
+        light: data?.light_credits ?? 0,
+        medium: data?.medium_credits ?? 0,
+        heavy: data?.heavy_credits ?? 0,
+      };
+      setLightCredits(next.light);
+      setMediumCredits(next.medium);
+      setHeavyCredits(next.heavy);
+      try { localStorage.setItem('bellosai-token-balances', JSON.stringify(next)); } catch {}
+    } catch (err) {
+      console.error('❌ [AccountMenu] Failed to fetch token balances:', err);
+      setTokenError('Failed to load token balances');
+    } finally {
+      setTokenLoading(false);
+    }
+  };
   
   // Use subscription hook
   const { 
