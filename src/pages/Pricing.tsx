@@ -75,7 +75,7 @@ export default function Pricing() {
             {TOKEN_BUNDLES.map((bundle) => {
               const highlight = bundle.sku === 'MEDIUM' ? 'Most Popular' : (bundle.sku === 'HEAVY' ? 'Best Value' : null);
               return (
-                <div key={bundle.id} className="relative rounded-3xl glass border border-white/10 shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1">
+                <div key={bundle.id} className={`relative rounded-3xl ${isLight ? 'border border-gray-200 bg-white' : 'glass border border-white/10'} shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1`}>
                   {highlight && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                       <span className="inline-flex items-center gap-1 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
@@ -87,7 +87,7 @@ export default function Pricing() {
                     <div className="text-center mb-6">
                       <h3 className="text-2xl font-extrabold">{bundle.name}</h3>
                       <div className="mt-3 text-4xl font-extrabold">{bundle.price}</div>
-                      <p className="mt-3 text-white/70">{bundle.description}</p>
+                      <p className={`${isLight ? 'text-gray-600' : 'text-white/70'} mt-3`}>{bundle.description}</p>
                     </div>
                     <div className="grid grid-cols-3 gap-3 mb-6">
                       {(['light','medium','heavy'] as const).map((tier) => (
