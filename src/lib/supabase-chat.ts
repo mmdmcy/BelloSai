@@ -31,7 +31,7 @@ export interface MessageLimitError {
 
 export type DeepSeekModel = 'DeepSeek-V3' | 'DeepSeek-R1';
 
-type ModelProvider = 'DeepSeek' | 'Claude' | 'Mistral';
+type ModelProvider = 'DeepSeek' | 'Claude' | 'Mistral' | 'Groq';
 
 // No timeouts - let AI work without any interruption!
 
@@ -160,6 +160,7 @@ export async function sendChatMessage(
     if (provider === 'DeepSeek') url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`;
     else if (provider === 'Claude') url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/claude-chat`;
     else if (provider === 'Mistral') url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mistral-chat`;
+    else if (provider === 'Groq') url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/groq-chat`;
     console.log('📡 Calling Edge Function:', url);
     console.log('📡 Request payload:', { messages, model: modelCode, conversationId });
     
@@ -290,7 +291,7 @@ export async function sendChatMessage(
         reader.releaseLock();
       }
     } else {
-      // Claude/Mistral: regular JSON response (no streaming)
+      // Claude/Mistral/Groq: regular JSON response (no streaming)
       console.log('📦 Processing non-DeepSeek response for provider:', provider);
       const data = await response.json();
       console.log('📦 Non-DeepSeek response data:', data);

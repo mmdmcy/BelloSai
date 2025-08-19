@@ -7,6 +7,7 @@ import AuthDebug from './pages/AuthDebug.tsx';
 import Game from './pages/Game.tsx';
 import Success from './pages/Success.tsx';
 import Pricing from './pages/Pricing.tsx';
+import Models from './pages/Models.tsx';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
@@ -19,6 +20,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/game" element={<Game />} />
           <Route path="/success" element={<Success />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/models" element={<Models />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -1,6 +1,6 @@
 # BelloSai - AI Chat Assistant
 
-A modern, open-source AI chat application built with React, TypeScript, and Supabase. Features multiple AI models including DeepSeek, Claude, and Mistral, real-time streaming responses, subscription management with Stripe, and an AI Feud game.
+A modern, open-source AI chat application built with React, TypeScript, and Supabase. Features multiple AI models including DeepSeek, Claude, Mistral, and Groq, real-time streaming responses, subscription management with Stripe, and an AI Feud game.
 
 ## Live Demo
 
@@ -15,6 +15,7 @@ A modern, open-source AI chat application built with React, TypeScript, and Supa
 - **Mistral Medium 3** - State-of-the-art performance, cost-efficient (Free)
 - **Mistral Small 3.1** - Multimodal, multilingual capabilities (Free)
 - **Codestral** - Specialized coding assistant supporting 80+ languages (Free)
+- **Groq** - Llama 3.1 8B Instant, Llama 3.3 70B Versatile, GPT-OSS 20B, GPT-OSS 120B
 - Real-time streaming responses
 - Conversation history and context
 - Model switching during conversations
@@ -81,6 +82,7 @@ A modern, open-source AI chat application built with React, TypeScript, and Supa
 - **DeepSeek API** for advanced reasoning and general chat
 - **Claude API** for fast, efficient responses
 - **Mistral API** for multilingual and coding tasks
+- **Groq API** via `GROQ_API_KEY` for the production Groq models listed above
 - Streaming support for real-time responses
 - Rate limiting and usage tracking
 - Error handling and fallbacks
@@ -146,6 +148,7 @@ supabase login
 supabase functions deploy deepseek-chat --project-ref your_project_ref
 supabase functions deploy claude-chat --project-ref your_project_ref
 supabase functions deploy mistral-chat --project-ref your_project_ref
+supabase functions deploy groq-chat --project-ref your_project_ref
 supabase functions deploy stripe-checkout --project-ref your_project_ref
 supabase functions deploy stripe-webhook --project-ref your_project_ref
 ```
@@ -154,6 +157,7 @@ supabase functions deploy stripe-webhook --project-ref your_project_ref
 supabase secrets set DEEPSEEK_API_KEY=your_deepseek_api_key
 supabase secrets set CLAUDE_API_KEY=your_claude_api_key
 supabase secrets set MISTRAL_API_KEY=your_mistral_api_key
+supabase secrets set GROQ_API_KEY=your_groq_api_key
 supabase secrets set STRIPE_SECRET_KEY=your_stripe_secret_key
 supabase secrets set STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
 ```
