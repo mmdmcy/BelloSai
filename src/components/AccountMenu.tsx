@@ -4,7 +4,8 @@ import { CustomizationSettings } from '../types/app';
 import { AVAILABLE_THEMES } from '../theme/registry';
 import type { User } from '@supabase/supabase-js';
 import { useSubscription } from '../hooks/useSubscription';
-import { SUBSCRIPTION_PLANS } from '../lib/stripeService';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 interface AccountMenuProps {
   isDark: boolean;
@@ -21,15 +22,20 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
   const [tempCustomization, setTempCustomization] = useState<CustomizationSettings>(customization);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
-  const [upgradeLoading, setUpgradeLoading] = useState(false);
   const [syncLoading, setSyncLoading] = useState(false);
+  const navigate = useNavigate();
+  // Token bundle balances
+  const [tokenLoading, setTokenLoading] = useState<boolean>(false);
+  const [tokenError, setTokenError] = useState<string | null>(null);
+  const [lightCredits, setLightCredits] = useState<number>(0);
+  const [mediumCredits, setMediumCredits] = useState<number>(0);
+  const [heavyCredits, setHeavyCredits] = useState<number>(0);
   
   // Use subscription hook
   const { 
     subscription, 
     hasActiveSubscription, 
     loading: subscriptionLoading, 
-    createCheckoutSession,
     refreshSubscription 
   } = useSubscription();
 
@@ -121,9 +127,7 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
   };
 
   const getPlanStatus = () => {
-    if (localSubscriptionLoading) return 'Checking...';
-    if (hasActiveSubscription) return 'Pro Plan';
-    return 'Free Plan';
+    return 'Token Bundles';
   };
 
   const getPlanColor = () => {
@@ -131,28 +135,8 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
     return 'bg-gray-700 text-white';
   };
 
-  const handleUpgradeClick = async () => {
-    if (upgradeLoading) return; // Prevent multiple clicks
-    
-    setUpgradeLoading(true);
-    
-    try {
-      // Add timeout to prevent infinite loading
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Checkout timeout')), 15000) // 15 second timeout
-      })
-      
-      const checkoutPromise = createCheckoutSession(SUBSCRIPTION_PLANS.MONTHLY.priceId);
-      
-      await Promise.race([checkoutPromise, timeoutPromise]);
-    } catch (error) {
-      console.error('❌ [AccountMenu] Failed to create checkout session:', error);
-      
-      // Show user-friendly error message
-      alert('Something went wrong starting the checkout. Please try again.');
-    } finally {
-      setUpgradeLoading(false);
-    }
+  const handleGoToPricing = () => {
+    navigate('/pricing');
   };
 
   const handleSyncSubscription = async () => {
@@ -209,74 +193,55 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
         )}
       </div>
 
-      {/* Upgrade Section - Only show if not already subscribed */}
-      {!hasActiveSubscription && (
-        <div className={`p-6 rounded-lg border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <div className="flex justify-between items-start mb-4">
-            <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              Upgrade to Pro
-            </h3>
-            <span className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-              €6.99<span className="text-sm font-normal">/month</span>
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div className="flex items-start gap-3">
-              <Sparkles className="w-5 h-5 text-pink-500 mt-0.5" />
-              <div>
-                <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  Access to All Models
-                </h4>
-                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Get access to the full suite of models including Claude, o3-mini-high, and more!
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-3">
-              <Sparkles className="w-5 h-5 text-pink-500 mt-0.5" />
-              <div>
-                <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  Generous Limits
-                </h4>
-                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Receive <strong>1500 standard credits</strong> per month, plus <strong>100 premium credits*</strong> per month.
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-start gap-3">
-              <Sparkles className="w-5 h-5 text-pink-500 mt-0.5" />
-              <div>
-                <h4 className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  Priority Support
-                </h4>
-                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                  Get faster responses and dedicated assistance when you need help!
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <button 
-            onClick={handleUpgradeClick}
-            disabled={upgradeLoading}
-            className="w-full py-3 rounded-lg font-medium transition-colors text-white hover:opacity-90 disabled:opacity-50"
-            style={{ 
-              background: customization.gradientEnabled 
-                ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                : customization.primaryColor
-            }}
+      {/* Token Bundles Section */}
+      <div className={`p-6 rounded-lg border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+        <div className="flex justify-between items-start mb-4">
+          <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            Token bundles
+          </h3>
+          <button
+            onClick={handleGoToPricing}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isDark ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-purple-600 hover:bg-purple-700 text-white'}`}
           >
-            {upgradeLoading ? 'Loading...' : 'Upgrade Now'}
+            Buy tokens
           </button>
-
-          <p className={`text-xs mt-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-            * Premium credits are used for GPT Image Gen, Claude Sonnet, and Grok 3. Additional Premium credits can be purchased separately.
-          </p>
         </div>
-      )}
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className={`${isDark ? 'bg-gray-900/50' : 'bg-gray-50'} rounded-lg p-4`}>
+            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Light credits</p>
+            <p className={`text-2xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{tokenLoading ? '—' : lightCredits}</p>
+          </div>
+          <div className={`${isDark ? 'bg-gray-900/50' : 'bg-gray-50'} rounded-lg p-4`}>
+            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Medium credits</p>
+            <p className={`text-2xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{tokenLoading ? '—' : mediumCredits}</p>
+          </div>
+          <div className={`${isDark ? 'bg-gray-900/50' : 'bg-gray-50'} rounded-lg p-4`}>
+            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Heavy credits</p>
+            <p className={`text-2xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{tokenLoading ? '—' : heavyCredits}</p>
+          </div>
+        </div>
+
+        {tokenError && (
+          <p className="text-sm text-red-500 mt-3">{tokenError}</p>
+        )}
+
+        <div className="mt-4 flex gap-2">
+          <button
+            onClick={async () => { await fetchTokenBalances(); }}
+            disabled={tokenLoading}
+            className={`px-3 py-2 rounded-lg text-sm transition-colors ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-900'} disabled:opacity-50`}
+          >
+            {tokenLoading ? 'Refreshing…' : 'Refresh balances'}
+          </button>
+          <button
+            onClick={handleGoToPricing}
+            className={`px-3 py-2 rounded-lg text-sm transition-colors ${isDark ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
+          >
+            Go to Pricing
+          </button>
+        </div>
+      </div>
 
       {/* Current Subscription Info - Show if subscribed */}
       {hasActiveSubscription && subscription && (
