@@ -55,7 +55,8 @@ Deno.serve(async (req) => {
         model: model || 'mistral-medium',
         messages: mistralMessages,
         temperature: 0.7,
-        max_tokens: 4096
+        max_tokens: 4096,
+        stream: true
       })
     })
 
@@ -65,28 +66,41 @@ Deno.serve(async (req) => {
       throw new Error(`Mistral API error: ${response.status} - ${error}`)
     }
 
+    if (response.headers.get('content-type')?.includes('text/event-stream')) {
+      const stream = new ReadableStream({
+        async start(controller) {
+          const reader = response.body!.getReader();
+          const decoder = new TextDecoder();
+          let full = '';
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            for (const line of chunk.split('\n')) {
+              if (!line.startsWith('data: ')) continue;
+              const payload = line.slice(6).trim();
+              if (!payload || payload === '[DONE]') continue;
+              try {
+                const data = JSON.parse(payload);
+                const delta = data?.choices?.[0]?.delta?.content;
+                if (delta) {
+                  full += delta;
+                  controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ content: delta, type: 'chunk' })}\n\n`));
+                }
+              } catch {}
+            }
+          }
+          controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ content: full, type: 'complete', model: model || 'mistral-medium' })}\n\n`));
+          controller.close();
+        }
+      });
+      return new Response(stream, { headers: { ...corsHeaders, 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' } });
+    }
+
+    // Fallback non-stream
     const data = await response.json()
-    console.log('Mistral response:', JSON.stringify(data, null, 2))
-
-    // Validate response format
-    if (!data.choices || !Array.isArray(data.choices) || data.choices.length === 0) {
-      throw new Error('Invalid response format from Mistral API')
-    }
-
-    const choice = data.choices[0]
-    if (!choice.message || !choice.message.content) {
-      throw new Error('No message content found in Mistral response')
-    }
-
-    // Return in the format expected by the frontend (response field for non-DeepSeek providers)
-    const responseData = {
-      response: choice.message.content,
-      model: model || 'mistral-medium'
-    }
-
-    return new Response(JSON.stringify(responseData), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    const content = data?.choices?.[0]?.message?.content || ''
+    return new Response(JSON.stringify({ response: content, model: model || 'mistral-medium' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   } catch (error) {
     console.error('Mistral chat error:', error)
     return new Response(JSON.stringify({ 
