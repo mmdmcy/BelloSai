@@ -10,12 +10,11 @@ const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' })
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
 if (!SUPABASE_URL) console.error('[stripe-checkout] Missing SUPABASE_URL')
-if (!SUPABASE_SERVICE_ROLE_KEY && !SUPABASE_ANON_KEY) console.error('[stripe-checkout] Missing both SERVICE_ROLE and ANON keys')
-const supabaseClient = createClient(
+if (!SUPABASE_SERVICE_ROLE_KEY) console.error('[stripe-checkout] Missing SUPABASE_SERVICE_ROLE_KEY')
+const supabaseAdmin = createClient(
   SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY
+  SUPABASE_SERVICE_ROLE_KEY
 )
 
 interface CheckoutRequest {
@@ -28,7 +27,7 @@ interface CheckoutRequest {
 
 async function getOrCreateCustomer(user: any): Promise<string> {
   // Check if customer already exists in our database
-  const { data: existingCustomer } = await supabaseClient
+  const { data: existingCustomer } = await supabaseAdmin
     .from('stripe_customers')
     .select('customer_id')
     .eq('user_id', user.id)
@@ -48,7 +47,7 @@ async function getOrCreateCustomer(user: any): Promise<string> {
   })
 
   // Store customer in our database
-  await supabaseClient
+  await supabaseAdmin
     .from('stripe_customers')
     .insert({
       user_id: user.id,
@@ -89,9 +88,9 @@ serve(async (req) => {
       return new Response('Missing authorization header', { status: 401 })
     }
 
-    // Get user from auth token
+    // Validate user from bearer token using admin client
     const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token)
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token)
 
     if (authError || !user) {
       console.error('Auth error:', authError)
