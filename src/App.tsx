@@ -196,14 +196,17 @@ function App() {
     
     // Default values if nothing in localStorage
     console.log('🎨 Using default customization settings');
+    const prefersLight = typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: light)').matches;
+    const defaultTheme = 'glass-night';
+    const defaultSecondary = '#7c3aed';
     return {
       showQuestions: true,
       primaryColor: '#7c3aed',
-      secondaryColor: '#6366f1',
+      secondaryColor: defaultSecondary,
       fontFamily: 'Inter',
-      gradientEnabled: true,
-      gradientColors: ['#7c3aed', '#6366f1'],
-      selectedTheme: 'glass-night'
+      gradientEnabled: false,
+      gradientColors: prefersLight ? ['#ffffff', '#ffffff'] : ['#0b0b10', '#0b0b10'],
+      selectedTheme: defaultTheme
     };
   });
 
@@ -1324,15 +1327,13 @@ function App() {
     <div 
       className={`h-screen overflow-hidden ${
         isDark 
-          ? 'dark bg-gray-900' 
-          : hasGlassEffect() 
-            ? 'glass-bg' 
-            : 'bg-gray-50'
+          ? 'dark bg-black' 
+          : 'bg-white'
       }`}
       style={{ 
         fontFamily: customization.fontFamily,
-        background: hasGlassEffect() && !isDark 
-          ? getCurrentTheme()?.backgroundColor || 'linear-gradient(135deg, #a7f3d0 0%, #7dd3fc 35%, #93c5fd 100%)'
+        background: hasGlassEffect() && isDark 
+          ? getCurrentTheme()?.backgroundColor || '#0b0b10'
           : undefined
       }}
     >
