@@ -2,13 +2,20 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@14.19.0'
 
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
-  apiVersion: '2023-10-16',
-})
+const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY') || ''
+if (!STRIPE_SECRET_KEY) {
+  console.error('[stripe-checkout] Missing STRIPE_SECRET_KEY environment variable')
+}
+const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' })
 
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+if (!SUPABASE_URL) console.error('[stripe-checkout] Missing SUPABASE_URL')
+if (!SUPABASE_SERVICE_ROLE_KEY && !SUPABASE_ANON_KEY) console.error('[stripe-checkout] Missing both SERVICE_ROLE and ANON keys')
 const supabaseClient = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY
 )
 
 interface CheckoutRequest {
@@ -68,6 +75,14 @@ serve(async (req) => {
       return new Response('Method not allowed', { status: 405 })
     }
 
+    // Validate server envs early
+    if (!STRIPE_SECRET_KEY) {
+      return new Response('Stripe not configured on the server', { status: 500 })
+    }
+    if (!SUPABASE_URL) {
+      return new Response('Supabase not configured on the server', { status: 500 })
+    }
+
     // Get the authorization header
     const authHeader = req.headers.get('authorization')
     if (!authHeader) {
@@ -91,7 +106,13 @@ serve(async (req) => {
     }
 
     // Get or create Stripe customer
-    const customerId = await getOrCreateCustomer(user)
+    let customerId = ''
+    try {
+      customerId = await getOrCreateCustomer(user)
+    } catch (e) {
+      console.error('Failed to get or create Stripe customer:', e)
+      return new Response('Unable to create customer', { status: 500 })
+    }
 
     // Create checkout session (supports subscriptions and one-time bundles)
     const params: Stripe.Checkout.SessionCreateParams = {
@@ -127,10 +148,10 @@ serve(async (req) => {
         },
       }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error creating checkout session:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error?.message || 'Unknown error' }),
       {
         status: 500,
         headers: {
