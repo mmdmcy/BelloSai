@@ -43,9 +43,11 @@ export interface ModelInfo {
   name: string;
   code: string;
   provider: 'DeepSeek' | 'Claude' | 'Mistral' | 'Groq';
+  source?: string; // e.g., Meta, OpenAI, Mistral
   capabilities: string[];
   description?: string;
   premium?: boolean;
+  forChat?: boolean; // filter flag for chat selector visibility
 }
 
 export const MODEL_CAPABILITIES: Record<string, ModelCapability> = {
@@ -60,6 +62,13 @@ export const MODEL_CAPABILITIES: Record<string, ModelCapability> = {
   search: { key: 'search', label: 'Search', icon: 'Globe' },
   tuning: { key: 'tuning', label: 'Tuning', icon: 'SlidersHorizontal' },
   reasoning: { key: 'reasoning', label: 'Reasoning', icon: 'Brain' },
+  multimodal: { key: 'multimodal', label: 'Multimodal', icon: 'Image' },
+  ocr: { key: 'ocr', label: 'OCR', icon: 'ScanText' },
+  voice: { key: 'voice', label: 'Voice', icon: 'Mic' },
+  embedding: { key: 'embedding', label: 'Embedding', icon: 'Database' },
+  classifier: { key: 'classifier', label: 'Classifier', icon: 'ShieldCheck' },
+  agentic: { key: 'agentic', label: 'Agentic', icon: 'Workflow' },
+  lightweight: { key: 'lightweight', label: 'Lightweight', icon: 'Feather' },
 };
 
 
