@@ -57,13 +57,29 @@ export default function Success(props: SuccessPageProps) {
       const verifyResult = await StripeService.verifyPaymentSession(sessionId);
       console.log('Session verification result:', verifyResult);
 
-      if (verifyResult.success) {
-        // 2) For one-time bundles, webhook credits tokens. Poll balances until they appear
-        const balances = await pollTokenBalances();
-        if (balances) {
-          setProcessingComplete(true);
-          return;
+      // 2) Try to fulfill credits on-demand (idempotent) to avoid waiting for webhook delays
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-fulfill-bundle`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: sessionId })
+        });
+        if (resp.ok) {
+          const result = await resp.json();
+          console.log('Fulfill result:', result);
+        } else {
+          console.warn('Fulfill endpoint returned non-OK');
         }
+      } catch (e) {
+        console.warn('Fulfill call failed:', e);
+      }
+
+      // 3) Poll for balances to appear
+      const balances = await pollTokenBalances();
+      if (balances) {
+        setProcessingComplete(true);
+        return;
       }
 
       // If credits didn’t appear yet, show soft error with retry option
