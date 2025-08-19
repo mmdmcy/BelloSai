@@ -970,6 +970,11 @@ function App() {
     setConversationTitle(conversation?.title || 'Loading conversation...');
     
     try {
+      // Soft session re-check on navigation to guard against focus glitches
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.warn('⚠️ No active session during conversation select; attempting to proceed with anon headers may fail.');
+      }
       // Always fetch fresh data from database
       console.log('🔄 Loading fresh messages from database for:', conversationId);
       

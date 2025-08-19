@@ -131,6 +131,21 @@ const preprocessLegacyContent = (content: string): string => {
     return result;
   }
   
+  // Detect mid-text language token and treat the rest as a code block
+  // Example: "... functionalities ... python# Import necessary libraries..."
+  const midTextLangPattern = /(python|javascript|typescript|java|c\+\+|cpp|csharp|ruby|php|swift|go|html|css)[\s:]*([\s\S]{20,})$/i;
+  const midMatch = content.match(midTextLangPattern);
+  if (midMatch) {
+    const langToken = midMatch[1].toLowerCase();
+    const rest = midMatch[2].trim();
+    if (rest) {
+      // Keep the preface text before the language token (if any)
+      const prefixEnd = content.toLowerCase().lastIndexOf(langToken);
+      const prefix = prefixEnd > 0 ? content.slice(0, prefixEnd).trimEnd() + '\n\n' : '';
+      return `${prefix}\n\n\`\`\`${langToken}\n${rest}\n\`\`\``.replace(/\\`\\`\\`/g, '```');
+    }
+  }
+
   // Single code block detection patterns - only if content starts with language name
   const singleCodePatterns = [
     { pattern: /^(python|py)\s*([\s\S]+)$/i, lang: 'python' },
