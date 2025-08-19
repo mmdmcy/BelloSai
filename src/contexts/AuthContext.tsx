@@ -56,9 +56,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     )
 
+    // Ensure session is not lost on visibility changes (soft restore)
+    const handleVisibility = async () => {
+      if (document.visibilityState === 'visible') {
+        const { data } = await supabase.auth.getSession()
+        if (data?.session) {
+          setSession(data.session)
+          setUser(data.session.user)
+        }
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+
     return () => {
       console.log('🔧 AuthProvider: Cleaning up auth listener')
       subscription.unsubscribe()
+      document.removeEventListener('visibilitychange', handleVisibility)
     }
   }, [])
 
