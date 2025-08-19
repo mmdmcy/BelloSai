@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
         'Authorization': `Bearer ${qwenApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ model, messages: qwenMessages })
+      body: JSON.stringify({ model, messages: qwenMessages, stream: true })
     })
 
     if (!resp.ok) {
@@ -39,6 +39,41 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: `Qwen API error: ${resp.status}`, details: err }), { status: resp.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
+    // Stream SSE back to client with chunk/complete events
+    if (resp.headers.get('content-type')?.includes('text/event-stream')) {
+      const stream = new ReadableStream({
+        async start(controller) {
+          const reader = resp.body!.getReader();
+          const decoder = new TextDecoder();
+          let full = '';
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            for (const line of chunk.split('\n')) {
+              if (!line.startsWith('data: ')) continue;
+              const payload = line.slice(6).trim();
+              if (payload === '[DONE]') continue;
+              try {
+                const data = JSON.parse(payload);
+                const delta = data?.choices?.[0]?.delta?.content;
+                if (delta) {
+                  full += delta;
+                  controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ content: delta, type: 'chunk' })}\n\n`));
+                }
+              } catch {
+                continue;
+              }
+            }
+          }
+          controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ content: full, type: 'complete', model })}\n\n`));
+          controller.close();
+        }
+      });
+      return new Response(stream, { headers: { ...corsHeaders, 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' } });
+    }
+
+    // Fallback non-stream
     const data = await resp.json()
     const content = data?.choices?.[0]?.message?.content || ''
     return new Response(JSON.stringify({ response: content, model }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })

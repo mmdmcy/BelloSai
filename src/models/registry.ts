@@ -191,7 +191,7 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     capabilities: ['text', 'multimodal', 'ocr'],
     description: 'Multimodal visual understanding with OCR; supports images.',
     premium: false,
-    forChat: true,
+    forChat: false,
     inputPricePerMTokens: 0.21,
     outputPricePerMTokens: 0.63,
     pricingNotes: 'Image/video tokens billed; up to 16k tokens per image.'

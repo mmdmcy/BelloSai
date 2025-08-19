@@ -124,7 +124,8 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: model || 'claude-3-haiku-20240307',
         max_tokens: 4096,
-        messages: claudeMessages
+        messages: claudeMessages,
+        stream: true
       })
     })
 
@@ -134,28 +135,43 @@ Deno.serve(async (req) => {
       throw new Error(`Claude API error: ${response.status} - ${error}`)
     }
 
+    if (response.headers.get('content-type')?.includes('text/event-stream')) {
+      const stream = new ReadableStream({
+        async start(controller) {
+          const reader = response.body!.getReader();
+          const decoder = new TextDecoder();
+          let full = '';
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            for (const line of chunk.split('\n')) {
+              if (!line.startsWith('data: ')) continue;
+              const payload = line.slice(6).trim();
+              if (!payload || payload === '[DONE]') continue;
+              try {
+                const data = JSON.parse(payload);
+                const blocks = data?.delta?.content || [];
+                for (const b of blocks) {
+                  if (b.type === 'text_delta' && b.text) {
+                    full += b.text;
+                    controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ content: b.text, type: 'chunk' })}\n\n`));
+                  }
+                }
+              } catch {}
+            }
+          }
+          controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ content: full, type: 'complete', model: model || 'claude-3-haiku-20240307' })}\n\n`));
+          controller.close();
+        }
+      });
+      return new Response(stream, { headers: { ...corsHeaders, 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', 'Connection': 'keep-alive' } });
+    }
+
+    // Fallback non-stream
     const data = await response.json()
-    console.log('Claude response:', JSON.stringify(data, null, 2))
-
-    // Extract text from Claude's response format
-    if (!data.content || !Array.isArray(data.content) || data.content.length === 0) {
-      throw new Error('Invalid response format from Claude API')
-    }
-
-    const textContent = data.content.find(block => block.type === 'text')
-    if (!textContent || !textContent.text) {
-      throw new Error('No text content found in Claude response')
-    }
-
-    // Return in the format expected by the client (response field for non-DeepSeek providers)
-    const responseData = {
-      response: textContent.text,
-      model: model || 'claude-3-haiku-20240307'
-    }
-
-    return new Response(JSON.stringify(responseData), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    const textContent = data.content?.find((b: any) => b.type === 'text')?.text || ''
+    return new Response(JSON.stringify({ response: textContent, model: model || 'claude-3-haiku-20240307' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   } catch (error) {
     console.error('Claude chat error:', error)
     return new Response(JSON.stringify({ 
