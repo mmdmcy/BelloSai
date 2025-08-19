@@ -4,13 +4,14 @@ interface ChatRequest {
   messages: Array<{ type?: 'user' | 'ai'; role?: 'user' | 'assistant' | 'system'; content: string }>;
   model: string;
   conversationId?: string;
+  webSearch?: boolean;
 }
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const { messages, model }: ChatRequest = await req.json()
+    const { messages, model, webSearch }: ChatRequest = await req.json()
     if (!messages || !Array.isArray(messages)) {
       return new Response(JSON.stringify({ error: 'Messages array is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
@@ -31,7 +32,7 @@ Deno.serve(async (req) => {
         'Authorization': `Bearer ${qwenApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ model, messages: qwenMessages, stream: true })
+      body: JSON.stringify({ model, messages: qwenMessages, stream: true, web_search: !!webSearch })
     })
 
     if (!resp.ok) {

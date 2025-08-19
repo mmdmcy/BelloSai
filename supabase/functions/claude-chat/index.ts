@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
 
     // Parse request body
     console.log('📥 Parsing request body...');
-    const { messages, model, conversationId } = await req.json()
+    const { messages, model, conversationId, webSearch } = await req.json()
     console.log('📥 Parsed request:', { messageCount: messages?.length, model, conversationId });
 
     if (!messages || !Array.isArray(messages)) {
@@ -125,6 +125,7 @@ Deno.serve(async (req) => {
         model: model || 'claude-3-haiku-20240307',
         max_tokens: 4096,
         messages: claudeMessages,
+        tools: webSearch ? [{ type: 'web_search' }] as any : undefined,
         stream: true
       })
     })

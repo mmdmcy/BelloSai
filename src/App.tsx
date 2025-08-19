@@ -1933,10 +1933,10 @@ function App() {
                 >
                   <button 
                     onClick={handleNewGame}
-                    className={`w-full py-3 px-4 ${
-                      hasGlassEffect() ? 'glass-button-modern text-gray-800' : 'rounded-lg'
-                    } font-medium flex items-center justify-center gap-2 transition-colors ${
-                      hasGlassEffect() ? 'hover:text-gray-900' : 'text-white hover:opacity-90'
+                    className={`w-full py-3 px-4 rounded-xl font-medium flex items-center justify-center gap-2 transition-all shadow-sm ${
+                      hasGlassEffect() 
+                        ? 'glass-button-modern text-gray-800 hover:text-gray-900' 
+                        : 'text-white hover:opacity-90'
                     }`}
                     style={{ 
                       background: !hasGlassEffect() 
@@ -1974,10 +1974,10 @@ function App() {
                 >
                   <button 
                     onClick={handleNewChat}
-                    className={`w-full py-3 px-4 ${
-                      hasGlassEffect() ? 'glass-button-modern text-gray-800' : 'rounded-lg'
-                    } font-medium flex items-center justify-center gap-2 transition-colors ${
-                      hasGlassEffect() ? 'hover:text-gray-900' : 'text-white hover:opacity-90'
+                    className={`w-full py-3 px-4 rounded-xl font-medium flex items-center justify-center gap-2 transition-all shadow-sm ${
+                      hasGlassEffect() 
+                        ? 'glass-button-modern text-gray-800 hover:text-gray-900' 
+                        : 'text-white hover:opacity-90'
                     }`}
                     style={{ 
                       background: !hasGlassEffect() 
@@ -2037,8 +2037,10 @@ function App() {
                 >
                   <button 
                     onClick={toggleAccountMenu}
-                    className={`w-full h-full flex items-center justify-center gap-2 transition-colors ${
-                      isDark ? 'text-gray-300 hover:bg-gray-700 hover:text-white' : 'text-purple-600 hover:bg-purple-100 hover:text-purple-700'
+                    className={`w-full h-full flex items-center justify-center gap-2 rounded-xl transition-all shadow-sm ${
+                      hasGlassEffect() 
+                        ? 'glass-button-modern text-gray-800 hover:text-gray-900' 
+                        : (isDark ? 'text-white hover:opacity-90' : 'text-purple-700 hover:opacity-90')
                     }`}
                     style={{ fontFamily: customization.fontFamily }}
                     title="Account Settings"

@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
 
     // Parse request body
     console.log('📥 Parsing request body...');
-    const { messages, model, conversationId }: ChatRequest = await req.json()
+    const { messages, model, conversationId, webSearch }: ChatRequest = await req.json()
     console.log('📥 Parsed request:', { messageCount: messages?.length, model, conversationId });
 
     if (!messages || !Array.isArray(messages)) {
@@ -56,7 +56,9 @@ Deno.serve(async (req) => {
         messages: mistralMessages,
         temperature: 0.7,
         max_tokens: 4096,
-        stream: true
+        stream: true,
+        // If using Mistral Agents API we would specify tools; here we include a hint flag for server-side routing.
+        web_search: !!webSearch
       })
     })
 

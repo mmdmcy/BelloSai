@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown, Brain, Sparkles, Feather, Star, Lock, FileText, Image as ImageIcon, Mic, Code, ListChecks, Globe, SlidersHorizontal, Database, ScanText } from 'lucide-react';
+import { ChevronDown, Brain, Sparkles, Feather, Star, Lock, FileText, Image as ImageIcon, Mic, Code, ListChecks, Globe, SlidersHorizontal, Database, ScanText, Search } from 'lucide-react';
 import { CustomizationSettings } from '../types/app';
 import type { ModelInfo } from '../types/app';
 import { MODEL_CAPABILITIES } from '../types/app';
@@ -142,6 +142,9 @@ export default function ModelSelector({
             const IconComp = CAPABILITY_ICON[cap] || FileText;
             return <IconComp key={cap} className="w-3.5 h-3.5 opacity-70" />
           })}
+          {model.supportsWebSearch && (
+            <Search className="w-3.5 h-3.5 opacity-70" />
+          )}
         </span>
         {(model.inputPricePerMTokens || model.outputPricePerMTokens) && (
           <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'}`}>
@@ -215,6 +218,23 @@ export default function ModelSelector({
                 <input type="checkbox" checked={compact} onChange={(e) => setCompact(e.target.checked)} />
                 Compact
               </label>
+            </div>
+            {/* Feature filters */}
+            <div className="mt-2 flex items-center flex-wrap gap-2 text-xs">
+              <span className={`${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Filter by:</span>
+              {['reasoning','code','multimodal','lightweight','agentic'].map((cap) => (
+                <button
+                  key={cap}
+                  onClick={() => setQuery(cap)}
+                  className={`${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-800'} px-2 py-0.5 rounded`}
+                >{cap}</button>
+              ))}
+              <button
+                onClick={() => setQuery('web-search')}
+                className={`${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-800'} px-2 py-0.5 rounded flex items-center gap-1`}
+              >
+                <Search className="w-3 h-3" /> web-search
+              </button>
             </div>
           </div>
           <div className="py-1 max-h-96 overflow-y-auto">
