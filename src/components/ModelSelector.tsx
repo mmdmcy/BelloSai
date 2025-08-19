@@ -70,6 +70,25 @@ export default function ModelSelector({
       return raw ? JSON.parse(raw) : [];
     } catch { return []; }
   });
+  const [query, setQuery] = useState('');
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [activeTab, setActiveTab] = useState<'provider' | 'all' | 'favorites'>('provider');
+  const [compact, setCompact] = useState<boolean>(false);
+
+  const isUnsupportedModel = (model: ModelInfo) => {
+    const unsupportedCaps = ['embedding','ocr','voice','multimodal'];
+    return (model.forChat === false) || model.capabilities.some(c => unsupportedCaps.includes(c));
+  };
+
+  const filtered = availableModels.filter(m => {
+    if (!query.trim()) return true;
+    const q = query.toLowerCase();
+    return (
+      m.name.toLowerCase().includes(q) ||
+      m.code.toLowerCase().includes(q) ||
+      (m.description || '').toLowerCase().includes(q)
+    );
+  });
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -99,6 +118,49 @@ export default function ModelSelector({
 
   const selectedModelInfo = availableModels.find(m => m.code === selectedModel);
   const ProviderIcon = selectedModelInfo ? PROVIDER_ICON[selectedModelInfo.provider] : Brain;
+
+  const renderRow = (model: ModelInfo, isSelected: boolean, isDisabled: boolean, providerColor: string) => {
+    const ModelProviderIcon = PROVIDER_ICON[model.provider];
+    return (
+      <button
+        key={model.code}
+        className={`w-full flex items-center ${compact ? 'gap-2 px-3 py-2' : 'gap-3 px-4 py-3'} text-left hover:bg-gray-50 ${
+          isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+        } ${isSelected ? (isDark ? 'bg-gray-700' : 'bg-purple-50') : ''} ${isDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+        onClick={() => !isDisabled && handleModelSelect(model.code)}
+        disabled={isDisabled}
+      >
+        <ModelProviderIcon className="w-4 h-4" style={{ color: providerColor }} />
+        <div className="flex-1 min-w-0">
+          <div className={`text-sm truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{model.name}</div>
+          {!compact && model.description && (
+            <div className={`text-xs truncate ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>{model.description}</div>
+          )}
+        </div>
+        <span className="ml-2 flex items-center gap-1">
+          {model.capabilities.slice(0, compact ? 3 : 5).map(cap => {
+            const IconComp = CAPABILITY_ICON[cap] || FileText;
+            return <IconComp key={cap} className="w-3.5 h-3.5 opacity-70" />
+          })}
+        </span>
+        {(model.inputPricePerMTokens || model.outputPricePerMTokens) && (
+          <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${isDark ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'}`}>
+            {model.inputPricePerMTokens ? `$${model.inputPricePerMTokens}/Min` : ''}
+            {model.outputPricePerMTokens ? ` • $${model.outputPricePerMTokens}/Mout` : ''}
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); toggleFavorite(model.code); }}
+          className={`ml-2 text-xs px-2 py-0.5 rounded ${favorites.includes(model.code) ? 'bg-yellow-500 text-white' : (isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700')}`}
+          aria-label="Toggle favorite"
+        >★</button>
+        {isUnsupportedModel(model) && (
+          <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-gray-600 text-white opacity-80">In development</span>
+        )}
+      </button>
+    );
+  };
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -131,111 +193,77 @@ export default function ModelSelector({
               : 'bg-white border-gray-200'
           }`}
         >
-          <div className="py-1 max-h-96 overflow-y-auto">
-            {/* Favorites section */}
-            {favorites.length > 0 && (
-              <div className="px-3 py-2 text-xs opacity-70">Favorites</div>
-            )}
-            {availableModels.filter(m => favorites.includes(m.code)).map((model) => {
-              const isSelected = model.code === selectedModel;
-              const ModelProviderIcon = PROVIDER_ICON[model.provider];
-              const providerColor = PROVIDER_COLOR[model.provider];
-              const isPremium = model.premium;
-              const isUnsupported = model.capabilities.some(c => ['embedding','ocr','voice','multimodal'].includes(c)) && model.forChat === false || model.capabilities.some(c => ['embedding','ocr','voice','multimodal'].includes(c));
-              const isDisabled = (isPremium && !hasActiveSubscription) || isUnsupported;
-              return (
-                <button
-                  key={model.code}
-                  className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 ${
-                    isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
-                  } ${isSelected ? (isDark ? 'bg-gray-700' : 'bg-purple-50') : ''} ${isDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
-                  onClick={() => !isDisabled && handleModelSelect(model.code)}
-                  disabled={isDisabled}
-                >
-                  <ModelProviderIcon 
-                    className="w-4 h-4" 
-                    style={{ color: providerColor }}
-                  />
-                  <span className={`text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    {model.name}
-                  </span>
-                  {/* Capabilities */}
-                  <span className="ml-2 flex items-center gap-1">
-                    {model.capabilities.slice(0, 5).map(cap => {
-                      const IconComp = CAPABILITY_ICON[cap] || FileText;
-                      return <IconComp key={cap} className="w-3.5 h-3.5 opacity-70" />
-                    })}
-                  </span>
-                  {isPremium && !hasActiveSubscription && (
-                    <Lock className="w-4 h-4 text-gray-400 ml-2" />
-                  )}
-                  {isSelected && !isDisabled && (
-                    <div 
-                      className="ml-auto w-2 h-2 rounded-full"
-                      style={{ backgroundColor: providerColor }}
-                    />
-                  )}
-                  {isUnsupported && (
-                    <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-gray-600 text-white opacity-80">Unsupported</span>
-                  )}
-                  {/* Favorite toggle */}
+          {/* Search + Tabs + Compact */}
+          <div className="p-2 border-b border-gray-200 sticky top-0 bg-inherit">
+            <input
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Search models..."
+              className={`w-full text-sm px-3 py-2 rounded-lg ${isDark ? 'bg-gray-700 text-white placeholder-gray-400' : 'bg-gray-100 text-gray-900 placeholder-gray-500'}`}
+            />
+            <div className="mt-2 flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                {(['provider','all','favorites'] as const).map(tab => (
                   <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); toggleFavorite(model.code); }}
-                    className={`ml-2 text-xs px-2 py-0.5 rounded ${favorites.includes(model.code) ? 'bg-yellow-500 text-white' : (isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700')}`}
-                    aria-label="Toggle favorite"
-                  >★</button>
-                </button>
-              );
-            })}
-
-            {/* Grouped by provider */}
-            {['Mistral','DeepSeek','Claude','Groq','Qwen'].map((prov) => (
-              <div key={prov}>
-                <div className="px-3 py-2 text-xs opacity-70">{prov}</div>
-                {availableModels.filter(m => m.provider === (prov as any) && !favorites.includes(m.code)).map((model) => {
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`text-xs px-2 py-1 rounded ${activeTab === tab ? (isDark ? 'bg-gray-700 text-white' : 'bg-gray-200 text-gray-900') : (isDark ? 'text-gray-300' : 'text-gray-600')}`}
+                  >{tab === 'provider' ? 'By provider' : tab.charAt(0).toUpperCase() + tab.slice(1)}</button>
+                ))}
+              </div>
+              <label className="flex items-center gap-2 text-xs">
+                <input type="checkbox" checked={compact} onChange={(e) => setCompact(e.target.checked)} />
+                Compact
+              </label>
+            </div>
+          </div>
+          <div className="py-1 max-h-96 overflow-y-auto">
+            {activeTab === 'favorites' && (
+              <>
+                {filtered.filter(m => favorites.includes(m.code)).length === 0 && (
+                  <div className={`px-3 py-2 text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>No favorites yet</div>
+                )}
+                {filtered.filter(m => favorites.includes(m.code)).map(model => {
                   const isSelected = model.code === selectedModel;
-                  const ModelProviderIcon = PROVIDER_ICON[model.provider];
                   const providerColor = PROVIDER_COLOR[model.provider];
                   const isPremium = model.premium;
-                  const isUnsupported = model.capabilities.some(c => ['embedding','ocr','voice','multimodal'].includes(c)) && model.forChat === false || model.capabilities.some(c => ['embedding','ocr','voice','multimodal'].includes(c));
-                  const isDisabled = (isPremium && !hasActiveSubscription) || isUnsupported;
-                  return (
-                    <button
-                      key={model.code}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 ${
-                        isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
-                      } ${isSelected ? (isDark ? 'bg-gray-700' : 'bg-purple-50') : ''} ${isDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
-                      onClick={() => !isDisabled && handleModelSelect(model.code)}
-                      disabled={isDisabled}
-                    >
-                      <ModelProviderIcon className="w-4 h-4" style={{ color: providerColor }} />
-                      <div className="flex-1 min-w-0">
-                        <div className={`text-sm truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>{model.name}</div>
-                        {model.description && (
-                          <div className={`text-xs truncate ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>{model.description}</div>
-                        )}
-                      </div>
-                      <span className="ml-2 flex items-center gap-1">
-                        {model.capabilities.slice(0, 5).map(cap => {
-                          const IconComp = CAPABILITY_ICON[cap] || FileText;
-                          return <IconComp key={cap} className="w-3.5 h-3.5 opacity-70" />
-                        })}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); toggleFavorite(model.code); }}
-                        className={`ml-2 text-xs px-2 py-0.5 rounded ${favorites.includes(model.code) ? 'bg-yellow-500 text-white' : (isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700')}`}
-                        aria-label="Toggle favorite"
-                      >★</button>
-                      {isUnsupported && (
-                        <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-gray-600 text-white opacity-80">Unsupported</span>
-                      )}
-                    </button>
-                  );
+                  const isDisabled = (isPremium && !hasActiveSubscription) || isUnsupportedModel(model);
+                  return renderRow(model, isSelected, isDisabled, providerColor);
                 })}
-              </div>
-            ))}
+              </>
+            )}
+
+            {activeTab === 'all' && (
+              filtered.map(model => {
+                const isSelected = model.code === selectedModel;
+                const providerColor = PROVIDER_COLOR[model.provider];
+                const isPremium = model.premium;
+                const isDisabled = (isPremium && !hasActiveSubscription) || isUnsupportedModel(model);
+                return renderRow(model, isSelected, isDisabled, providerColor);
+              })
+            )}
+
+            {activeTab === 'provider' && (
+              ['Qwen','Mistral','DeepSeek','Claude','Groq'].map((prov) => (
+                <div key={prov}>
+                  <button
+                    type="button"
+                    className="w-full flex items-center justify-between px-3 py-2 text-xs opacity-70"
+                    onClick={() => setCollapsed(prev => ({ ...prev, [prov]: !prev[prov] }))}
+                  >
+                    <span>{prov}</span>
+                    <ChevronDown className={`w-3 h-3 transition-transform ${collapsed[prov] ? '-rotate-90' : ''}`} />
+                  </button>
+                  {!collapsed[prov] && filtered.filter(m => m.provider === (prov as any) && !favorites.includes(m.code)).map((model) => {
+                    const isSelected = model.code === selectedModel;
+                    const providerColor = PROVIDER_COLOR[model.provider];
+                    const isPremium = model.premium;
+                    const isDisabled = (isPremium && !hasActiveSubscription) || isUnsupportedModel(model);
+                    return renderRow(model, isSelected, isDisabled, providerColor);
+                  })}
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
