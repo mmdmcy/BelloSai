@@ -23,7 +23,7 @@ export const AVAILABLE_THEMES: Theme[] = [
     description: 'Crisp black/white base with strong purple contrast. No gradients by default.',
     primaryColor: '#7c3aed',
     secondaryColor: '#7c3aed',
-    backgroundColor: '#0f1115',
+    backgroundColor: '#111827',
     textColor: '#e5e7eb',
     accentColors: ['#7c3aed'],
     gradientEnabled: false,
