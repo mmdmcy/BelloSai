@@ -494,7 +494,7 @@ export default function DesignerMode({
         <div className="flex items-center gap-3">
           <button
             onClick={onToggleTheme}
-            className="p-2 rounded-lg transition-colors bg-white/10 hover:bg-white/20 text-white"
+            className="p-2 rounded-lg transition-colors bg-white/20 hover:bg-white/30 text-white border border-white/30"
           >
             {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
@@ -530,7 +530,7 @@ export default function DesignerMode({
         <div className="flex-1 p-6">
           <div 
             ref={gridRef}
-            className={`h-full grid gap-1 bg-gray-300/20 rounded-lg p-4 relative overflow-hidden touch-none`}
+            className={`h-full grid gap-1 rounded-lg p-4 relative overflow-hidden touch-none ${isDark ? 'bg-transparent' : 'bg-gray-100/50'}`}
             style={{
               gridTemplateColumns: `repeat(${GRID_COLS}, 1fr)`,
               gridTemplateRows: `repeat(${GRID_ROWS}, 1fr)`
@@ -611,8 +611,8 @@ export default function DesignerMode({
           </div>
         </div>
 
-        {/* Control Panel - Enhanced with all customization options */}
-        <div className="w-80 bg-white border-gray-200 border-l p-6 overflow-y-auto">
+        {/* Control Panel - Enhanced with consistent glass/3D visuals */}
+        <div className={`w-80 border-l p-6 overflow-y-auto ${isDark ? 'ios-panel ios-panel-dark' : 'ios-panel'}`}>
           <h3 className={`font-semibold mb-6`} style={{ fontFamily: customization.fontFamily }}>
             Designer Controls
           </h3>
@@ -624,7 +624,7 @@ export default function DesignerMode({
             </h4>
 
             {/* Theme Selector */}
-            <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+            <div className={`p-4 rounded-lg neo-surface ${isDark ? 'card-surface-dark' : 'card-surface-light'}`}>
               <h4 className={`font-medium mb-4 flex items-center gap-2 ${isDark ? 'text-gray-200' : 'text-gray-800'}`} style={{ fontFamily: customization.fontFamily }}>
                 <Sparkles className="w-5 h-5" />
                 Aesthetic Themes
@@ -677,7 +677,7 @@ export default function DesignerMode({
             </div>
             
             {/* Show Questions Toggle */}
-            <div className={`p-4 rounded-lg`}>
+            <div className={`p-4 rounded-lg neo-surface ${isDark ? 'card-surface-dark' : 'card-surface-light'}`}>
               <div className="flex items-center justify-between">
                 <div>
                   <h4 className={`font-medium`} style={{ fontFamily: customization.fontFamily }}>
@@ -703,7 +703,7 @@ export default function DesignerMode({
             </div>
 
             {/* Color Theme */}
-            <div className={`p-4 rounded-lg`}>
+            <div className={`p-4 rounded-lg neo-surface ${isDark ? 'card-surface-dark' : 'card-surface-light'}`}>
               <h4 className={`font-medium mb-4 flex items-center gap-2`} style={{ fontFamily: customization.fontFamily }}>
                 <Palette className="w-5 h-5" />
                 Color Theme
@@ -763,7 +763,7 @@ export default function DesignerMode({
             </div>
 
             {/* Font Selection */}
-            <div className={`p-4 rounded-lg`}>
+            <div className={`p-4 rounded-lg neo-surface ${isDark ? 'card-surface-dark' : 'card-surface-light'}`}>
               <h4 className={`font-medium mb-4 flex items-center gap-2`} style={{ fontFamily: customization.fontFamily }}>
                 <Type className="w-5 h-5" />
                 Font Family
@@ -784,7 +784,7 @@ export default function DesignerMode({
             </div>
 
             {/* Gradient Toggle */}
-            <div className={`p-4 rounded-lg`}>
+            <div className={`p-4 rounded-lg neo-surface ${isDark ? 'card-surface-dark' : 'card-surface-light'}`}>
               <div className="flex items-center justify-between">
                 <div>
                   <h4 className={`font-medium`} style={{ fontFamily: customization.fontFamily }}>

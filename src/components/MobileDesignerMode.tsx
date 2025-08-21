@@ -218,7 +218,7 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
       </div>
 
       {/* Main Content Area */}
-      <div className="h-full bg-red-200 relative" style={{ height: 'calc(100vh - 56px)' }}>
+      <div className="h-full relative" style={{ height: 'calc(100vh - 56px)', background: isDark ? 'rgba(17,19,21,0.6)' : 'rgba(255,255,255,0.06)' }}>
         
         {/* Instructions - moved to bottom left and made smaller */}
         <div className="absolute bottom-2 left-2 bg-black/80 text-white px-2 py-1 rounded text-xs z-50 max-w-40">
@@ -226,18 +226,18 @@ const MobileDesignerMode: React.FC<MobileDesignerModeProps> = ({
         </div>
 
         {/* Grid Background */}
-        <div className="absolute inset-0 opacity-30">
+        <div className="absolute inset-0 opacity-20">
           {Array.from({ length: 21 }).map((_, i) => (
             <div
               key={`v-${i}`}
-              className="absolute top-0 bottom-0 w-px bg-black"
+              className={`absolute top-0 bottom-0 w-px ${isDark ? 'bg-white/20' : 'bg-black/30'}`}
               style={{ left: `${(i / 20) * 100}%` }}
             />
           ))}
           {Array.from({ length: 16 }).map((_, i) => (
             <div
               key={`h-${i}`}
-              className="absolute left-0 right-0 h-px bg-black"
+              className={`absolute left-0 right-0 h-px ${isDark ? 'bg-white/20' : 'bg-black/30'}`}
               style={{ top: `${(i / 15) * 100}%` }}
             />
           ))}

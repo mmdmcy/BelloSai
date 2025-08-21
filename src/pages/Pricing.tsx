@@ -107,8 +107,8 @@ export default function Pricing() {
             <p className="text-white/70 text-sm">Chat with Qwen, Mistral, Groq, Claude‑compatible routes and more. Light/Medium/Heavy tiers map to real API costs.</p>
           </div>
           <div className="rounded-2xl glass p-6 shadow-md border border-white/10">
-            <h4 className="font-semibold mb-2">No lock‑in, keep credits</h4>
-            <p className="text-white/70 text-sm">Buy once, use any time. Credits don’t expire, and you can upgrade later.</p>
+            <h4 className="font-semibold mb-2">Cancel anytime</h4>
+            <p className="text-white/70 text-sm">Simple monthly plans with generous included usage across tiers. Change or cancel your plan anytime.</p>
           </div>
           <div className="rounded-2xl glass p-6 shadow-md border border-white/10">
             <h4 className="font-semibold mb-2">Great value</h4>
