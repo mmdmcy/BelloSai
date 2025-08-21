@@ -1332,8 +1332,8 @@ function App() {
       }`}
       style={{ 
         fontFamily: customization.fontFamily,
-        background: hasGlassEffect() && isDark 
-          ? getCurrentTheme()?.backgroundColor || '#0b0b10'
+        background: isDark 
+          ? (getCurrentTheme()?.backgroundColor || '#0f1115')
           : undefined
       }}
     >
