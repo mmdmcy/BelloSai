@@ -51,17 +51,17 @@ export default function Welcome() {
       <section className="relative z-10 max-w-7xl mx-auto px-6 pt-6 pb-10 md:pb-16">
         <div className="text-center">
           <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/10 text-xs text-white/80">
-            <Sparkles className="w-3.5 h-3.5" /> Pay‑as‑you‑go • Multi‑model • Streaming
+            <Sparkles className="w-3.5 h-3.5" /> Simple subscriptions • Multi‑model • Streaming
           </span>
           <h1 className="mt-5 text-4xl md:text-6xl font-extrabold tracking-tight">
             Chat with multiple <span className="bg-gradient-to-r from-purple-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent animate-[shine_8s_ease_infinite]">AI models</span>
           </h1>
           <p className={`mt-4 max-w-3xl mx-auto ${isLight ? 'text-gray-600' : 'text-white/70'} text-base md:text-lg`}>
-            BelloSai lets you choose Qwen, Mistral, Groq and more in one place. Buy credits once, keep them forever. No subscriptions.
+            BelloSai lets you choose Qwen, Mistral, Groq and more in one place. Generous monthly plans include Light, Medium, and Heavy usage so even premium models are covered.
           </p>
           <div className="mt-8 flex items-center justify-center gap-3">
             <a href="/pricing" className={`group px-5 py-3 rounded-xl ${isLight ? 'bg-gray-900 text-white hover:bg-black shadow' : 'bg-gradient-to-r from-purple-600 to-indigo-600 shadow-[0_10px_40px_rgba(124,58,237,.35)] hover:shadow-[0_14px_60px_rgba(124,58,237,.55)]'} font-semibold transition`}>
-              Get Credits <ArrowRight className="inline w-4 h-4 ml-1 translate-x-0 group-hover:translate-x-0.5 transition" />
+              Choose a Plan <ArrowRight className="inline w-4 h-4 ml-1 translate-x-0 group-hover:translate-x-0.5 transition" />
             </a>
             <a href="/" className={`px-5 py-3 rounded-xl ${isLight ? 'bg-white border border-gray-300 text-gray-900 hover:bg-gray-50' : 'glass hover:bg-white/10 text-white border border-white/10'} font-semibold transition`}>Start Chatting</a>
           </div>
@@ -129,15 +129,15 @@ export default function Welcome() {
                 <tr>
                   <th className="py-2 pr-4">Feature</th>
                   <th className="py-2 pr-4">BelloSai</th>
-                  <th className="py-2 pr-4">Subscriptions</th>
+                  <th className="py-2 pr-4">Typical subscriptions</th>
                   <th className="py-2">Single‑Model</th>
                 </tr>
               </thead>
               <tbody>
-                {[{f:'Pricing',b:'One‑time bundles',s:'Monthly lock‑in',m:'Per‑token'},
+                {[{f:'Pricing',b:'Fair monthly plans',s:'Annual lock‑ins',m:'Per‑token'},
                   {f:'Models',b:'Multiple providers',s:'Limited',m:'One'},
                   {f:'Streaming',b:'Yes',s:'Varies',m:'Varies'},
-                  {f:'Limits',b:'Tier credits',s:'Opaque caps',m:'Opaque'}].map((r) => (
+                  {f:'Limits',b:'Generous included usage',s:'Opaque caps',m:'Unpredictable'}].map((r) => (
                   <tr key={r.f} className="border-t border-white/10">
                     <td className="py-3 pr-4 text-white/80">{r.f}</td>
                     <td className="py-3 pr-4"><span className="text-emerald-300">{r.b}</span></td>
@@ -160,9 +160,9 @@ export default function Welcome() {
 
       {/* Hidden SEO headings for disambiguation */}
       <section className="sr-only">
-        <h1>BelloSai AI chatbot – multi‑model streaming, pay‑as‑you‑go</h1>
+        <h1>BelloSai AI chatbot – multi‑model streaming, subscription plans</h1>
         <h2>AI assistant with Qwen, Mistral, Groq, Claude‑compatible routes</h2>
-        <h3>No subscriptions, credits never expire</h3>
+        <h3>Generous monthly usage, heavy models included</h3>
       </section>
     </div>
   );
