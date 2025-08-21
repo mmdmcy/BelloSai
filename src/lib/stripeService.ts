@@ -61,61 +61,48 @@ export interface TokenBundle {
 }
 
 export const SUBSCRIPTION_PLANS: Record<string, SubscriptionPlan> = {
-  LITE: {
-    id: 'lite',
-    name: 'Lite',
-    price: '€8.99',
-    features: ['1500 Standard messages', '100 Premium messages'],
-    priceId: import.meta.env.VITE_STRIPE_PRICE_SUB_LITE || 'price_1RxudDBzQy7WGhPxAyHDM7RM',
+  BASIC: {
+    id: 'basic',
+    name: 'Basic',
+    price: '€7.99',
+    features: [
+      '2,000 Light-tier messages',
+      '100 Medium-tier messages',
+      'All core models included',
+      'Fast streaming'
+    ],
+    priceId: import.meta.env.VITE_STRIPE_PRICE_SUB_BASIC || 'price_basic_placeholder',
     interval: 'month'
   },
-  PRO: {
-    id: 'pro',
-    name: 'Pro',
-    price: '€14.99',
-    features: ['5000 Standard', '150 Premium'],
-    priceId: import.meta.env.VITE_STRIPE_PRICE_SUB_PRO || 'price_1RxudaBzQy7WGhPxk2oaYpXS',
+  PLUS: {
+    id: 'plus',
+    name: 'Plus',
+    price: '€12.99',
+    features: [
+      '6,000 Light-tier messages',
+      '300 Medium-tier messages',
+      '30 Heavy-tier messages',
+      'Priority routing'
+    ],
+    priceId: import.meta.env.VITE_STRIPE_PRICE_SUB_PLUS || 'price_plus_placeholder',
     interval: 'month'
   },
-  ELITE: {
-    id: 'elite',
-    name: 'Elite',
-    price: '€24.99',
-    features: ['8000 Standard', '200 Premium', '200 Heavy'],
-    priceId: import.meta.env.VITE_STRIPE_PRICE_SUB_ELITE || 'price_1RxueXBzQy7WGhPxuodYSeBj',
+  MAX: {
+    id: 'max',
+    name: 'Max',
+    price: '€19.99',
+    features: [
+      '12,000 Light-tier messages',
+      '800 Medium-tier messages',
+      '100 Heavy-tier messages',
+      'Highest priority + larger uploads'
+    ],
+    priceId: import.meta.env.VITE_STRIPE_PRICE_SUB_MAX || 'price_max_placeholder',
     interval: 'month'
   }
 }
 
-export const TOKEN_BUNDLES: TokenBundle[] = [
-  {
-    sku: 'LIGHT',
-    id: 'bundle_light',
-    name: 'Light Bundle',
-    price: '€4.99',
-    description: 'Great for casual chats with light-tier models',
-    credits: { light: 1500, medium: 0, heavy: 0 },
-    priceId: 'price_1RxjjbBzQy7WGhPxljmWOmd3'
-  },
-  {
-    sku: 'MEDIUM',
-    id: 'bundle_medium',
-    name: 'Medium Bundle',
-    price: '€9.99',
-    description: 'Best value: includes Medium + Light credits',
-    credits: { light: 1500, medium: 600, heavy: 0 },
-    priceId: 'price_1Rxjk7BzQy7WGhPx92T9dbzA'
-  },
-  {
-    sku: 'HEAVY',
-    id: 'bundle_heavy',
-    name: 'Heavy Bundle',
-    price: '€19.99',
-    description: 'All-in: Heavy + Medium + Light credits',
-    credits: { light: 3000, medium: 1200, heavy: 400 },
-    priceId: 'price_1RxjkUBzQy7WGhPxcHxiNtSs'
-  },
-]
+export const TOKEN_BUNDLES: TokenBundle[] = []
 
 export class StripeService {
   /**

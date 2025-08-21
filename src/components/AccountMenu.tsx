@@ -155,7 +155,8 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
   };
 
   const getPlanStatus = () => {
-    return 'Token Bundles';
+    if (hasActiveSubscription) return 'Active Subscription';
+    return 'Free Plan';
   };
 
   const getPlanColor = () => {
@@ -221,57 +222,45 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
         )}
       </div>
 
-      {/* Token Bundles Section */}
+      {/* Subscription Management */}
       <div className={`p-6 rounded-lg border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className="flex justify-between items-start mb-4">
           <h3 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
-            Token bundles
+            Subscription
           </h3>
           <button
             onClick={handleGoToPricing}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isDark ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-purple-600 hover:bg-purple-700 text-white'}`}
           >
-            Buy tokens
+            View plans
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className={`${isDark ? 'bg-gray-900/50' : 'bg-gray-50'} rounded-lg p-4`}>
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Light credits</p>
-            <p className={`text-2xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{tokenLoading ? '—' : lightCredits}</p>
-          </div>
-          <div className={`${isDark ? 'bg-gray-900/50' : 'bg-gray-50'} rounded-lg p-4`}>
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Medium credits</p>
-            <p className={`text-2xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{tokenLoading ? '—' : mediumCredits}</p>
-          </div>
-          <div className={`${isDark ? 'bg-gray-900/50' : 'bg-gray-50'} rounded-lg p-4`}>
-            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Heavy credits</p>
-            <p className={`text-2xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{tokenLoading ? '—' : heavyCredits}</p>
-          </div>
-        </div>
+        {!localSubscriptionLoading && (
+          <div className="space-y-3">
+            <div className={`${isDark ? 'bg-gray-900/50' : 'bg-gray-50'} rounded-lg p-4`}>
+              <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Status</p>
+              <p className={`text-2xl font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{hasActiveSubscription ? 'Active' : 'Inactive'}</p>
+            </div>
 
-        {tokenError && (
-          <p className="text-sm text-red-500 mt-3">{tokenError}</p>
+            <div className="flex gap-2">
+              <button
+                onClick={handleSyncSubscription}
+                disabled={syncLoading}
+                className={`px-3 py-2 rounded-lg text-sm transition-colors ${isDark ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'} disabled:opacity-50`}
+              >
+                {syncLoading ? 'Syncing...' : 'Sync Status'}
+              </button>
+              <button
+                onClick={handleGoToPricing}
+                className={`px-3 py-2 rounded-lg text-sm transition-colors ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-900'}`}
+              >
+                Manage
+              </button>
+            </div>
+          </div>
         )}
-
-        <div className="mt-4 flex gap-2">
-          <button
-            onClick={async () => { await fetchTokenBalances(); }}
-            disabled={tokenLoading}
-            className={`px-3 py-2 rounded-lg text-sm transition-colors ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-900'} disabled:opacity-50`}
-          >
-            {tokenLoading ? 'Refreshing…' : 'Refresh balances'}
-          </button>
-          <button
-            onClick={handleGoToPricing}
-            className={`px-3 py-2 rounded-lg text-sm transition-colors ${isDark ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}
-          >
-            Go to Pricing
-          </button>
-        </div>
       </div>
-
-      {/* Subscription section removed (bundles-only model) */}
 
       {/* Subscription Sync Section - Always show when logged in */}
       {user && (

@@ -77,3 +77,6 @@ end; $$;
 revoke all on function public.debit_subscription_counter(uuid, text) from public;
 
 
+
+
+

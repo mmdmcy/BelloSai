@@ -1,8 +1,7 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { TOKEN_BUNDLES, SUBSCRIPTION_PLANS, StripeService } from '../lib/stripeService';
-import { ArrowLeft, Sparkles, BadgeDollarSign, Star, ArrowRight, LogIn } from 'lucide-react';
-import { StripeService } from '../lib/stripeService';
+import { SUBSCRIPTION_PLANS, StripeService } from '../lib/stripeService';
+import { ArrowLeft, Sparkles, ArrowRight, LogIn } from 'lucide-react';
 
 export default function Pricing() {
   const { user } = useAuth();
@@ -61,10 +60,10 @@ export default function Pricing() {
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6 text-center">
           <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/10 text-xs text-white/80">
-            <Sparkles className="w-3.5 h-3.5" /> Pick your bundle
+            <Sparkles className="w-3.5 h-3.5" /> New plans
           </span>
-          <h1 className="mt-3 text-3xl md:text-4xl font-extrabold">Choose your credits</h1>
-          <p className={`text-sm md:text-base mt-2 ${isLight ? 'text-gray-600' : 'text-white/70'}`}>No subscriptions. Instant access. Keep unused credits forever.</p>
+          <h1 className="mt-3 text-3xl md:text-4xl font-extrabold">Choose your plan</h1>
+          <p className={`text-sm md:text-base mt-2 ${isLight ? 'text-gray-600' : 'text-white/70'}`}>Simple monthly pricing with generous Light/Medium/Heavy usage included.</p>
         </div>
 
         {/* Subscriptions */}
@@ -99,59 +98,7 @@ export default function Pricing() {
           </div>
         </div>
 
-        {/* One-time Token Bundles (Top-ups) */}
-        <div className="mb-16">
-          <h2 className={`text-3xl font-extrabold text-center mb-3 ${isLight ? 'text-gray-900' : ''}`}>Add‑on Top‑ups</h2>
-          <p className={`${isLight ? 'text-gray-600' : 'text-white/70'} text-center mb-10`}>Out of messages? Buy top‑ups that never expire.</p>
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-            {TOKEN_BUNDLES.map((bundle) => {
-              const highlight = bundle.sku === 'MEDIUM' ? 'Most Popular' : (bundle.sku === 'HEAVY' ? 'Best Value' : null);
-              return (
-                <div key={bundle.id} className={`relative rounded-3xl ${isLight ? 'border border-gray-200 bg-white' : 'glass border border-white/10'} shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-1`}>
-                  {highlight && (
-                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <span className="inline-flex items-center gap-1 bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
-                        <Star className="w-3.5 h-3.5" /> {highlight}
-                      </span>
-                    </div>
-                  )}
-                  <div className="p-8">
-                    <div className="text-center mb-6">
-                      <h3 className="text-2xl font-extrabold">{bundle.name}</h3>
-                      <div className="mt-3 text-4xl font-extrabold">{bundle.price}</div>
-                      <p className={`${isLight ? 'text-gray-600' : 'text-white/70'} mt-3`}>{bundle.description}</p>
-                    </div>
-                    <div className="grid grid-cols-3 gap-3 mb-6">
-                      {(['light','medium','heavy'] as const).map((tier) => (
-                        <div key={tier} className={`${isLight ? 'bg-gray-50' : 'bg-white/5 border border-white/10'} rounded-lg p-3 text-center`}>
-                          <p className={`${isLight ? 'text-gray-800' : 'text-white/80'} text-xs capitalize`}>{tier}</p>
-                          <p className={`${isLight ? 'text-gray-900' : 'text-white'} text-lg font-semibold`}>{bundle.credits[tier]}</p>
-                        </div>
-                      ))}
-                    </div>
-                    <button
-                      onClick={async () => {
-                        if (!user) { alert('Please log in to purchase a bundle.'); return }
-                        setActionLoading(bundle.id)
-                        try { await StripeService.createBundleCheckout(bundle) } catch(e){ console.error(e); alert('Failed to start checkout. Please try again.'); } finally { setActionLoading(null) }
-                      }}
-                      disabled={actionLoading === bundle.id || !bundle.priceId}
-                      className="group w-full py-3 px-6 rounded-xl font-semibold transition-all bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-[0_14px_60px_rgba(124,58,237,.55)] disabled:opacity-50 shadow-[0_10px_40px_rgba(124,58,237,.35)]"
-                    >
-                      {actionLoading === bundle.id ? 'Processing…' : (!bundle.priceId ? 'Coming Soon' : 'Buy Bundle')} <ArrowRight className="inline w-4 h-4 ml-1 translate-x-0 group-hover:translate-x-0.5 transition" />
-                    </button>
-                    <div className="mt-3 text-xs text-gray-600 flex items-center justify-center gap-2">
-                      <BadgeDollarSign className="w-4 h-4 text-purple-400" />
-                      <span>Use credits on {bundle.id==='light'?'Light':'Light+Medium'}{bundle.id==='heavy'?'+Heavy':''} models. No expiry.</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Subscriptions removed — bundles only */}
+        {/* Bundles removed — subscription-only */}
 
         {/* Selling points below the fold */}
         <div className="mt-12 grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
