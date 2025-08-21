@@ -1327,7 +1327,7 @@ function App() {
     <div 
       className={`h-screen overflow-hidden ${
         isDark 
-          ? 'dark bg-black' 
+          ? 'dark bg-[#0b0b10]' 
           : 'bg-white'
       }`}
       style={{ 
@@ -1891,7 +1891,7 @@ function App() {
                       ? 'glass-element' 
                       : isDark 
                         ? 'bg-gray-900' 
-                        : 'bg-purple-50'
+                        : 'bg-white'
                   } flex items-center justify-center`}
                   style={{
                     background: !hasGlassEffect() && customization.gradientEnabled && !isDark 
@@ -1926,7 +1926,7 @@ function App() {
                       ? 'glass-element' 
                       : isDark 
                         ? 'bg-gray-900' 
-                        : 'bg-purple-50'
+                        : 'bg-white'
                   } flex items-center justify-center p-2`}
                   style={{
                     background: !hasGlassEffect() && customization.gradientEnabled && !isDark 
@@ -1967,7 +1967,7 @@ function App() {
                       ? 'glass-element' 
                       : isDark 
                         ? 'bg-gray-900' 
-                        : 'bg-purple-50'
+                        : 'bg-white'
                   } flex items-center justify-center p-2`}
                   style={{
                     background: !hasGlassEffect() && customization.gradientEnabled && !isDark 
@@ -2003,7 +2003,7 @@ function App() {
               {/* Search Button - Detached and moved above sidebar */}
               {elementKey === 'searchButton' && (
                 <div 
-                  className={`h-full w-full ${isDark ? 'bg-gray-900' : 'bg-gray-50'} flex items-center justify-center px-2`}
+                  className={`h-full w-full ${isDark ? 'bg-gray-900' : 'bg-white'} flex items-center justify-center px-2`}
                   style={{
                     background: customization.gradientEnabled && !isDark 
                       ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
@@ -2031,7 +2031,7 @@ function App() {
               {/* Account Panel - Detached */}
               {elementKey === 'accountPanel' && (
                 <div 
-                  className={`h-full w-full ${isDark ? 'bg-gray-900' : 'bg-gray-50'} flex items-center justify-center`}
+                  className={`h-full w-full ${isDark ? 'bg-gray-900' : 'bg-white'} flex items-center justify-center`}
                   style={{
                     background: customization.gradientEnabled && !isDark 
                       ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
@@ -2068,7 +2068,7 @@ function App() {
                     ? 'glass-element' 
                     : isDark 
                       ? 'bg-gray-900' 
-                      : 'bg-purple-50'
+                      : 'bg-white'
                 }`}>
                   {messages.length === 0 ? (
                     <MainContent 
@@ -2115,7 +2115,7 @@ function App() {
                     ? 'glass-element' 
                     : isDark 
                       ? 'bg-gray-900' 
-                      : 'bg-gray-50'
+                      : 'bg-white'
                 } p-4`}>
                   <div className="h-full flex items-end">
                     <div className="w-full">
