@@ -1327,7 +1327,7 @@ function App() {
     <div 
       className={`h-screen overflow-hidden ${
         isDark 
-          ? 'dark bg-[#0b0b10]' 
+          ? 'dark bg-[#0f1115]' 
           : 'bg-white'
       }`}
       style={{ 

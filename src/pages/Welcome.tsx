@@ -5,7 +5,7 @@ export default function Welcome() {
   const prefersLight = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;
   const isLight = prefersLight;
   return (
-    <div className={`min-h-screen relative overflow-hidden ${isLight ? 'bg-white text-gray-900' : 'bg-[#0b0b10] text-white'}`}>
+    <div className={`min-h-screen relative overflow-hidden ${isLight ? 'bg-white text-gray-900' : 'bg-[#0f1115] text-white'}`}>
       {/* Animated background: moving gradients + subtle grid + particles */}
       <style>{`
         @keyframes floatSlow { 0%{transform:translateY(0)} 50%{transform:translateY(-10px)} 100%{transform:translateY(0)} }
