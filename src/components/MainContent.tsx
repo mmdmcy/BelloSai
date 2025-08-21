@@ -246,7 +246,7 @@ export default function MainContent({
           ? 'bg-transparent' 
           : isDark 
             ? 'bg-gray-900' 
-            : 'bg-gray-50'
+            : 'bg-white'
       }`}
       style={{
         background: !hasGlassEffect && customization.gradientEnabled && !isDark 
@@ -392,7 +392,7 @@ export default function MainContent({
             <form onSubmit={handleSubmit}>
               {/* Message Input - Responsive sizing */}
               <div className={`relative rounded-2xl border neo-surface ${
-                isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-purple-200'
+                isDark ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
               } shadow-sm`}>
                 <textarea
                   ref={textareaRef}

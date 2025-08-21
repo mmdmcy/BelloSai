@@ -52,8 +52,8 @@ export default function ActionButton({ icon: Icon, label, isDark, customization 
       onMouseLeave={(e) => {
         if (!isDark) {
           e.currentTarget.style.background = customization.gradientEnabled
-            ? `linear-gradient(135deg, ${customization.primaryColor}20, ${customization.secondaryColor}10)`
-            : customization.primaryColor + '20';
+            ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}08)`
+            : '';
         }
       }}
     >
