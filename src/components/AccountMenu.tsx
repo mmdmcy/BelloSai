@@ -290,7 +290,7 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
       )}
 
       {/* Usage Stats */}
-      <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+      <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
         <div className="flex justify-between items-center mb-2">
           <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
             Message Usage
@@ -597,7 +597,7 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
 
   const renderAPIKeysTab = () => (
     <div className="space-y-6" style={{ fontFamily: customization.fontFamily }}>
-      <div className={`p-8 text-center rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+      <div className={`p-8 text-center rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
         <h3 className={`text-xl font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
           API Keys (BYOK)
         </h3>
@@ -610,7 +610,7 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
 
   const renderGenericTab = (title: string) => (
     <div className="space-y-6" style={{ fontFamily: customization.fontFamily }}>
-      <div className={`p-8 text-center rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
+      <div className={`p-8 text-center rounded-lg ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
         <h3 className={`text-xl font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
           {title}
         </h3>

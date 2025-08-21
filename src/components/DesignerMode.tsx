@@ -494,7 +494,7 @@ export default function DesignerMode({
         <div className="flex items-center gap-3">
           <button
             onClick={onToggleTheme}
-            className="p-2 rounded-lg transition-colors bg-white/20 hover:bg-white/30 text-white border border-white/30"
+            className="p-2 rounded-lg transition-colors bg-white text-gray-900 hover:bg-white/90 border border-white/70 shadow"
           >
             {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
