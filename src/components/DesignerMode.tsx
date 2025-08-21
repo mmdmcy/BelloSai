@@ -680,10 +680,10 @@ export default function DesignerMode({
             <div className={`p-4 rounded-lg neo-surface ${isDark ? 'card-surface-dark' : 'card-surface-light'}`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`} style={{ fontFamily: customization.fontFamily }}>
+                  <h4 className={`font-medium`} style={{ fontFamily: customization.fontFamily }}>
                     Show Sample Questions
                   </h4>
-                  <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`} style={{ fontFamily: customization.fontFamily }}>
+                  <p className={`text-sm`} style={{ fontFamily: customization.fontFamily }}>
                     Display sample questions on the main page
                   </p>
                 </div>
@@ -787,10 +787,10 @@ export default function DesignerMode({
             <div className={`p-4 rounded-lg neo-surface ${isDark ? 'card-surface-dark' : 'card-surface-light'}`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className={`font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`} style={{ fontFamily: customization.fontFamily }}>
+                  <h4 className={`font-medium`} style={{ fontFamily: customization.fontFamily }}>
                     Gradient Effects
                   </h4>
-                  <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`} style={{ fontFamily: customization.fontFamily }}>
+                  <p className={`text-sm`} style={{ fontFamily: customization.fontFamily }}>
                     Enable gradient backgrounds and effects
                   </p>
                 </div>
