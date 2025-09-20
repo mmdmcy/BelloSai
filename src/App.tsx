@@ -51,7 +51,7 @@ import ModelSelector from './components/ModelSelector';
 import { supabase } from './lib/supabase';
 import { chatFeaturesService } from './lib/chat-features';
 import { anonymousUsageService } from './lib/anonymous-usage';
-import { layoutManager, ExtendedLayoutConfig, MobileLayoutConfig, defaultMobileLayout } from './lib/auth-integration'
+import { layoutManager, ExtendedLayoutConfig, MobileLayoutConfig, defaultMobileLayout, defaultLayoutWithAuth } from './lib/auth-integration'
 import { StripeService } from './lib/stripeService';
 import { LogIn, UserPlus, User, Loader2 } from 'lucide-react';
 
@@ -200,8 +200,8 @@ const App: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isDesigner, setIsDesigner] = useState(false);
-  const [layout, setLayout] = useState<LayoutConfig>(DEFAULT_LAYOUT);
-  const [mobileLayout, setMobileLayout] = useState<MobileLayoutConfig>(DEFAULT_MOBILE_LAYOUT);
+  const [layout, setLayout] = useState<LayoutConfig>(defaultLayoutWithAuth);
+  const [mobileLayout, setMobileLayout] = useState<MobileLayoutConfig>(defaultMobileLayout);
   const [customization, setCustomization] = useState<Customization>({
     showQuestions: true,
     primaryColor: '#7c3aed',
