@@ -75,11 +75,30 @@ export interface Message {
  */
 export type LayoutConfig = ExtendedLayoutConfig;
 
+export interface LayoutElement {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  zIndex: number;
+  visible?: boolean;
+}
+
 /**
  * Customization Settings Interface
  * Defines user-customizable appearance settings
  */
 export interface CustomizationSettings {
+  showQuestions: boolean;
+  primaryColor: string;
+  secondaryColor: string;
+  fontFamily: string;
+  gradientEnabled: boolean;
+  gradientColors: string[];
+  selectedTheme: string;
+}
+
+export interface Customization {
   showQuestions: boolean;
   primaryColor: string;
   secondaryColor: string;
@@ -226,6 +245,25 @@ const App: React.FC = () => {
   const [showChatSharing, setShowChatSharing] = useState(false);
   const [showAnonymousUsage, setShowAnonymousUsage] = useState(false);
 
+  // Additional missing state variables
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showSignupModal, setShowSignupModal] = useState(false);
+  const [authModalLoading, setAuthModalLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+  const [signupForm, setSignupForm] = useState({ fullName: '', email: '', password: '' });
+  const [selectedModel, setSelectedModel] = useState(AVAILABLE_MODELS[0].code);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [conversationId, setConversationId] = useState<string | undefined>();
+  const [conversationTitle, setConversationTitle] = useState<string>('');
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [chatError, setChatError] = useState<string | null>(null);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+
   const mainContentRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -300,6 +338,59 @@ const App: React.FC = () => {
 
   const getSortedLayout = () => {
     return Object.entries(layout).sort(([, a], [, b]) => (a.zIndex || 0) - (b.zIndex || 0));
+  };
+
+  const getSortedElements = () => {
+    return Object.entries(layout).sort(([, a], [, b]) => (a.zIndex || 0) - (b.zIndex || 0));
+  };
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed);
+  };
+
+  const toggleAccountMenu = () => {
+    setIsAccountMenuOpen(!isAccountMenuOpen);
+  };
+
+  const handleNewGame = () => {
+    // Implementation for new game
+    console.log('New game clicked');
+  };
+
+  const handleNewChat = () => {
+    // Implementation for new chat
+    console.log('New chat clicked');
+  };
+
+  const handleConversationSelect = (convId: string) => {
+    setCurrentConversationId(convId);
+  };
+
+  const handleConversationDelete = (convId: string) => {
+    // Implementation for deleting conversation
+    console.log('Delete conversation:', convId);
+  };
+
+  const handleSearch = () => {
+    // Implementation for search
+    console.log('Search:', searchQuery);
+  };
+
+  const getUserInitial = () => {
+    return user?.email?.[0]?.toUpperCase() || 'U';
+  };
+
+  const getUserDisplayName = () => {
+    return user?.email?.split('@')[0] || 'User';
+  };
+
+  const updateCustomization = (newCustomization: Customization) => {
+    setCustomization(newCustomization);
+  };
+
+  const handleRegenerateResponse = () => {
+    // Implementation for regenerating response
+    console.log('Regenerate response');
   };
 
   if (authLoading) {
