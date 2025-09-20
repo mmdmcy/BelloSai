@@ -192,7 +192,7 @@ export default function Sidebar({
   // Full sidebar layout - simplified when in detached mode
   return (
     <div 
-      className={`w-full h-full ${hasGlassEffect && !isDark ? 'glass-sidebar' : ''} flex flex-col ${isDark ? 'bg-gray-900' : 'bg-white'}`}
+      className={`w-full h-full ${hasGlassEffect && !isDark ? 'glass-sidebar' : ''} flex flex-col surface-app`}
       style={{
         background: !hasGlassEffect && customization.gradientEnabled && !isDark 
           ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
@@ -200,10 +200,10 @@ export default function Sidebar({
       }}
     >
       {/* Header Section - Only show collapse button in detached mode */}
-      <div className={`p-3 border-b ${isDark ? 'border-gray-800' : 'border-gray-100'} flex items-center justify-end ${hasGlassEffect ? 'ios-toolbar' : ''}`}>
+      <div className={`p-3 border-b flex items-center justify-end ${hasGlassEffect ? 'ios-toolbar' : ''}`} style={{ borderColor: 'color-mix(in srgb, var(--color-text) 10%, transparent)' }}>
         <button
           onClick={onToggleCollapse}
-          className={`p-1.5 rounded-md ${isDark ? 'text-gray-300 hover:bg-gray-800' : 'text-gray-600 hover:bg-gray-100'} transition-colors`}
+          className={`p-1.5 rounded-md transition-colors text-app`}
           title="Collapse Sidebar"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -211,15 +211,15 @@ export default function Sidebar({
       </div>
 
       {/* Chat History Section */}
-      <div className="px-4 pb-4 flex-1 overflow-y-auto">
+      <div className="px-4 pb-4 flex-1 overflow-y-auto text-app">
         {/* Refresh Prompt - shown when user returns after alt-tabbing (only for logged in users) */}
         {false && showRefreshPrompt && isLoggedIn && (
           <div 
-            className={`mb-4 p-3 rounded-lg border cursor-pointer hover:opacity-80 transition-opacity ${
-              isDark 
-                ? 'bg-blue-900/30 border-blue-700 text-blue-200' 
-                : 'bg-blue-50 border-blue-200 text-blue-800'
-              }`}
+            className={`mb-4 p-3 rounded-lg border cursor-pointer hover:opacity-80 transition-opacity`}
+            style={{
+              background: 'color-mix(in srgb, var(--color-primary) 10%, transparent)',
+              borderColor: 'color-mix(in srgb, var(--color-primary) 35%, transparent)'
+            }}
             onClick={() => {
               setShowRefreshPrompt(false);
               setWasTabHidden(false);
@@ -246,7 +246,7 @@ export default function Sidebar({
             <div className={`text-xs font-medium mb-2`}
                  style={{ 
                    fontFamily: customization.fontFamily,
-                   color: getSecondaryTextColor(customization.primaryColor + 'CC', isDark)
+                   color: getSecondaryTextColor('var(--color-text)', isDark)
                  }}>
               Recent Conversations
             </div>
@@ -254,41 +254,25 @@ export default function Sidebar({
             {conversations.map((conversation) => (
               <div 
                 key={conversation.id}
-                className={`group relative rounded-xl mb-2 transition-colors ios-pressable ${
-                  currentConversationId === conversation.id
-                    ? (isDark ? 'bg-gray-800' : 'bg-gray-100')
-                    : (isDark ? 'hover:bg-gray-800' : 'hover:bg-gray-50')
-                } border ${isDark ? 'border-gray-700' : 'border-gray-200'}`}
+                className={`group relative rounded-xl mb-2 transition-colors ios-pressable border`}
                 style={{ 
                   background: currentConversationId === conversation.id
-                    ? (isDark 
-                        ? undefined 
-                        : customization.gradientEnabled
-                          ? `linear-gradient(135deg, ${customization.secondaryColor}40, ${customization.primaryColor}20)`
-                          : customization.secondaryColor + '40')
+                    ? `color-mix(in srgb, var(--color-primary) 10%, transparent)`
                     : 'transparent',
+                  borderColor: 'color-mix(in srgb, var(--color-text) 10%, transparent)'
                 }}
               >
                 <button 
                   onClick={() => onConversationSelect?.(conversation.id)}
-                   className={`w-full text-left px-3 py-2 pr-10 transition-colors ${
-                    currentConversationId === conversation.id
-                      ? (isDark ? 'text-white' : 'text-gray-900')
-                      : (isDark ? 'text-gray-300 hover:text-white' : 'hover:text-gray-900')
-                  }`}
+                   className={`w-full text-left px-3 py-2 pr-10 transition-colors text-app`}
                   style={{ 
-                    fontFamily: customization.fontFamily,
-                    color: currentConversationId === conversation.id
-                      ? (isDark 
-                          ? (customization.secondaryColor !== '#a855f7' ? customization.secondaryColor : undefined)
-                          : customization.primaryColor)
-                      : getTextColor(customization.primaryColor + 'CC', isDark)
+                    fontFamily: customization.fontFamily
                   }}
                 >
                   <div className="truncate text-sm">
                     {conversation.title || 'Untitled Conversation'}
                   </div>
-                  <div className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  <div className={`text-xs mt-1`} style={{ color: 'color-mix(in srgb, var(--color-text) 70%, transparent)' }}>
                     {new Date(conversation.updated_at).toLocaleDateString()}
                   </div>
                 </button>
@@ -301,11 +285,7 @@ export default function Sidebar({
                       onConversationDelete?.(conversation.id);
                     }
                   }}
-                  className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity ${
-                    isDark 
-                      ? 'text-gray-400 hover:text-red-400 hover:bg-gray-600' 
-                      : 'text-gray-500 hover:text-red-600 hover:bg-white'
-                  }`}
+                  className={`absolute right-2 top-1/2 transform -translate-y-1/2 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity`}
                   title="Delete conversation"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -314,7 +294,7 @@ export default function Sidebar({
             ))}
           </>
         ) : (
-          <div className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+          <div className={`text-center py-8`} style={{ color: 'color-mix(in srgb, var(--color-text) 60%, transparent)' }}>
             <p className="text-sm" style={{ fontFamily: customization.fontFamily }}>
               No conversations yet
             </p>
