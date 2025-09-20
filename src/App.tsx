@@ -358,6 +358,10 @@ const App: React.FC = () => {
     setIsAccountMenuOpen(!isAccountMenuOpen);
   };
 
+  const toggleDesignerMode = () => {
+    setIsDesigner(prev => !prev);
+  };
+
   const handleNewGame = () => {
     // Implementation for new game
     console.log('New game clicked');
@@ -1377,7 +1381,7 @@ const App: React.FC = () => {
               onLogout={handleLogout}
               onOpenAPIKeyManager={() => {
                 setIsAccountMenuOpen(false);
-                setShowAPIKeyManager(true);
+                setShowApiKeyManager(true);
               }}
             />
           </div>
@@ -1387,8 +1391,8 @@ const App: React.FC = () => {
       {/* API Key Manager Modal */}
       <APIKeyManager
         isDark={isDark}
-        isOpen={showAPIKeyManager}
-        onClose={() => setShowAPIKeyManager(false)}
+        isOpen={showApiKeyManager}
+        onClose={() => setShowApiKeyManager(false)}
       />
     </div>
   );
