@@ -15,7 +15,17 @@ export const AVAILABLE_THEMES: Theme[] = [
     borderRadius: '0.75rem',
     shadows: true,
     glassEffect: false,
-    retroMode: false
+    retroMode: false,
+    light: {
+      backgroundColor: '#f9fafb',
+      textColor: '#1f2937',
+      surfaceColor: '#ffffff'
+    },
+    dark: {
+      backgroundColor: '#111827',
+      textColor: '#f9fafb',
+      surfaceColor: '#1f2937'
+    }
   },
   {
     id: 'glass-night',
@@ -31,7 +41,17 @@ export const AVAILABLE_THEMES: Theme[] = [
     borderRadius: '1.25rem',
     shadows: true,
     glassEffect: true,
-    retroMode: false
+    retroMode: false,
+    light: {
+      backgroundColor: '#f9fafb',
+      textColor: '#1f2937',
+      surfaceColor: '#ffffff'
+    },
+    dark: {
+      backgroundColor: '#111827',
+      textColor: '#e5e7eb',
+      surfaceColor: '#1f2937'
+    }
   },
   {
     id: 'glassmorphism',
@@ -47,7 +67,17 @@ export const AVAILABLE_THEMES: Theme[] = [
     borderRadius: '1.25rem',
     shadows: true,
     glassEffect: true,
-    retroMode: false
+    retroMode: false,
+    light: {
+      backgroundColor: 'linear-gradient(135deg, #a7f3d0 0%, #7dd3fc 35%, #93c5fd 100%)',
+      textColor: '#0f172a',
+      surfaceColor: 'rgba(255, 255, 255, 0.7)'
+    },
+    dark: {
+      backgroundColor: 'linear-gradient(135deg, #1e293b 0%, #0f172a 35%, #1e3a8a 100%)',
+      textColor: '#f1f5f9',
+      surfaceColor: 'rgba(30, 41, 59, 0.7)'
+    }
   },
   {
     id: 'frutiger-aero',
@@ -63,7 +93,17 @@ export const AVAILABLE_THEMES: Theme[] = [
     borderRadius: '1rem',
     shadows: true,
     glassEffect: true,
-    retroMode: false
+    retroMode: false,
+    light: {
+      backgroundColor: '#f0f9ff',
+      textColor: '#0f172a',
+      surfaceColor: 'rgba(255, 255, 255, 0.8)'
+    },
+    dark: {
+      backgroundColor: '#0c1e2c',
+      textColor: '#e0f2fe',
+      surfaceColor: 'rgba(12, 30, 44, 0.8)'
+    }
   },
   {
     id: 'vista-glass',
@@ -79,7 +119,17 @@ export const AVAILABLE_THEMES: Theme[] = [
     borderRadius: '0.5rem',
     shadows: true,
     glassEffect: true,
-    retroMode: false
+    retroMode: false,
+    light: {
+      backgroundColor: '#f8fafc',
+      textColor: '#1e293b',
+      surfaceColor: 'rgba(255, 255, 255, 0.7)'
+    },
+    dark: {
+      backgroundColor: '#0f172a',
+      textColor: '#f1f5f9',
+      surfaceColor: 'rgba(15, 23, 42, 0.7)'
+    }
   },
   {
     id: 'retro-computing',
@@ -95,7 +145,17 @@ export const AVAILABLE_THEMES: Theme[] = [
     borderRadius: '0',
     shadows: false,
     glassEffect: false,
-    retroMode: true
+    retroMode: true,
+    light: {
+      backgroundColor: '#000000',
+      textColor: '#00ff00',
+      surfaceColor: '#111111'
+    },
+    dark: {
+      backgroundColor: '#0a0a0a',
+      textColor: '#00ff00',
+      surfaceColor: '#111111'
+    }
   },
   {
     id: 'cupertino',
@@ -111,7 +171,17 @@ export const AVAILABLE_THEMES: Theme[] = [
     borderRadius: '0.875rem',
     shadows: true,
     glassEffect: false,
-    retroMode: false
+    retroMode: false,
+    light: {
+      backgroundColor: '#ffffff',
+      textColor: '#000000',
+      surfaceColor: '#f8fafc'
+    },
+    dark: {
+      backgroundColor: '#1a1a1a',
+      textColor: '#ffffff',
+      surfaceColor: '#2a2a2a'
+    }
   },
   {
     id: 'synthwave',
@@ -127,7 +197,17 @@ export const AVAILABLE_THEMES: Theme[] = [
     borderRadius: '0.25rem',
     shadows: true,
     glassEffect: false,
-    retroMode: true
+    retroMode: true,
+    light: {
+      backgroundColor: '#1a1a1a',
+      textColor: '#ffffff',
+      surfaceColor: '#2a2a2a'
+    },
+    dark: {
+      backgroundColor: '#0d1117',
+      textColor: '#ffffff',
+      surfaceColor: '#1a1a1a'
+    }
   },
   {
     id: 'nature-green',
@@ -143,7 +223,17 @@ export const AVAILABLE_THEMES: Theme[] = [
     borderRadius: '1rem',
     shadows: true,
     glassEffect: false,
-    retroMode: false
+    retroMode: false,
+    light: {
+      backgroundColor: '#f0fdf4',
+      textColor: '#064e3b',
+      surfaceColor: '#ffffff'
+    },
+    dark: {
+      backgroundColor: '#064e3b',
+      textColor: '#d1fae5',
+      surfaceColor: '#065f46'
+    }
   },
   {
     id: 'warm-sunset',
@@ -159,7 +249,17 @@ export const AVAILABLE_THEMES: Theme[] = [
     borderRadius: '0.75rem',
     shadows: true,
     glassEffect: false,
-    retroMode: false
+    retroMode: false,
+    light: {
+      backgroundColor: '#fff7ed',
+      textColor: '#9a3412',
+      surfaceColor: '#ffffff'
+    },
+    dark: {
+      backgroundColor: '#451a03',
+      textColor: '#fed7aa',
+      surfaceColor: '#7c2d12'
+    }
   },
   {
     id: 'genie-dark',
@@ -175,7 +275,17 @@ export const AVAILABLE_THEMES: Theme[] = [
     borderRadius: '0.875rem',
     shadows: true,
     glassEffect: false,
-    retroMode: false
+    retroMode: false,
+    light: {
+      backgroundColor: '#f0fdf4',
+      textColor: '#064e3b',
+      surfaceColor: '#ffffff'
+    },
+    dark: {
+      backgroundColor: '#0b0f0c',
+      textColor: '#e5e7eb',
+      surfaceColor: '#14532d'
+    }
   },
   {
     id: 'aurora-light',
@@ -191,7 +301,17 @@ export const AVAILABLE_THEMES: Theme[] = [
     borderRadius: '1rem',
     shadows: true,
     glassEffect: false,
-    retroMode: false
+    retroMode: false,
+    light: {
+      backgroundColor: '#ffffff',
+      textColor: '#111827',
+      surfaceColor: '#f8fafc'
+    },
+    dark: {
+      backgroundColor: '#111827',
+      textColor: '#f9fafb',
+      surfaceColor: '#1f2937'
+    }
   },
   {
     id: 'app-store-neo',
@@ -207,7 +327,17 @@ export const AVAILABLE_THEMES: Theme[] = [
     borderRadius: '1.25rem',
     shadows: true,
     glassEffect: false,
-    retroMode: false
+    retroMode: false,
+    light: {
+      backgroundColor: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 55%, #d1fae5 100%)',
+      textColor: '#064e3b',
+      surfaceColor: 'rgba(255, 255, 255, 0.7)'
+    },
+    dark: {
+      backgroundColor: 'linear-gradient(135deg, #0b1f1b 0%, #071611 55%, #05211a 100%)',
+      textColor: '#e5e7eb',
+      surfaceColor: 'rgba(11, 31, 27, 0.7)'
+    }
   },
   {
     id: 'obsidian-dark',
@@ -223,7 +353,17 @@ export const AVAILABLE_THEMES: Theme[] = [
     borderRadius: '0.5rem',
     shadows: true,
     glassEffect: false,
-    retroMode: false
+    retroMode: false,
+    light: {
+      backgroundColor: '#f9fafb',
+      textColor: '#111827',
+      surfaceColor: '#ffffff'
+    },
+    dark: {
+      backgroundColor: '#0e0f10',
+      textColor: '#e5e7eb',
+      surfaceColor: '#1f2937'
+    }
   },
   {
     id: 'midnight-flat',
@@ -239,7 +379,17 @@ export const AVAILABLE_THEMES: Theme[] = [
     borderRadius: '0.5rem',
     shadows: true,
     glassEffect: false,
-    retroMode: false
+    retroMode: false,
+    light: {
+      backgroundColor: '#f9fafb',
+      textColor: '#111827',
+      surfaceColor: '#ffffff'
+    },
+    dark: {
+      backgroundColor: '#0e0f10',
+      textColor: '#e5e7eb',
+      surfaceColor: '#1f2937'
+    }
   },
   {
     id: 'sonnet-elegant',
@@ -255,7 +405,17 @@ export const AVAILABLE_THEMES: Theme[] = [
     borderRadius: '0.875rem',
     shadows: true,
     glassEffect: false,
-    retroMode: false
+    retroMode: false,
+    light: {
+      backgroundColor: '#fafaf9',
+      textColor: '#1c1917',
+      surfaceColor: '#ffffff'
+    },
+    dark: {
+      backgroundColor: '#0f0f0f',
+      textColor: '#e7e5e4',
+      surfaceColor: '#1c1917'
+    }
   }
 ];
 

@@ -31,6 +31,16 @@ export interface Theme {
   shadows: boolean;
   glassEffect: boolean;
   retroMode: boolean;
+  light?: {
+    backgroundColor: string;
+    textColor: string;
+    surfaceColor: string;
+  };
+  dark?: {
+    backgroundColor: string;
+    textColor: string;
+    surfaceColor: string;
+  };
 }
 
 export interface ModelCapability {
