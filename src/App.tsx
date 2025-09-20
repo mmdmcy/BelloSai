@@ -264,6 +264,9 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
 
+  // Filtered models based on user subscription
+  const filteredModels = AVAILABLE_MODELS.filter(model => !model.premium || (user && user.subscription === 'pro'));
+
   const mainContentRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
