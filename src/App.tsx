@@ -173,6 +173,10 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
 
 // Theme definitions moved to src/theme/registry.ts
 
+// Grid layout constants
+const maxX = 20;
+const maxY = 17;
+
 const App: React.FC = () => {
   const { theme, setTheme, availableThemes, getTheme, applyTheme, isDark, toggleTheme, hasGlassEffect, getCurrentColors } = useTheme();
   const { user, loading: authLoading, signOut } = useAuth();
