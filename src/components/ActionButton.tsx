@@ -19,42 +19,41 @@ import { CustomizationSettings } from '../types/app';
 interface ActionButtonProps {
   icon: LucideIcon;
   label: string;
-  isDark: boolean;
+  themeColors: {
+    primary: string;
+    secondary: string;
+    background: string;
+    text: string;
+    accent: string;
+    surface: string;
+  };
   customization: CustomizationSettings;
 }
 
-export default function ActionButton({ icon: Icon, label, isDark, customization }: ActionButtonProps) {
+export default function ActionButton({ icon: Icon, label, themeColors, customization }: ActionButtonProps) {
   return (
-    <button 
-      className={`flex items-center gap-2 px-5 py-2.5 rounded-full ios-pressable ${
-        isDark 
-          ? 'bg-gray-800 text-gray-100 hover:bg-gray-700' 
-          : 'bg-white text-gray-800 border border-gray-200 hover:bg-gray-50'
-      } shadow-sm`}
-      style={{ 
+    <button
+      className="flex items-center gap-2 px-5 py-2.5 rounded-full ios-pressable shadow-sm"
+      style={{
         fontFamily: customization.fontFamily,
-        // Apply custom colors and gradients for light mode
-        background: isDark 
-          ? undefined 
-          : customization.gradientEnabled
-            ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}08)`
-            : undefined,
-        color: isDark ? undefined : 'inherit'
+        backgroundColor: themeColors.surface,
+        color: themeColors.text,
+        border: `1px solid ${themeColors.background}`,
+        // Apply custom colors and gradients
+        background: customization.gradientEnabled
+          ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}08)`
+          : themeColors.surface
       }}
-      // Dynamic hover effects for light mode
+      // Dynamic hover effects
       onMouseEnter={(e) => {
-        if (!isDark) {
-          e.currentTarget.style.background = customization.gradientEnabled
-            ? `linear-gradient(135deg, ${customization.primaryColor}30, ${customization.secondaryColor}20)`
-            : customization.primaryColor + '30';
-        }
+        e.currentTarget.style.background = customization.gradientEnabled
+          ? `linear-gradient(135deg, ${customization.primaryColor}30, ${customization.secondaryColor}20)`
+          : customization.primaryColor + '30';
       }}
       onMouseLeave={(e) => {
-        if (!isDark) {
-          e.currentTarget.style.background = customization.gradientEnabled
-            ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}08)`
-            : '';
-        }
+        e.currentTarget.style.background = customization.gradientEnabled
+          ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}08)`
+          : themeColors.surface;
       }}
     >
       <Icon className="w-4 h-4" />
