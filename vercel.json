@@ -10,9 +10,15 @@
   ],
   "redirects": [
     {
-      "source": "https://www.bellosai.com/(.*)",
+      "source": "/(.*)",
       "destination": "https://bellosai.com/$1",
-      "statusCode": 301
+      "statusCode": 301,
+      "has": [
+        {
+          "type": "host",
+          "value": "www.bellosai.com"
+        }
+      ]
     }
   ],
   "headers": [
