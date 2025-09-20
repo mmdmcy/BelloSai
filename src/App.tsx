@@ -411,6 +411,30 @@ const App: React.FC = () => {
     );
   }
 
+  // Full-screen Designer Mode
+  if (isDesigner) {
+    return (
+      <div className={`${isDark ? 'dark' : ''}`}>
+        <DesignerMode
+          isDark={isDark}
+          layout={layout}
+          onLayoutChange={(newLayout) => {
+            setLayout(newLayout);
+            layoutManager.saveLayout(newLayout);
+          }}
+          onExitDesigner={() => setIsDesigner(false)}
+          onToggleTheme={toggleTheme}
+          customization={customization}
+          onCustomizationChange={(partial) => setCustomization(prev => ({ ...prev, ...partial }))}
+          onApplyTheme={(themeId) => {
+            setCustomization(prev => ({ ...prev, selectedTheme: themeId }));
+            setTheme(themeId);
+          }}
+        />
+      </div>
+    );
+  }
+
   const commonProps = {
     isDark,
     customization,
