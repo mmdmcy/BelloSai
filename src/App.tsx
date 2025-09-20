@@ -267,6 +267,9 @@ const App: React.FC = () => {
   // Filtered models based on user subscription
   const filteredModels = AVAILABLE_MODELS.filter(model => !model.premium || (user && user.subscription === 'pro'));
 
+  // Check if user has active subscription
+  const hasActiveSubscription = user?.subscription === 'pro';
+
   const mainContentRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
