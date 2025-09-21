@@ -78,6 +78,7 @@ export default function Sidebar({
   hasGlassEffect = false,
   isLoggedIn = false
 }: SidebarProps) {
+  const glassActive = hasGlassEffect;
   // State for tracking if user has alt-tabbed and needs to refresh
   const [showRefreshPrompt, setShowRefreshPrompt] = useState(false);
   const [wasTabHidden, setWasTabHidden] = useState(false);
@@ -161,25 +162,25 @@ export default function Sidebar({
   // Collapsed sidebar - only show toggle button
   if (isCollapsed) {
     return (
-      <div 
-        className={`w-full h-full ${
-          hasGlassEffect && !isDark 
-            ? 'glass-sidebar' 
-            : ''
-        } flex flex-col items-center py-4 gap-4 neo-surface ${isDark ? 'bg-gray-900' : 'bg-white'}`}
-        style={{
-          background: !hasGlassEffect && customization.gradientEnabled && !isDark 
-            ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
-            : undefined
-        }}
+      <div
+        className={`w-full h-full flex flex-col items-center py-4 gap-4 ${
+          glassActive
+            ? 'glass-effect border border-theme shadow-theme-soft'
+            : 'bg-theme-surface border border-theme shadow-theme-soft'
+        }`}
+        style={!glassActive && customization.gradientEnabled
+          ? {
+              background: `linear-gradient(135deg, ${customization.primaryColor}18, ${customization.secondaryColor}12)`
+            }
+          : undefined}
       >
         {/* Expand Button */}
         <button
           onClick={onToggleCollapse}
-          className={`p-2 rounded-lg ios-pressable ${
-            isDark 
-              ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' 
-              : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+          className={`p-2 rounded-theme ios-pressable transition-all duration-200 hover:scale-[1.03] ${
+            glassActive
+              ? 'glass-button text-theme'
+              : 'bg-theme-surface text-theme border border-theme shadow-theme-soft hover:bg-theme-surface-hover'
           }`}
           title="Expand Sidebar"
         >
@@ -191,19 +192,23 @@ export default function Sidebar({
 
   // Full sidebar layout - simplified when in detached mode
   return (
-    <div 
-      className={`w-full h-full ${hasGlassEffect && !isDark ? 'glass-sidebar' : ''} flex flex-col surface-app`}
-      style={{
-        background: !hasGlassEffect && customization.gradientEnabled && !isDark 
-          ? `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}10)`
-          : undefined
-      }}
+    <div
+      className={`w-full h-full flex flex-col ${
+        glassActive
+          ? 'glass-effect border border-theme shadow-theme-soft'
+          : 'bg-theme-surface border border-theme shadow-theme-soft'
+      }`}
+      style={!glassActive && customization.gradientEnabled
+        ? {
+            background: `linear-gradient(135deg, ${customization.primaryColor}14, ${customization.secondaryColor}10)`
+          }
+        : undefined}
     >
       {/* Header Section - Only show collapse button in detached mode */}
-      <div className={`p-3 border-b flex items-center justify-end ${hasGlassEffect ? 'ios-toolbar' : ''}`} style={{ borderColor: 'color-mix(in srgb, var(--color-text) 10%, transparent)' }}>
+      <div className={`p-3 border-b flex items-center justify-end ${glassActive ? 'ios-toolbar' : ''} border-theme`}>
         <button
           onClick={onToggleCollapse}
-          className={`p-1.5 rounded-md transition-colors text-app`}
+          className={`p-1.5 rounded-theme transition-all duration-200 text-theme hover:bg-theme-surface-hover ${glassActive ? 'glass-button' : ''}`}
           title="Collapse Sidebar"
         >
           <ChevronLeft className="w-4 h-4" />

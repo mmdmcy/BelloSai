@@ -55,6 +55,7 @@ export default function MainContent({
   hasActiveSubscription = false
 }: MainContentProps) {
   const { isDark, hasGlassEffect, getCurrentColors } = useTheme();
+  const glassActive = hasGlassEffect();
   // Input state management
   const [inputValue, setInputValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -108,6 +109,18 @@ export default function MainContent({
    * Get current theme colors
    */
   const currentColors = getCurrentColors();
+  const heroCardClass = glassActive
+    ? 'glass-card border border-theme shadow-theme-glow'
+    : 'rounded-theme bg-theme-surface border border-theme shadow-theme';
+  const inputShellClass = glassActive
+    ? 'glass-card border border-theme shadow-theme-soft'
+    : 'rounded-theme bg-theme-surface border border-theme shadow-theme-soft';
+  const sampleQuestionClass = glassActive
+    ? 'glass-button text-theme hover:border-theme-accent'
+    : 'bg-theme-surface-accent text-theme hover:bg-theme-accent hover:text-theme-inverse shadow-theme-soft';
+  const accentActionClass = glassActive
+    ? 'glass-button text-theme'
+    : 'bg-theme-accent text-theme-inverse shadow-theme-soft';
 
   /**
    * Handle form submission for message input
@@ -164,8 +177,7 @@ export default function MainContent({
           
           <form onSubmit={handleSubmit}>
             {/* Message Input Container */}
-            <div className={`relative rounded-2xl border shadow-sm`}
-                  style={{ backgroundColor: currentColors.surface, borderColor: currentColors.background }}>
+            <div className={`relative ${inputShellClass}`}>
               <textarea
                 ref={textareaRef}
                 value={inputValue}
@@ -200,13 +212,15 @@ export default function MainContent({
                   <button
                     type="submit"
                     disabled={!inputValue.trim()}
-                    className="p-2.5 rounded-xl ios-pressable hover:opacity-90 disabled:opacity-50"
-                    style={{
-                      background: customization.gradientEnabled
-                        ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                        : customization.primaryColor,
-                      color: 'white'
-                    }}
+                    className={`p-2.5 rounded-theme ios-pressable transition-transform duration-200 hover:scale-[1.03] disabled:opacity-50 disabled:cursor-not-allowed ${accentActionClass}`}
+                    style={!glassActive
+                      ? {
+                          background: customization.gradientEnabled
+                            ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                            : customization.primaryColor,
+                          color: 'var(--color-text-inverse)'
+                        }
+                      : undefined}
                   >
                   <ArrowUp className="w-4 h-4" />
                 </button>
@@ -222,14 +236,20 @@ export default function MainContent({
   return (
       <div
       ref={containerRef}
-      className="flex-1 h-full flex flex-col"
-      style={{
-        backgroundColor: currentColors.background
-      }}
+      className="flex-1 h-full flex flex-col bg-theme-ghost"
     >
       {/* Main Content Area - Responsive scaling */}
       <div className="flex-1 flex flex-col items-center justify-center px-8">
-        <div className="w-full text-center" style={{ maxWidth: getResponsiveMaxWidth() }}>
+        <div
+          className={`${heroCardClass} w-full text-center px-8 py-10`}
+          style={{
+            maxWidth: getResponsiveMaxWidth(),
+            fontFamily: customization.fontFamily,
+            background: !glassActive && customization.gradientEnabled
+              ? `linear-gradient(135deg, ${customization.primaryColor}0f, ${customization.secondaryColor}14)`
+              : undefined
+          }}
+        >
           {/* Main Heading - Responsive text size */}
           <h1
             className={`${containerWidth < 600 ? 'text-2xl' : containerWidth < 1200 ? 'text-3xl' : 'text-4xl'} font-semibold mb-10`}
@@ -256,22 +276,10 @@ export default function MainContent({
                 <button
                   key={index}
                   onClick={() => handleQuestionClick(question)}
-                  className={`block w-full text-left px-6 py-3.5 rounded-xl transition-colors ios-pressable hover:text-white ${
+                  className={`block w-full text-left rounded-theme ios-pressable transition-all ${sampleQuestionClass} ${
                     containerWidth < 600 ? 'text-sm px-4 py-3' : 'px-6 py-3.5'
                   }`}
-                  style={{
-                    fontFamily: customization.fontFamily,
-                    color: currentColors.text,
-                    backgroundColor: 'transparent'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = customization.gradientEnabled
-                      ? `linear-gradient(135deg, ${customization.primaryColor}20, ${customization.secondaryColor}10)`
-                      : customization.primaryColor + '20';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'transparent';
-                  }}
+                  style={{ fontFamily: customization.fontFamily }}
                 >
                   {question}
                 </button>
@@ -322,8 +330,7 @@ export default function MainContent({
 
             <form onSubmit={handleSubmit}>
               {/* Message Input - Responsive sizing */}
-              <div className="relative rounded-2xl border shadow-sm"
-                   style={{ backgroundColor: currentColors.surface, borderColor: currentColors.background }}>
+              <div className={`relative ${inputShellClass}`}>
                 <textarea
                   ref={textareaRef}
                   value={inputValue}
