@@ -11,13 +11,13 @@ interface AnonymousUsageIndicatorProps {
 const AnonymousUsageIndicator: React.FC<AnonymousUsageIndicatorProps> = ({ 
   onLoginClick, 
   isLimitReached = false,
-  showAlways: _showAlways = false 
+  showAlways: forceShow = false 
 }) => {
   const stats = anonymousUsageService.getStats();
   const remaining = anonymousUsageService.getRemainingMessages();
   
   // Don't show if user has plenty of messages left, unless forced to show
-  if (!showAlways && remaining > 5 && !isLimitReached) {
+  if (!forceShow && remaining > 5 && !isLimitReached) {
     return null;
   }
 
@@ -41,11 +41,7 @@ const AnonymousUsageIndicator: React.FC<AnonymousUsageIndicatorProps> = ({
       }}
     >
       <div className="flex items-center gap-2 mb-2">
-        {isAtLimit ? (
-          <AlertTriangle className="w-4 h-4" style={{ color: statusPalette.text }} />
-        ) : (
-          <MessageCircle className="w-4 h-4" style={{ color: statusPalette.text }} />
-        )}
+        <AlertTriangle className="w-4 h-4" style={{ color: statusPalette.text }} />
         <span className="text-sm font-medium" style={{ color: statusPalette.text }}>
           Daily limit reached
         </span>
