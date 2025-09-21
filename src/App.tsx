@@ -240,24 +240,13 @@ const App: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const glassActive = hasGlassEffect();
-  const themedPanelBase = glassActive
-    ? 'glass-effect rounded-theme border border-theme shadow-theme-soft'
-    : 'rounded-theme bg-theme-surface border border-theme shadow-theme-soft';
   const themedTileBase = glassActive
     ? 'glass-effect rounded-theme border border-theme shadow-theme-soft'
     : 'rounded-theme bg-theme-surface border border-theme shadow-theme-soft';
-  const actionButtonBase = glassActive
-    ? 'glass-button text-theme'
-    : 'bg-theme-accent text-theme-inverse shadow-theme-soft';
   const canvasSurfaceClass = glassActive
     ? 'glass-effect border border-theme shadow-theme-soft'
     : 'bg-transparent';
-  const [showConversations, setShowConversations] = useState(true);
-  const [showAccountMenu, setShowAccountMenu] = useState(false);
-  const [showSubscriptionManager, setShowSubscriptionManager] = useState(false);
   const [showApiKeyManager, setShowApiKeyManager] = useState(false);
-  const [showChatSharing, setShowChatSharing] = useState(false);
-  const [showAnonymousUsage, setShowAnonymousUsage] = useState(false);
 
   // Additional missing state variables
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -619,25 +608,22 @@ const App: React.FC = () => {
               {/* New Game Button - Detached with proper styling */}
               {elementKey === 'newGameButton' && (
                 <div
-                  className={`h-full w-full ${themedTileBase} flex items-center justify-center p-2`}
-                  style={!glassActive && customization.gradientEnabled
-                    ? {
-                        background: `linear-gradient(135deg, ${customization.primaryColor}18, ${customization.secondaryColor}12)`
-                      }
-                    : undefined}
+                  className={`h-full w-full rounded-theme overflow-hidden ${glassActive ? 'glass-effect border border-theme shadow-theme-soft' : ''}`}
                 >
                   <button 
                     onClick={handleNewGame}
-                    className={`w-full py-3 px-4 rounded-theme font-medium flex items-center justify-center gap-2 transition-transform duration-200 ${actionButtonBase}`}
-                    style={!glassActive
-                      ? {
-                          background: customization.gradientEnabled
-                            ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                            : customization.primaryColor,
-                          color: 'var(--color-text-inverse)',
-                          fontFamily: customization.fontFamily
-                        }
-                      : { fontFamily: customization.fontFamily }}
+                    className={`w-full h-full rounded-theme font-medium flex items-center justify-center gap-2 transition-transform duration-200 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-theme-accent ${
+                      glassActive ? 'glass-button text-theme' : ''
+                    }`}
+                    style={{
+                      fontFamily: customization.fontFamily,
+                      background: glassActive
+                        ? undefined
+                        : customization.gradientEnabled
+                          ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                          : customization.primaryColor,
+                      color: glassActive ? undefined : 'var(--color-text-inverse)'
+                    }}
                     title="New Game"
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -651,25 +637,22 @@ const App: React.FC = () => {
               {/* New Chat Button - Detached with proper styling */}
               {elementKey === 'newChatButton' && (
                 <div
-                  className={`h-full w-full ${themedTileBase} flex items-center justify-center p-2`}
-                  style={!glassActive && customization.gradientEnabled
-                    ? {
-                        background: `linear-gradient(135deg, ${customization.primaryColor}18, ${customization.secondaryColor}12)`
-                      }
-                    : undefined}
+                  className={`h-full w-full rounded-theme overflow-hidden ${glassActive ? 'glass-effect border border-theme shadow-theme-soft' : ''}`}
                 >
                   <button 
                     onClick={handleNewChat}
-                    className={`w-full py-3 px-4 rounded-theme font-medium flex items-center justify-center gap-2 transition-transform duration-200 ${actionButtonBase}`}
-                    style={!glassActive
-                      ? {
-                          background: customization.gradientEnabled
-                            ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                            : customization.primaryColor,
-                          color: 'var(--color-text-inverse)',
-                          fontFamily: customization.fontFamily
-                        }
-                      : { fontFamily: customization.fontFamily }}
+                    className={`w-full h-full rounded-theme font-medium flex items-center justify-center gap-2 transition-transform duration-200 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-theme-accent ${
+                      glassActive ? 'glass-button text-theme' : ''
+                    }`}
+                    style={{
+                      fontFamily: customization.fontFamily,
+                      background: glassActive
+                        ? undefined
+                        : customization.gradientEnabled
+                          ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
+                          : customization.primaryColor,
+                      color: glassActive ? undefined : 'var(--color-text-inverse)'
+                    }}
                     title="New Chat"
                   >
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -682,13 +665,15 @@ const App: React.FC = () => {
 
               {/* Search Button - Detached and moved above sidebar */}
               {elementKey === 'searchButton' && (
-                <div className={`h-full w-full ${themedTileBase} flex items-center justify-center px-2`}>
+                <div
+                  className={`h-full w-full rounded-theme flex items-center justify-center ${
+                    glassActive ? 'glass-effect border border-theme shadow-theme-soft' : 'border border-theme bg-theme-surface shadow-theme-soft'
+                  }`}
+                >
                   <button
                     onClick={() => setIsSearchFocused(true)}
-                    className={`w-full h-full flex items-center justify-center gap-2 rounded-theme transition-all duration-200 ${
-                      glassActive
-                        ? 'glass-button text-theme'
-                        : 'bg-theme-surface text-theme border border-theme shadow-theme-soft hover:bg-theme-surface-hover'
+                    className={`w-full h-full flex items-center justify-center gap-2 rounded-theme transition-all duration-200 hover:scale-[1.02] ${
+                      glassActive ? 'glass-button text-theme' : 'bg-transparent text-theme hover:bg-theme-surface-hover'
                     }`}
                     style={{ fontFamily: customization.fontFamily }}
                     title="Search Chats"
@@ -703,7 +688,9 @@ const App: React.FC = () => {
 
               {/* Account Panel - Detached */}
               {elementKey === 'accountPanel' && (
-                <div className={`h-full w-full ${themedTileBase} flex items-center justify-center`}>
+                <div className={`h-full w-full rounded-theme overflow-hidden flex items-center justify-center ${
+                  glassActive ? 'glass-effect border border-theme shadow-theme-soft' : 'border border-theme bg-theme-surface shadow-theme-soft'
+                }`}>
                   <button 
                     onClick={toggleAccountMenu}
                     className="w-full h-full flex items-center justify-center gap-2 rounded-theme transition-all duration-200 hover:bg-theme-surface-hover text-theme font-theme"

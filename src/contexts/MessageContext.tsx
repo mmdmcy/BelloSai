@@ -66,7 +66,20 @@ export const MessageProvider: FC<{ children: ReactNode }> = ({ children }) => {
   };
 
   const handleNewConversation = useCallback(async (title: string = "New Conversation"): Promise<Conversation | undefined> => {
-    if (isCreatingConversation || !user) return;
+    if (isCreatingConversation) return;
+
+    if (!user) {
+      const localConversation: Conversation = {
+        id: `local-${Date.now()}`,
+        title,
+        created_at: new Date().toISOString()
+      };
+      setConversations(prev => [localConversation, ...prev]);
+      setActiveConversationId(localConversation.id);
+      setMessages([]);
+      return localConversation;
+    }
+
     setIsCreatingConversation(true);
     try {
       const { data, error } = await supabase
@@ -155,10 +168,13 @@ export const MessageProvider: FC<{ children: ReactNode }> = ({ children }) => {
           : msg
       ));
       
-      await supabase.from('messages').upsert([
-        { conversation_id: conversationIdToUse, role: 'user', content: message },
-        { conversation_id: conversationIdToUse, role: 'assistant', content: stream }
-      ]);
+      const shouldPersist = !!user && !conversationIdToUse.startsWith('local-');
+      if (shouldPersist) {
+        await supabase.from('messages').upsert([
+          { conversation_id: conversationIdToUse, role: 'user', content: message },
+          { conversation_id: conversationIdToUse, role: 'assistant', content: stream }
+        ]);
+      }
 
     } catch (error: any) {
       console.error('Error sending message:', error);
