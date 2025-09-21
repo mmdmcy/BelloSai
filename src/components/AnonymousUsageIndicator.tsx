@@ -1,5 +1,5 @@
 import React from 'react';
-import { MessageCircle, Clock, LogIn, Sparkles, AlertTriangle } from 'lucide-react';
+import { Clock, LogIn, Sparkles, AlertTriangle } from 'lucide-react';
 import { anonymousUsageService } from '../lib/anonymous-usage';
 
 interface AnonymousUsageIndicatorProps {
@@ -11,7 +11,7 @@ interface AnonymousUsageIndicatorProps {
 const AnonymousUsageIndicator: React.FC<AnonymousUsageIndicatorProps> = ({ 
   onLoginClick, 
   isLimitReached = false,
-  showAlways = false 
+  showAlways: _showAlways = false 
 }) => {
   const stats = anonymousUsageService.getStats();
   const remaining = anonymousUsageService.getRemainingMessages();
