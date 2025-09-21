@@ -236,7 +236,8 @@ export default function MainContent({
   return (
       <div
       ref={containerRef}
-      className="flex-1 h-full flex flex-col bg-theme-ghost"
+      className="flex-1 h-full flex flex-col"
+      style={{ background: 'transparent' }}
     >
       {/* Main Content Area - Responsive scaling */}
       <div className="flex-1 flex flex-col items-center justify-center px-8">
