@@ -7,6 +7,12 @@ const isGradientValue = (value?: string) => {
   return value.startsWith('linear-gradient') || value.startsWith('radial-gradient');
 };
 
+const mixColor = (color: string, target: string, amount: number) => {
+  const safeAmount = Math.min(100, Math.max(0, amount));
+  const complement = 100 - safeAmount;
+  return `color-mix(in srgb, ${color} ${safeAmount}%, ${target} ${complement}%)`;
+};
+
 const resolveBackgroundTokens = (selectedTheme: Theme, useDarkMode: boolean) => {
   const modePalette = useDarkMode && selectedTheme.dark
     ? selectedTheme.dark
@@ -77,6 +83,15 @@ export const ThemeProvider: FC<{ children: ReactNode }> = ({ children }) => {
 
     const { backgroundColor, backgroundGradient } = resolveBackgroundTokens(selectedTheme, useDarkMode);
 
+    const accentColor = selectedTheme.accentColors[0] || selectedTheme.primaryColor;
+    const accentSecondary = selectedTheme.accentColors[1] || selectedTheme.secondaryColor || accentColor;
+    const accentSoft = mixColor(accentColor, surfaceColor, 18);
+    const accentSurface = mixColor(accentColor, backgroundColor, 12);
+    const borderAccent = mixColor(accentColor, surfaceColor, 42);
+    const ghostSurface = mixColor(surfaceColor, '#000000', useDarkMode ? 12 : 4);
+    const softGlow = mixColor(accentSecondary, backgroundColor, 18);
+    const textInverse = useDarkMode ? '#f8fafc' : '#101624';
+
     const colors = {
       primary: selectedTheme.primaryColor,
       secondary: selectedTheme.secondaryColor,
@@ -92,6 +107,14 @@ export const ThemeProvider: FC<{ children: ReactNode }> = ({ children }) => {
     });
 
     root.style.setProperty('--color-background-gradient', backgroundGradient);
+    root.style.setProperty('--color-accent-strong', accentColor);
+    root.style.setProperty('--color-accent-secondary', accentSecondary);
+    root.style.setProperty('--color-accent-soft', accentSoft);
+    root.style.setProperty('--color-surface-accent', accentSurface);
+    root.style.setProperty('--color-border-accent', borderAccent);
+    root.style.setProperty('--color-surface-ghost', ghostSurface);
+    root.style.setProperty('--color-pulse-glow', softGlow);
+    root.style.setProperty('--color-text-inverse', textInverse);
     root.setAttribute('data-theme-ready', 'true');
 
     root.style.setProperty('--font-family', selectedTheme.fontFamily);

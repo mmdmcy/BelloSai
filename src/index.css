@@ -21,6 +21,14 @@
     --color-surface-hover: color-mix(in srgb, var(--color-surface) 92%, transparent);
     --shadow-elevation: 0 24px 48px color-mix(in srgb, var(--color-primary) 18%, transparent);
     --shadow-soft: 0 16px 32px color-mix(in srgb, var(--color-primary) 12%, transparent);
+    --color-accent-strong: #8b5cf6;
+    --color-accent-secondary: #d946ef;
+    --color-accent-soft: color-mix(in srgb, var(--color-accent-strong) 18%, var(--color-surface) 82%);
+    --color-surface-accent: color-mix(in srgb, var(--color-accent-strong) 12%, var(--color-background) 88%);
+    --color-border-accent: color-mix(in srgb, var(--color-accent-strong) 42%, var(--color-surface) 58%);
+    --color-surface-ghost: color-mix(in srgb, var(--color-surface) 94%, transparent);
+    --color-pulse-glow: color-mix(in srgb, var(--color-accent-secondary) 18%, var(--color-background) 82%);
+    --color-text-inverse: #0b1120;
   }
 
   * {
@@ -122,16 +130,26 @@
   .bg-theme-surface { background-color: var(--color-surface); }
   .bg-theme-surface-muted { background-color: var(--color-surface-muted); }
   .bg-theme-glass { background-color: color-mix(in srgb, var(--color-surface) 55%, transparent); }
+  .bg-theme-accent { background-color: var(--color-accent-strong); }
+  .bg-theme-accent-soft { background-color: var(--color-accent-soft); }
+  .bg-theme-surface-accent { background-color: var(--color-surface-accent); }
+  .bg-theme-ghost { background-color: var(--color-surface-ghost); }
   .text-theme { color: var(--color-text); }
   .text-theme-muted { color: var(--color-text-muted); }
   .text-theme-primary { color: var(--color-primary); }
+  .text-theme-inverse { color: var(--color-text-inverse); }
   .border-theme { border-color: var(--color-border); }
   .border-theme-strong { border-color: var(--color-border-strong); }
+  .border-theme-accent { border-color: var(--color-border-accent); }
   .shadow-theme { box-shadow: var(--shadow-elevation); }
   .shadow-theme-soft { box-shadow: var(--shadow-soft); }
+  .shadow-theme-glow { box-shadow: 0 20px 48px color-mix(in srgb, var(--color-pulse-glow) 35%, transparent); }
+  .hover\:bg-theme-accent:hover { background-color: color-mix(in srgb, var(--color-accent-strong) 92%, transparent); }
   .hover\:bg-theme-surface-hover:hover { background-color: var(--color-surface-hover); }
   .hover\:text-theme:hover { color: var(--color-text); }
   .hover\:border-theme-strong:hover { border-color: var(--color-border-strong); }
+  .hover\:border-theme-accent:hover { border-color: var(--color-border-accent); }
+  .focus\:ring-theme-accent:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-border-accent) 60%, transparent); }
   .focus\:ring-theme:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 35%, transparent); }
   .font-theme { font-family: var(--font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; }
   .rounded-theme { border-radius: var(--border-radius); }

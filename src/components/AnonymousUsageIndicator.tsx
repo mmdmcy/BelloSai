@@ -24,39 +24,42 @@ const AnonymousUsageIndicator: React.FC<AnonymousUsageIndicatorProps> = ({
   const isAtLimit = remaining === 0 || isLimitReached;
   const isNearLimit = remaining <= 2;
 
-  const getStatusColor = () => {
-    if (isAtLimit) return 'text-red-500';
-    if (isNearLimit) return 'text-orange-500';
-    return 'text-yellow-500';
-  };
+  const statusPalette = isAtLimit
+    ? { base: '#ef4444', text: '#dc2626' }
+    : isNearLimit
+      ? { base: '#f97316', text: '#c2410c' }
+      : { base: '#f59e0b', text: '#b45309' };
 
-  const getBackgroundColor = () => {
-    if (isAtLimit) return 'bg-red-50 border-red-200';
-    if (isNearLimit) return 'bg-orange-50 border-orange-200';
-    return 'bg-yellow-50 border-yellow-200';
-  };
+  const surfaceTint = (amount: number) => `color-mix(in srgb, ${statusPalette.base} ${amount}%, var(--color-surface) ${100 - amount}%)`;
+  const borderTint = (amount: number) => `color-mix(in srgb, ${statusPalette.base} ${amount}%, var(--color-border) ${100 - amount}%)`;
 
   return (
-    <div className={`p-4 rounded-lg border ${getBackgroundColor()} mb-4`}>
+    <div
+      className="p-4 rounded-theme border shadow-theme-soft mb-4"
+      style={{
+        background: surfaceTint(14),
+        borderColor: borderTint(38)
+      }}
+    >
       <div className="flex items-center gap-2 mb-2">
         {isAtLimit ? (
-          <AlertTriangle className="w-4 h-4 text-red-500" />
+          <AlertTriangle className="w-4 h-4" style={{ color: statusPalette.text }} />
         ) : (
-          <MessageCircle className={`w-4 h-4 ${getStatusColor()}`} />
+          <MessageCircle className="w-4 h-4" style={{ color: statusPalette.text }} />
         )}
-        <span className={`text-sm font-medium ${getStatusColor()}`}>
+        <span className="text-sm font-medium" style={{ color: statusPalette.text }}>
           {isAtLimit ? 'Daily limit reached' : `${remaining} messages left today`}
         </span>
       </div>
       
       {isAtLimit ? (
         <div className="space-y-3">
-          <p className="text-sm text-gray-700">
+          <p className="text-sm text-theme">
             You've reached your daily limit of <strong>{stats.dailyLimit} free messages</strong>. 
             Create an account to get more messages!
           </p>
           
-          <div className="flex items-center gap-1 text-xs text-gray-600">
+          <div className="flex items-center gap-1 text-xs text-theme-muted">
             <Clock className="w-3 h-3" />
             <span>Resets at {anonymousUsageService.getResetTimeFormatted()}</span>
           </div>
@@ -64,7 +67,11 @@ const AnonymousUsageIndicator: React.FC<AnonymousUsageIndicatorProps> = ({
           <div className="space-y-2">
             <button
               onClick={onLoginClick}
-              className="w-full flex items-center justify-center gap-2 text-sm bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+              className="w-full flex items-center justify-center gap-2 text-sm rounded-theme transition-all duration-200 hover:scale-[1.02] bg-theme-accent text-theme-inverse shadow-theme-soft"
+              style={{
+                background: `linear-gradient(135deg, ${statusPalette.base}, ${surfaceTint(32)})`,
+                color: 'var(--color-text-inverse)'
+              }}
             >
               <LogIn className="w-4 h-4" />
               Create Account - Get 20 Messages Daily
@@ -73,7 +80,7 @@ const AnonymousUsageIndicator: React.FC<AnonymousUsageIndicatorProps> = ({
             <div className="text-center">
               <button
                 onClick={onLoginClick}
-              className="inline-flex items-center gap-1 text-xs text-gray-700 hover:text-gray-900 font-medium"
+              className="inline-flex items-center gap-1 text-xs font-medium text-theme hover:text-theme"
               >
                 <Sparkles className="w-3 h-3" />
                 Or upgrade to Pro for unlimited messages
@@ -83,7 +90,7 @@ const AnonymousUsageIndicator: React.FC<AnonymousUsageIndicatorProps> = ({
         </div>
       ) : (
         <div className="space-y-2">
-          <div className="text-xs text-gray-600">
+          <div className="text-xs text-theme-muted">
             <div className="flex items-center gap-1 mb-1">
               <Clock className="w-3 h-3" />
               <span>Resets at {anonymousUsageService.getResetTimeFormatted()}</span>
@@ -94,14 +101,21 @@ const AnonymousUsageIndicator: React.FC<AnonymousUsageIndicatorProps> = ({
           </div>
 
           {isNearLimit && (
-            <p className="text-xs text-orange-600 font-medium">
+            <p className="text-xs font-medium" style={{ color: statusPalette.text }}>
               Running low! Create an account for 20 messages daily.
             </p>
           )}
 
           <button
             onClick={onLoginClick}
-            className="flex items-center gap-2 text-xs bg-blue-500 text-white px-3 py-1.5 rounded-md hover:bg-blue-600 transition-colors"
+            className="flex items-center gap-2 text-xs rounded-theme px-3 py-1.5 transition-all duration-200 hover:scale-[1.02]"
+            style={{
+              background: surfaceTint(26),
+              borderColor: borderTint(28),
+              borderWidth: '1px',
+              borderStyle: 'solid',
+              color: statusPalette.text
+            }}
           >
             <LogIn className="w-3 h-3" />
             Create account for more messages
