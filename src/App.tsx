@@ -251,7 +251,7 @@ const App: React.FC = () => {
     : 'bg-theme-accent text-theme-inverse shadow-theme-soft';
   const canvasSurfaceClass = glassActive
     ? 'glass-effect border border-theme shadow-theme-soft'
-    : 'bg-theme-ghost';
+    : 'bg-transparent';
   const [showConversations, setShowConversations] = useState(true);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [showSubscriptionManager, setShowSubscriptionManager] = useState(false);
