@@ -841,7 +841,6 @@ const App: React.FC = () => {
                                 selectedModel={selectedModel}
                                 onModelChange={setSelectedModel}
                                 availableModels={filteredModels}
-                                isDark={isDark}
                                 customization={customization}
                                 hasActiveSubscription={hasActiveSubscription}
                               />
