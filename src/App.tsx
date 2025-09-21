@@ -243,6 +243,13 @@ const App: React.FC = () => {
   const themedTileBase = glassActive
     ? 'glass-effect rounded-theme border border-theme shadow-theme-soft'
     : 'rounded-theme bg-theme-surface border border-theme shadow-theme-soft';
+  const tileInnerClass = 'h-full w-full flex flex-col justify-center gap-2 px-4 py-3';
+  const accentPillStyle = (primary?: string, secondary?: string) => ({
+    background: customization.gradientEnabled
+      ? `linear-gradient(135deg, ${primary || customization.primaryColor}, ${secondary || customization.secondaryColor})`
+      : (primary || customization.primaryColor),
+    color: 'var(--color-text-inverse)'
+  });
   const canvasSurfaceClass = glassActive
     ? 'glass-effect border border-theme shadow-theme-soft'
     : 'bg-transparent';
@@ -578,110 +585,136 @@ const App: React.FC = () => {
 
               {/* App Logo - Detached from sidebar */}
               {elementKey === 'appLogo' && (
-                <div
-                  className={`h-full w-full ${themedTileBase} flex items-center justify-center`}
-                  style={!glassActive && customization.gradientEnabled
-                    ? {
-                        background: `linear-gradient(135deg, ${customization.primaryColor}18, ${customization.secondaryColor}12)`
-                      }
-                    : undefined}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="p-1 rounded-theme border border-theme-accent bg-theme-accent-soft shadow-theme-soft">
-                      <svg className="w-4 h-4 text-theme" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/>
-                      </svg>
+                <div className={`h-full w-full ${themedTileBase}`}>
+                  <div
+                    className={`${tileInnerClass} items-start`}
+                    style={!glassActive && customization.gradientEnabled ? {
+                      background: `linear-gradient(135deg, ${customization.primaryColor}10, ${customization.secondaryColor}08)`
+                    } : undefined}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-theme border border-theme bg-theme-ghost flex items-center justify-center shadow-theme-soft">
+                        <svg className="w-4 h-4 text-theme" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/>
+                        </svg>
+                      </div>
+                      <div className="flex flex-col">
+                        <span
+                          className="text-xs uppercase tracking-[0.25em] text-theme-muted"
+                          style={{ fontFamily: customization.fontFamily }}
+                        >
+                          BelloSai
+                        </span>
+                        <span
+                          className="text-lg font-semibold text-theme"
+                          style={{ fontFamily: customization.fontFamily }}
+                        >
+                          Workspace
+                        </span>
+                      </div>
                     </div>
-                    <span 
-                      className="font-semibold text-lg text-theme"
-                      style={{ 
-                        fontFamily: customization.fontFamily,
-                        color: customization.primaryColor
-                      }}
-                    >
-                      BelloSai
-                    </span>
                   </div>
                 </div>
               )}
 
               {/* New Game Button - Detached with proper styling */}
               {elementKey === 'newGameButton' && (
-                <div
-                  className={`h-full w-full rounded-theme overflow-hidden ${glassActive ? 'glass-effect border border-theme shadow-theme-soft' : ''}`}
-                >
-                  <button 
-                    onClick={handleNewGame}
-                    className={`w-full h-full rounded-theme font-medium flex items-center justify-center gap-2 transition-transform duration-200 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-theme-accent ${
-                      glassActive ? 'glass-button text-theme' : ''
-                    }`}
-                    style={{
-                      fontFamily: customization.fontFamily,
-                      background: glassActive
-                        ? undefined
-                        : customization.gradientEnabled
-                          ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                          : customization.primaryColor,
-                      color: glassActive ? undefined : 'var(--color-text-inverse)'
-                    }}
-                    title="New Game"
-                  >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M7.5,4A5.5,5.5 0 0,0 2,9.5C2,10.82 2.5,12 3.3,12.9L12,21.5L20.7,12.9C21.5,12 22,10.82 22,9.5A5.5,5.5 0 0,0 16.5,4C14.64,4 13,4.93 12,6.34C11,4.93 9.36,4 7.5,4V4Z"/>
-                    </svg>
-                    New Game
-                  </button>
+                <div className={`h-full w-full ${themedTileBase}`}>
+                  <div className={`${tileInnerClass}`}>
+                    <span className="text-xs font-medium text-theme-muted" style={{ fontFamily: customization.fontFamily }}>Quick actions</span>
+                    <button 
+                      onClick={handleNewGame}
+                      className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-theme border border-theme hover:border-theme-accent transition-all duration-200 hover:bg-theme-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent"
+                      style={{ fontFamily: customization.fontFamily }}
+                      title="New Game"
+                    >
+                      <span className="flex items-center gap-3 text-theme">
+                        <span className="w-9 h-9 rounded-theme flex items-center justify-center shadow-theme-soft"
+                              style={accentPillStyle(customization.secondaryColor, customization.primaryColor)}>
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M7.5,4A5.5,5.5 0 0,0 2,9.5C2,10.82 2.5,12 3.3,12.9L12,21.5L20.7,12.9C21.5,12 22,10.82 22,9.5A5.5,5.5 0 0,0 16.5,4C14.64,4 13,4.93 12,6.34C11,4.93 9.36,4 7.5,4V4Z"/>
+                          </svg>
+                        </span>
+                        <span className="flex flex-col text-left">
+                          <span className="text-sm font-semibold">New game</span>
+                          <span className="text-xs text-theme-muted">Start AI Feud instantly</span>
+                        </span>
+                      </span>
+                      <svg className="w-4 h-4 text-theme-muted" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                        <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               )}
 
               {/* New Chat Button - Detached with proper styling */}
               {elementKey === 'newChatButton' && (
-                <div
-                  className={`h-full w-full rounded-theme overflow-hidden ${glassActive ? 'glass-effect border border-theme shadow-theme-soft' : ''}`}
-                >
-                  <button 
-                    onClick={handleNewChat}
-                    className={`w-full h-full rounded-theme font-medium flex items-center justify-center gap-2 transition-transform duration-200 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-theme-accent ${
-                      glassActive ? 'glass-button text-theme' : ''
-                    }`}
-                    style={{
-                      fontFamily: customization.fontFamily,
-                      background: glassActive
-                        ? undefined
-                        : customization.gradientEnabled
-                          ? `linear-gradient(135deg, ${customization.primaryColor}, ${customization.secondaryColor})`
-                          : customization.primaryColor,
-                      color: glassActive ? undefined : 'var(--color-text-inverse)'
-                    }}
-                    title="New Chat"
-                  >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                    </svg>
-                    New Chat
-                  </button>
+                <div className={`h-full w-full ${themedTileBase}`}>
+                  <div className={`${tileInnerClass} gap-3`}>
+                    <button 
+                      onClick={handleNewChat}
+                      className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-theme border border-theme hover:border-theme-accent transition-all duration-200 hover:bg-theme-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent"
+                      style={{ fontFamily: customization.fontFamily }}
+                      title="New Chat"
+                    >
+                      <span className="flex items-center gap-3 text-theme">
+                        <span className="w-9 h-9 rounded-theme flex items-center justify-center shadow-theme-soft"
+                              style={accentPillStyle()}>
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                          </svg>
+                        </span>
+                        <span className="flex flex-col text-left">
+                          <span className="text-sm font-semibold">New chat</span>
+                          <span className="text-xs text-theme-muted">Blank canvas with your AI</span>
+                        </span>
+                      </span>
+                      <svg className="w-4 h-4 text-theme-muted" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                        <path d="M9 6l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+
+                    <button
+                      onClick={handleNewConversation}
+                      className="w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-theme border border-dashed border-theme text-theme-muted hover:text-theme hover:border-theme-accent transition-colors"
+                      style={{ fontFamily: customization.fontFamily }}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span className="w-7 h-7 rounded-theme border border-theme flex items-center justify-center">
+                          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                            <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+                          </svg>
+                        </span>
+                        <span className="text-xs font-medium">Quick note</span>
+                      </span>
+                      <span className="text-[10px] uppercase tracking-wide">Draft</span>
+                    </button>
+                  </div>
                 </div>
               )}
 
               {/* Search Button - Detached and moved above sidebar */}
               {elementKey === 'searchButton' && (
-                <div
-                  className={`h-full w-full rounded-theme flex items-center justify-center ${
-                    glassActive ? 'glass-effect border border-theme shadow-theme-soft' : 'border border-theme bg-theme-surface shadow-theme-soft'
-                  }`}
-                >
+                <div className={`h-full w-full ${themedTileBase}`}>
                   <button
                     onClick={() => setIsSearchFocused(true)}
-                    className={`w-full h-full flex items-center justify-center gap-2 rounded-theme transition-all duration-200 hover:scale-[1.02] ${
-                      glassActive ? 'glass-button text-theme' : 'bg-transparent text-theme hover:bg-theme-surface-hover'
-                    }`}
+                    className="w-full h-full flex items-center justify-between gap-3 px-4 py-3 rounded-theme transition-all duration-200 hover:bg-theme-surface-hover hover:scale-[1.01] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-accent text-theme"
                     style={{ fontFamily: customization.fontFamily }}
                     title="Search Chats"
                   >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/>
-                    </svg>
-                    <span className="text-xs">Search</span>
+                    <span className="flex items-center gap-3">
+                      <span className="w-9 h-9 rounded-theme flex items-center justify-center bg-theme-ghost border border-theme">
+                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M9.5,3A6.5,6.5 0 0,1 16,9.5C16,11.11 15.41,12.59 14.44,13.73L14.71,14H15.5L20.5,19L19,20.5L14,15.5V14.71L13.73,14.44C12.59,15.41 11.11,16 9.5,16A6.5,6.5 0 0,1 3,9.5A6.5,6.5 0 0,1 9.5,3M9.5,5C7,5 5,7 5,9.5C5,12 7,14 9.5,14C12,14 14,12 14,9.5C14,7 12,5 9.5,5Z"/>
+                        </svg>
+                      </span>
+                      <span className="flex flex-col text-left">
+                        <span className="text-sm font-semibold">Search conversations</span>
+                        <span className="text-xs text-theme-muted">Ctrl / to open fast</span>
+                      </span>
+                    </span>
+                    <span className="text-[11px] px-2 py-1 rounded-theme bg-theme-ghost border border-theme text-theme-muted">CTRL /</span>
                   </button>
                 </div>
               )}
