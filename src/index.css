@@ -11,8 +11,16 @@
     --color-background: #ffffff;
     --color-text: #111827;
     --color-surface: #ffffff;
+    --color-background-gradient: none;
     --font-family: 'Inter', sans-serif;
     --border-radius: 0.75rem;
+    --color-text-muted: color-mix(in srgb, var(--color-text) 65%, var(--color-background) 35%);
+    --color-border: color-mix(in srgb, var(--color-text) 14%, transparent);
+    --color-border-strong: color-mix(in srgb, var(--color-text) 28%, transparent);
+    --color-surface-muted: color-mix(in srgb, var(--color-surface) 88%, var(--color-background) 12%);
+    --color-surface-hover: color-mix(in srgb, var(--color-surface) 92%, transparent);
+    --shadow-elevation: 0 24px 48px color-mix(in srgb, var(--color-primary) 18%, transparent);
+    --shadow-soft: 0 16px 32px color-mix(in srgb, var(--color-primary) 12%, transparent);
   }
 
   * {
@@ -23,9 +31,74 @@
     font-family: var(--font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
     color: var(--color-text);
     background-color: var(--color-background);
+    background-image: var(--color-background-gradient);
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
+
+  /* Remap neutral Tailwind utility colors to theme-aware tokens */
+  :root[data-theme-ready='true'] .bg-white { background-color: var(--color-surface) !important; }
+  :root[data-theme-ready='true'] .bg-gray-50 { background-color: color-mix(in srgb, var(--color-surface) 96%, var(--color-background) 4%) !important; }
+  :root[data-theme-ready='true'] .bg-gray-100 { background-color: color-mix(in srgb, var(--color-surface) 92%, var(--color-background) 8%) !important; }
+  :root[data-theme-ready='true'] .bg-gray-200 { background-color: color-mix(in srgb, var(--color-surface) 85%, var(--color-background) 15%) !important; }
+  :root[data-theme-ready='true'] .bg-gray-300 { background-color: color-mix(in srgb, var(--color-surface) 75%, var(--color-background) 25%) !important; }
+  :root[data-theme-ready='true'] .bg-gray-400 { background-color: color-mix(in srgb, var(--color-surface) 60%, var(--color-text) 40%) !important; }
+  :root[data-theme-ready='true'] .bg-gray-500 { background-color: color-mix(in srgb, var(--color-surface) 40%, var(--color-text) 60%) !important; }
+  :root[data-theme-ready='true'] .bg-gray-600 { background-color: color-mix(in srgb, var(--color-background) 40%, var(--color-text) 60%) !important; }
+  :root[data-theme-ready='true'] .bg-gray-700 { background-color: color-mix(in srgb, var(--color-background) 30%, var(--color-text) 70%) !important; }
+  :root[data-theme-ready='true'] .bg-gray-800 { background-color: color-mix(in srgb, var(--color-background) 20%, var(--color-text) 80%) !important; }
+  :root[data-theme-ready='true'] .bg-gray-900 { background-color: color-mix(in srgb, var(--color-background) 12%, var(--color-text) 88%) !important; }
+  :root[data-theme-ready='true'] .bg-gray-900\/20 { background-color: color-mix(in srgb, var(--color-text) 20%, var(--color-background) 80%) !important; }
+  :root[data-theme-ready='true'] .bg-white\/10 { background-color: color-mix(in srgb, var(--color-surface) 10%, transparent) !important; }
+  :root[data-theme-ready='true'] .bg-white\/20 { background-color: color-mix(in srgb, var(--color-surface) 20%, transparent) !important; }
+  :root[data-theme-ready='true'] .bg-white\/30 { background-color: color-mix(in srgb, var(--color-surface) 30%, transparent) !important; }
+  :root[data-theme-ready='true'] .bg-white\/80 { background-color: color-mix(in srgb, var(--color-surface) 80%, transparent) !important; }
+  :root[data-theme-ready='true'] .bg-black\/50 { background-color: color-mix(in srgb, var(--color-background) 30%, #000 70%) !important; }
+  :root[data-theme-ready='true'] .bg-black\/30 { background-color: color-mix(in srgb, var(--color-background) 50%, #000 50%) !important; }
+  :root[data-theme-ready='true'] .bg-black\/80 { background-color: color-mix(in srgb, var(--color-background) 10%, #000 90%) !important; }
+
+  :root[data-theme-ready='true'] .hover\:bg-gray-50:hover { background-color: color-mix(in srgb, var(--color-surface) 94%, var(--color-background) 6%) !important; }
+  :root[data-theme-ready='true'] .hover\:bg-gray-100:hover { background-color: color-mix(in srgb, var(--color-surface) 90%, var(--color-background) 10%) !important; }
+  :root[data-theme-ready='true'] .hover\:bg-gray-200:hover { background-color: color-mix(in srgb, var(--color-surface) 82%, var(--color-background) 18%) !important; }
+  :root[data-theme-ready='true'] .hover\:bg-gray-300:hover { background-color: color-mix(in srgb, var(--color-surface) 72%, var(--color-background) 28%) !important; }
+  :root[data-theme-ready='true'] .hover\:bg-gray-600:hover { background-color: color-mix(in srgb, var(--color-background) 45%, var(--color-text) 55%) !important; }
+  :root[data-theme-ready='true'] .hover\:bg-gray-700:hover { background-color: color-mix(in srgb, var(--color-background) 25%, var(--color-text) 75%) !important; }
+  :root[data-theme-ready='true'] .hover\:bg-white:hover { background-color: var(--color-surface-hover) !important; }
+  :root[data-theme-ready='true'] .hover\:bg-white\/20:hover { background-color: color-mix(in srgb, var(--color-surface) 24%, transparent) !important; }
+  :root[data-theme-ready='true'] .hover\:bg-white\/30:hover { background-color: color-mix(in srgb, var(--color-surface) 34%, transparent) !important; }
+
+  :root[data-theme-ready='true'] .text-gray-900,
+  :root[data-theme-ready='true'] .text-gray-800,
+  :root[data-theme-ready='true'] .text-gray-700,
+  :root[data-theme-ready='true'] .text-slate-900,
+  :root[data-theme-ready='true'] .text-slate-800 { color: var(--color-text) !important; }
+  :root[data-theme-ready='true'] .text-gray-600,
+  :root[data-theme-ready='true'] .text-gray-500,
+  :root[data-theme-ready='true'] .text-slate-600,
+  :root[data-theme-ready='true'] .text-slate-500 { color: var(--color-text-muted) !important; }
+  :root[data-theme-ready='true'] .text-gray-400,
+  :root[data-theme-ready='true'] .text-gray-300,
+  :root[data-theme-ready='true'] .text-slate-400,
+  :root[data-theme-ready='true'] .text-slate-300 { color: color-mix(in srgb, var(--color-text-muted) 70%, var(--color-background) 30%) !important; }
+  :root[data-theme-ready='true'] .text-gray-200,
+  :root[data-theme-ready='true'] .text-gray-100 { color: color-mix(in srgb, var(--color-text-muted) 45%, var(--color-background) 55%) !important; }
+
+  :root[data-theme-ready='true'] .border-gray-100,
+  :root[data-theme-ready='true'] .border-gray-200,
+  :root[data-theme-ready='true'] .border-gray-300 { border-color: var(--color-border) !important; }
+  :root[data-theme-ready='true'] .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+  :root[data-theme-ready='true'] .divide-gray-200 > :not([hidden]) ~ :not([hidden]) { border-color: var(--color-border) !important; }
+  :root[data-theme-ready='true'] .border-gray-400,
+  :root[data-theme-ready='true'] .border-gray-500,
+  :root[data-theme-ready='true'] .border-gray-600,
+  :root[data-theme-ready='true'] .border-gray-700,
+  :root[data-theme-ready='true'] .border-gray-800 { border-color: var(--color-border-strong) !important; }
+  :root[data-theme-ready='true'] .divide-gray-400 > :not([hidden]) ~ :not([hidden]),
+  :root[data-theme-ready='true'] .divide-gray-500 > :not([hidden]) ~ :not([hidden]),
+  :root[data-theme-ready='true'] .divide-gray-600 > :not([hidden]) ~ :not([hidden]) { border-color: var(--color-border-strong) !important; }
 }
 
 /* Font family utilities */
@@ -45,6 +118,23 @@
   .primary { color: var(--color-primary); }
   .bg-primary { background-color: var(--color-primary); }
   .bg-gradient-primary { background: linear-gradient(135deg, var(--color-primary), var(--color-secondary)); }
+  .bg-theme-background { background-color: var(--color-background); }
+  .bg-theme-surface { background-color: var(--color-surface); }
+  .bg-theme-surface-muted { background-color: var(--color-surface-muted); }
+  .bg-theme-glass { background-color: color-mix(in srgb, var(--color-surface) 55%, transparent); }
+  .text-theme { color: var(--color-text); }
+  .text-theme-muted { color: var(--color-text-muted); }
+  .text-theme-primary { color: var(--color-primary); }
+  .border-theme { border-color: var(--color-border); }
+  .border-theme-strong { border-color: var(--color-border-strong); }
+  .shadow-theme { box-shadow: var(--shadow-elevation); }
+  .shadow-theme-soft { box-shadow: var(--shadow-soft); }
+  .hover\:bg-theme-surface-hover:hover { background-color: var(--color-surface-hover); }
+  .hover\:text-theme:hover { color: var(--color-text); }
+  .hover\:border-theme-strong:hover { border-color: var(--color-border-strong); }
+  .focus\:ring-theme:focus-visible { box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 35%, transparent); }
+  .font-theme { font-family: var(--font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif; }
+  .rounded-theme { border-radius: var(--border-radius); }
 
   /* Neo rounded surfaces and pills for modern Apple-like style */
   .neo-surface {
@@ -89,75 +179,75 @@
   .glass-effect {
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+    background: color-mix(in srgb, var(--color-surface) 40%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
+    box-shadow: var(--shadow-soft);
   }
   
   .glass-effect-strong {
     backdrop-filter: blur(30px);
     -webkit-backdrop-filter: blur(30px);
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.15);
+    background: color-mix(in srgb, var(--color-surface) 55%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-border) 85%, transparent);
+    box-shadow: 0 12px 40px 0 color-mix(in srgb, var(--color-primary) 18%, transparent);
   }
   
   .glass-effect-subtle {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.05);
+    background: color-mix(in srgb, var(--color-surface) 30%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-border) 65%, transparent);
+    box-shadow: 0 4px 20px 0 color-mix(in srgb, var(--color-primary) 10%, transparent);
   }
   
   .glass-effect-dark {
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    background: rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+    background: color-mix(in srgb, var(--color-background) 10%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+    box-shadow: 0 8px 32px 0 color-mix(in srgb, var(--color-primary) 14%, transparent);
   }
   
   .glass-card {
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    background: rgba(255, 255, 255, 0.12);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: color-mix(in srgb, var(--color-surface) 45%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-border) 80%, transparent);
     border-radius: 1rem;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-soft);
     transition: all 0.3s ease;
   }
   
   .glass-card:hover {
-    background: rgba(255, 255, 255, 0.18);
-    box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.15);
+    background: color-mix(in srgb, var(--color-surface) 60%, transparent);
+    box-shadow: 0 12px 40px 0 color-mix(in srgb, var(--color-primary) 18%, transparent);
     transform: translateY(-2px);
   }
   
   .glass-button {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: color-mix(in srgb, var(--color-surface) 35%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-border) 75%, transparent);
     transition: all 0.2s ease;
   }
   
   .glass-button:hover {
-    background: rgba(255, 255, 255, 0.2);
-    box-shadow: 0 6px 24px 0 rgba(0, 0, 0, 0.12);
+    background: color-mix(in srgb, var(--color-surface) 50%, transparent);
+    box-shadow: 0 6px 24px 0 color-mix(in srgb, var(--color-primary) 16%, transparent);
   }
   
   .glass-input {
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: color-mix(in srgb, var(--color-surface) 25%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-border) 65%, transparent);
     transition: all 0.2s ease;
   }
   
   .glass-input:focus {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: color-mix(in srgb, var(--color-surface) 38%, transparent);
+    border-color: color-mix(in srgb, var(--color-primary) 45%, transparent);
     box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.1);
   }
   
