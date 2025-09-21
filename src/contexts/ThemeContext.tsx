@@ -1,5 +1,37 @@
 import { createContext, useState, useEffect, useContext, useCallback, FC, ReactNode } from 'react';
 import { AVAILABLE_THEMES } from '../theme/registry';
+import { Theme } from '../types/app';
+
+const isGradientValue = (value?: string) => {
+  if (!value) return false;
+  return value.startsWith('linear-gradient') || value.startsWith('radial-gradient');
+};
+
+const resolveBackgroundTokens = (selectedTheme: Theme, useDarkMode: boolean) => {
+  const modePalette = useDarkMode && selectedTheme.dark
+    ? selectedTheme.dark
+    : selectedTheme.light || {
+        backgroundColor: selectedTheme.backgroundColor,
+        textColor: selectedTheme.textColor,
+        surfaceColor: '#ffffff'
+      };
+
+  const backgroundSource = modePalette.backgroundColor || selectedTheme.backgroundColor;
+  const surfaceFallback = modePalette.surfaceColor
+    || (useDarkMode ? '#111827' : '#ffffff');
+
+  if (isGradientValue(backgroundSource)) {
+    return {
+      backgroundColor: surfaceFallback,
+      backgroundGradient: backgroundSource
+    };
+  }
+
+  return {
+    backgroundColor: backgroundSource,
+    backgroundGradient: 'none'
+  };
+};
 
 interface ThemeContextType {
   theme: string;
@@ -33,32 +65,45 @@ export const ThemeProvider: FC<{ children: ReactNode }> = ({ children }) => {
     // Determine if we should use dark mode
     const useDarkMode = forceDark !== undefined ? forceDark : isDark;
 
-    // Get colors based on current mode
-    const colors = useDarkMode && selectedTheme.dark
-      ? {
-          primary: selectedTheme.primaryColor,
-          secondary: selectedTheme.secondaryColor,
-          background: selectedTheme.dark.backgroundColor,
-          text: selectedTheme.dark.textColor,
-          accent: selectedTheme.accentColors[0] || selectedTheme.primaryColor,
-          surface: selectedTheme.dark.surfaceColor
-        }
-      : {
-          primary: selectedTheme.primaryColor,
-          secondary: selectedTheme.secondaryColor,
-          background: selectedTheme.light?.backgroundColor || selectedTheme.backgroundColor,
-          text: selectedTheme.light?.textColor || selectedTheme.textColor,
-          accent: selectedTheme.accentColors[0] || selectedTheme.primaryColor,
-          surface: selectedTheme.light?.surfaceColor || '#ffffff'
-        };
+    const palette = useDarkMode && selectedTheme.dark
+      ? selectedTheme.dark
+      : selectedTheme.light;
+
+    const surfaceColor = palette?.surfaceColor
+      || (useDarkMode
+        ? selectedTheme.dark?.surfaceColor
+        : selectedTheme.light?.surfaceColor)
+      || '#ffffff';
+
+    const { backgroundColor, backgroundGradient } = resolveBackgroundTokens(selectedTheme, useDarkMode);
+
+    const colors = {
+      primary: selectedTheme.primaryColor,
+      secondary: selectedTheme.secondaryColor,
+      background: backgroundColor,
+      text: palette?.textColor || selectedTheme.textColor,
+      accent: selectedTheme.accentColors[0] || selectedTheme.primaryColor,
+      surface: surfaceColor
+    };
 
     // Apply CSS variables
     Object.entries(colors).forEach(([key, value]) => {
       root.style.setProperty(`--color-${key}`, value);
     });
 
+    root.style.setProperty('--color-background-gradient', backgroundGradient);
+    root.setAttribute('data-theme-ready', 'true');
+
     root.style.setProperty('--font-family', selectedTheme.fontFamily);
     root.style.setProperty('--border-radius', selectedTheme.borderRadius);
+
+    if (!selectedTheme.shadows) {
+      root.style.setProperty('--shadow-elevation', 'none');
+      root.style.setProperty('--shadow-soft', 'none');
+    } else {
+      root.style.setProperty('--shadow-elevation', '0 24px 48px color-mix(in srgb, var(--color-primary) 18%, transparent)');
+      root.style.setProperty('--shadow-soft', '0 16px 32px color-mix(in srgb, var(--color-primary) 12%, transparent)');
+    }
 
     // Set dark mode class
     if (useDarkMode) {
@@ -115,12 +160,13 @@ export const ThemeProvider: FC<{ children: ReactNode }> = ({ children }) => {
   const getCurrentColors = useCallback(() => {
     const selectedTheme = AVAILABLE_THEMES.find(t => t.id === theme) || AVAILABLE_THEMES[0];
     const useDarkMode = isDark;
+    const { backgroundColor } = resolveBackgroundTokens(selectedTheme, useDarkMode);
 
     if (useDarkMode && selectedTheme.dark) {
       return {
         primary: selectedTheme.primaryColor,
         secondary: selectedTheme.secondaryColor,
-        background: selectedTheme.dark.backgroundColor,
+        background: backgroundColor,
         text: selectedTheme.dark.textColor,
         accent: selectedTheme.accentColors[0] || selectedTheme.primaryColor,
         surface: selectedTheme.dark.surfaceColor
@@ -129,7 +175,7 @@ export const ThemeProvider: FC<{ children: ReactNode }> = ({ children }) => {
       return {
         primary: selectedTheme.primaryColor,
         secondary: selectedTheme.secondaryColor,
-        background: selectedTheme.light?.backgroundColor || selectedTheme.backgroundColor,
+        background: backgroundColor,
         text: selectedTheme.light?.textColor || selectedTheme.textColor,
         accent: selectedTheme.accentColors[0] || selectedTheme.primaryColor,
         surface: selectedTheme.light?.surfaceColor || '#ffffff'

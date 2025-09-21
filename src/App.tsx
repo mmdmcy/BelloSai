@@ -692,14 +692,20 @@ const App: React.FC = () => {
 
               {/* Search Button - Detached and moved above sidebar */}
               {elementKey === 'searchButton' && (
-                <div className={`h-full w-full ${isDark ? 'bg-gray-900' : 'bg-purple-50'} flex items-center justify-center px-2`}>
+                <div
+                  className={`h-full w-full flex items-center justify-center px-2 rounded-theme ${
+                    hasGlassEffect()
+                      ? 'glass-effect border border-theme'
+                      : 'bg-theme-surface border border-theme shadow-theme-soft'
+                  }`}
+                >
                   <button
                     onClick={() => setIsSearchFocused(true)}
-                    className={`w-full h-full flex items-center justify-center gap-2 rounded-lg transition-colors ${
-                      isDark 
-                        ? 'bg-gray-800 border-gray-600 text-white hover:bg-gray-700' 
-                        : 'bg-white text-gray-900 border-gray-300 hover:bg-gray-50'
-                    } border`}
+                    className={`w-full h-full flex items-center justify-center gap-2 rounded-theme transition-colors ${
+                      hasGlassEffect()
+                        ? 'glass-button text-theme'
+                        : 'bg-theme-surface text-theme border border-theme shadow-theme-soft'
+                    } hover:bg-theme-surface-hover`}
                     style={{ fontFamily: customization.fontFamily }}
                     title="Search Chats"
                   >
@@ -1018,7 +1024,7 @@ const App: React.FC = () => {
           }}
         >
           <div 
-            className={`w-[500px] max-w-[90vw] max-h-[80vh] p-6 rounded-lg shadow-xl ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+            className="w-[500px] max-w-[90vw] max-h-[80vh] p-6 rounded-theme shadow-theme bg-theme-surface border border-theme"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -1150,7 +1156,7 @@ const App: React.FC = () => {
           }}
         >
           <div 
-            className={`w-96 max-w-[90vw] p-6 rounded-lg shadow-xl ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+            className="w-96 max-w-[90vw] p-6 rounded-theme shadow-theme bg-theme-surface border border-theme"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className={`text-xl font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -1262,7 +1268,7 @@ const App: React.FC = () => {
           }}
         >
           <div 
-            className={`w-96 max-w-[90vw] p-6 rounded-lg shadow-xl ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+            className="w-96 max-w-[90vw] p-6 rounded-theme shadow-theme bg-theme-surface border border-theme"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className={`text-xl font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>

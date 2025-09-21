@@ -409,8 +409,8 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
       </div>
 
       {/* Theme Selection */}
-      <div className={`p-4 rounded-lg ${isDark ? 'bg-gray-800' : 'bg-gray-100'}`}>
-        <h4 className={`font-medium mb-4 flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+      <div className="p-4 rounded-theme bg-theme-surface border border-theme shadow-theme-soft">
+        <h4 className="font-medium mb-4 flex items-center gap-2 text-theme">
           <Brush className="w-5 h-5" />
           Visual Theme
         </h4>
@@ -426,20 +426,18 @@ export default function AccountMenu({ isDark, onClose, customization, onCustomiz
                 fontFamily: theme.fontFamily,
                 gradientEnabled: theme.gradientEnabled
               })}
-              className={`p-4 rounded-lg border-2 transition-all text-left ${
+              className={`p-4 rounded-theme border-2 transition-all text-left ${
                 tempCustomization.selectedTheme === theme.id
-                  ? 'border-purple-500 bg-purple-50'
-                  : isDark 
-                    ? 'border-gray-600 hover:border-gray-500' 
-                    : 'border-gray-200 hover:border-gray-300'
+                  ? 'border-theme-strong bg-theme-surface-muted shadow-theme-soft'
+                  : 'border-theme hover:border-theme-strong bg-theme-surface hover:bg-theme-surface-hover'
               }`}
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <div className={`font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  <div className="font-medium text-theme">
                     {theme.name}
                   </div>
-                  <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <div className="text-sm text-theme-muted">
                     {theme.description}
                   </div>
                 </div>
