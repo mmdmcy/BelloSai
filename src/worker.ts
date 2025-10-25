@@ -25,6 +25,20 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
+    if (url.pathname === '/__env') {
+      const body = JSON.stringify({
+        VITE_SUPABASE_URL: env.VITE_SUPABASE_URL,
+        VITE_SUPABASE_ANON_KEY_present: !!env.VITE_SUPABASE_ANON_KEY,
+        VITE_STRIPE_PUBLISHABLE_KEY_present: !!env.VITE_STRIPE_PUBLISHABLE_KEY,
+      }, null, 2);
+      return new Response(body, {
+        headers: {
+          'content-type': 'application/json; charset=utf-8',
+          'cache-control': 'no-store',
+        }
+      });
+    }
+
     if (url.pathname.startsWith('/api/')) {
       return new Response('Not Found', { status: 404 });
     }
@@ -50,6 +64,8 @@ export default {
       const injected = injectRuntimeEnvIntoHtml(html, env);
       const headers = new Headers(response.headers);
       headers.set('content-type', 'text/html; charset=utf-8');
+      headers.set('cache-control', 'no-store');
+      headers.set('x-env-injected', '1');
       return new Response(injected, { headers, status: response.status });
     }
 
