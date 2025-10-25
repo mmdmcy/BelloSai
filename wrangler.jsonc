@@ -3,7 +3,13 @@
   "compatibility_date": "2025-10-25",
   "main": "src/worker.ts",
   "assets": {
-    "directory": "./dist"
+    "directory": "./dist",
+    "binding": "ASSETS"
+  },
+  "vars": {
+    "VITE_SUPABASE_URL": "https://sbmgdvbuveghxqneterd.supabase.co",
+    "VITE_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNibWdkdmJ1dmVnaHhxbmV0ZXJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTYzMDc0NDIsImV4cCI6MjA3MTg4MzQ0Mn0.mHLCijfGLnKR-sqhwshNCdm6ThQg5qfehXjc78ZEzWQ",
+    "VITE_STRIPE_PUBLISHABLE_KEY": "pk_test_51Q4PWFBzQy7WGhPxTqHnfZ8zBGnCISzt4Rwus8Dv8Oa2zRqcU3JLpY0cf5vSjHnWeBvaAKvkdYHlX4CPdeJG14ZC00WXgHImgP"
   }
 }
 
