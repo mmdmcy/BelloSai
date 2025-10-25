@@ -34,6 +34,7 @@
  */
 
 import { supabase } from './supabase'
+import { getRuntimeEnv } from './runtime-env'
 import type { Database } from './supabase'
 
 export type StripeCustomer = Database['public']['Tables']['stripe_customers']['Row']
@@ -109,8 +110,7 @@ export class StripeService {
    * Check environment configuration
    */
   static checkEnvironment(): void {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+    const { VITE_SUPABASE_URL: supabaseUrl, VITE_SUPABASE_ANON_KEY: supabaseAnonKey } = getRuntimeEnv()
     
     console.log('🔍 [StripeService] Environment check:', {
       hasSupabaseUrl: !!supabaseUrl,
@@ -144,8 +144,9 @@ export class StripeService {
         setTimeout(() => reject(new Error('Checkout session creation timeout')), 10000) // 10 second timeout
       })
 
+      const { VITE_SUPABASE_URL } = getRuntimeEnv()
       const fetchPromise = fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`,
+        `${VITE_SUPABASE_URL}/functions/v1/stripe-checkout`,
         {
           method: 'POST',
           headers: {
@@ -190,8 +191,9 @@ export class StripeService {
       setTimeout(() => reject(new Error('Checkout request timed out')), 12000)
     })
 
+    const { VITE_SUPABASE_URL } = getRuntimeEnv()
     const fetchPromise = fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`,
+      `${VITE_SUPABASE_URL}/functions/v1/stripe-checkout`,
       {
         method: 'POST',
         headers: {
@@ -328,8 +330,9 @@ export class StripeService {
         throw new Error('User not authenticated')
       }
 
+      const { VITE_SUPABASE_URL } = getRuntimeEnv()
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-customer-portal`,
+        `${VITE_SUPABASE_URL}/functions/v1/stripe-customer-portal`,
         {
           method: 'POST',
           headers: {
@@ -365,8 +368,9 @@ export class StripeService {
         throw new Error('User not authenticated')
       }
 
+      const { VITE_SUPABASE_URL } = getRuntimeEnv()
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-cancel-subscription`,
+        `${VITE_SUPABASE_URL}/functions/v1/stripe-cancel-subscription`,
         {
           method: 'POST',
           headers: {
@@ -398,8 +402,9 @@ export class StripeService {
         throw new Error('User not authenticated')
       }
 
+      const { VITE_SUPABASE_URL } = getRuntimeEnv()
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-reactivate-subscription`,
+        `${VITE_SUPABASE_URL}/functions/v1/stripe-reactivate-subscription`,
         {
           method: 'POST',
           headers: {
@@ -435,8 +440,9 @@ export class StripeService {
         throw new Error('User not authenticated')
       }
 
+      const { VITE_SUPABASE_URL } = getRuntimeEnv()
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-verify-session`,
+        `${VITE_SUPABASE_URL}/functions/v1/stripe-verify-session`,
         {
           method: 'POST',
           headers: {
@@ -478,8 +484,9 @@ export class StripeService {
         throw new Error('User not authenticated')
       }
 
+      const { VITE_SUPABASE_URL } = getRuntimeEnv()
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-sync-subscription`,
+        `${VITE_SUPABASE_URL}/functions/v1/stripe-sync-subscription`,
         {
           method: 'POST',
           headers: {

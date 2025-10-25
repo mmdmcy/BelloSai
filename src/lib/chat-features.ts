@@ -816,7 +816,9 @@ class ChatFeaturesService {
         return this.generateFallbackTitle(messages[0].content);
       }
 
-      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`;
+      const { getRuntimeEnv } = await import('./runtime-env');
+      const { VITE_SUPABASE_URL } = getRuntimeEnv();
+      const url = `${VITE_SUPABASE_URL}/functions/v1/deepseek-chat`;
       const response = await fetch(url, {
         method: 'POST',
         headers: {
