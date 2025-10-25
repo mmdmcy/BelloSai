@@ -6,6 +6,7 @@
  */
 
 import { supabase } from './supabase';
+import { getRuntimeEnv } from './runtime-env';
 import type { ModelInfo } from '../types/app';
 import { AVAILABLE_MODELS, getModelProvider, getModelTier } from '../models/registry';
 
@@ -151,7 +152,8 @@ export async function sendChatMessage(
     } else {
       console.log('🔓 No session found - proceeding as anonymous user');
       // Add anon key for anonymous users
-      authHeaders['apikey'] = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const { VITE_SUPABASE_ANON_KEY } = getRuntimeEnv();
+      authHeaders['apikey'] = VITE_SUPABASE_ANON_KEY as string;
     }
 
     // If user is logged in, attempt to debit a token up-front
@@ -173,12 +175,13 @@ export async function sendChatMessage(
 
     // Choose appropriate edge function
     const provider = getModelProvider(modelCode);
+    const { VITE_SUPABASE_URL } = getRuntimeEnv();
     let url = '';
-    if (provider === 'DeepSeek') url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/deepseek-chat`;
-    else if (provider === 'Claude') url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/claude-chat`;
-    else if (provider === 'Mistral') url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/mistral-chat`;
-    else if (provider === 'Qwen') url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/qwen-chat`;
-    else if (provider === 'Groq') url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/groq-chat`;
+    if (provider === 'DeepSeek') url = `${VITE_SUPABASE_URL}/functions/v1/deepseek-chat`;
+    else if (provider === 'Claude') url = `${VITE_SUPABASE_URL}/functions/v1/claude-chat`;
+    else if (provider === 'Mistral') url = `${VITE_SUPABASE_URL}/functions/v1/mistral-chat`;
+    else if (provider === 'Qwen') url = `${VITE_SUPABASE_URL}/functions/v1/qwen-chat`;
+    else if (provider === 'Groq') url = `${VITE_SUPABASE_URL}/functions/v1/groq-chat`;
     console.log('📡 Calling Edge Function:', url);
     console.log('📡 Request payload:', { messages, model: modelCode, conversationId });
     

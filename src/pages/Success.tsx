@@ -60,7 +60,9 @@ export default function Success(props: SuccessPageProps) {
       // 2) Try to fulfill credits on-demand (idempotent) to avoid waiting for webhook delays
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-fulfill-bundle`, {
+        const { getRuntimeEnv } = await import('../lib/runtime-env');
+        const { VITE_SUPABASE_URL } = getRuntimeEnv();
+        const resp = await fetch(`${VITE_SUPABASE_URL}/functions/v1/stripe-fulfill-bundle`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${session?.access_token}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ session_id: sessionId })

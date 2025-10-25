@@ -1,37 +1,59 @@
-export interface Env {}
+export interface Env {
+  ASSETS: { fetch: (request: Request) => Promise<Response> };
+  VITE_SUPABASE_URL: string;
+  VITE_SUPABASE_ANON_KEY: string;
+  VITE_STRIPE_PUBLISHABLE_KEY?: string;
+}
+
+function injectRuntimeEnvIntoHtml(html: string, env: Env): string {
+  const runtime = {
+    VITE_SUPABASE_URL: env.VITE_SUPABASE_URL,
+    VITE_SUPABASE_ANON_KEY: env.VITE_SUPABASE_ANON_KEY,
+    VITE_STRIPE_PUBLISHABLE_KEY: env.VITE_STRIPE_PUBLISHABLE_KEY || '',
+  };
+  const script = `<script>window.__ENV__=${JSON.stringify(runtime)}</script>`;
+  if (html.includes('</head>')) {
+    return html.replace('</head>', script + '</head>');
+  }
+  if (html.includes('</body>')) {
+    return html.replace('</body>', script + '</body>');
+  }
+  return html + script;
+}
 
 export default {
-  async fetch(request): Promise<Response> {
-    // With `assets.directory` configured in wrangler.jsonc, Workers Sites will
-    // automatically serve files from ./dist. We just need to ensure SPA fallback.
-    // Try to serve the asset first; if not found, fall back to index.html
+  async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
-    // For API or edge function calls, just pass through (none defined here)
     if (url.pathname.startsWith('/api/')) {
       return new Response('Not Found', { status: 404 });
     }
 
-    // Rely on Cloudflare's assets handling by returning undefined here is not possible.
-    // Use the built-in "assets" binding available when using assets.directory.
-    // Wrangler injects an ASSETS object at runtime. We'll use it if present.
-    // @ts-ignore - ASSETS is available at runtime
-    const assets = (globalThis as any).ASSETS;
+    // Try to serve the requested asset first
+    let response = await env.ASSETS.fetch(request);
 
-    if (assets && typeof assets.fetch === 'function') {
-      // Try to fetch the exact asset
-      let response = await assets.fetch(request);
-      if (response && response.status !== 404) {
-        return response;
-      }
-      // SPA fallback to index.html
+    // If not found, SPA fallback to index.html
+    if (!response || response.status === 404) {
       const fallbackUrl = new URL('/index.html', url.origin);
       const fallbackRequest = new Request(fallbackUrl.toString(), request);
-      response = await assets.fetch(fallbackRequest);
-      if (response) return response;
+      response = await env.ASSETS.fetch(fallbackRequest);
     }
 
-    return new Response('Not Found', { status: 404 });
+    if (!response) {
+      return new Response('Not Found', { status: 404 });
+    }
+
+    // If HTML, inject runtime env for frontend to consume
+    const contentType = response.headers.get('content-type') || '';
+    if (contentType.includes('text/html')) {
+      const html = await response.text();
+      const injected = injectRuntimeEnvIntoHtml(html, env);
+      const headers = new Headers(response.headers);
+      headers.set('content-type', 'text/html; charset=utf-8');
+      return new Response(injected, { headers, status: response.status });
+    }
+
+    return response;
   },
 };
 

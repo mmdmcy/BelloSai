@@ -23,9 +23,9 @@
 
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '../types/database'
+import { getRuntimeEnv } from './runtime-env'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const { VITE_SUPABASE_URL: supabaseUrl, VITE_SUPABASE_ANON_KEY: supabaseAnonKey } = getRuntimeEnv()
 
 console.log('🔧 Supabase config:', { url: supabaseUrl, hasKey: !!supabaseAnonKey })
 
