@@ -1,0 +1,9 @@
+{
+  "name": "bellosai",
+  "compatibility_date": "2025-10-25",
+  "main": "src/worker.ts",
+  "assets": {
+    "directory": "./dist"
+  }
+}
+
