@@ -69,6 +69,22 @@ export default {
       return new Response(injected, { headers, status: response.status });
     }
 
+    // For the main Vite entry chunk, prepend env assignment to guarantee availability
+    if (url.pathname.startsWith('/assets/index-') && contentType.includes('javascript')) {
+      const js = await response.text();
+      const runtime = {
+        VITE_SUPABASE_URL: env.VITE_SUPABASE_URL,
+        VITE_SUPABASE_ANON_KEY: env.VITE_SUPABASE_ANON_KEY,
+        VITE_STRIPE_PUBLISHABLE_KEY: env.VITE_STRIPE_PUBLISHABLE_KEY || '',
+      };
+      const prelude = `;window.__ENV__=Object.assign({}, ${JSON.stringify(runtime)}, window.__ENV__||{});`;
+      const headers = new Headers(response.headers);
+      headers.set('content-type', 'application/javascript; charset=utf-8');
+      headers.set('cache-control', 'no-store');
+      headers.set('x-env-prepended', '1');
+      return new Response(prelude + js, { headers, status: response.status });
+    }
+
     return response;
   },
 };
