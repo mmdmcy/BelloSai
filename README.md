@@ -91,3 +91,98 @@ npm run dev
 
 ## License
 MIT 
+
+---
+
+## 🚀 Technologies & Architecture (CV Highlights)
+
+### Frontend Stack
+| Technology | Purpose |
+|------------|---------|
+| **React 18** | Modern component architecture with Hooks, Context API, and functional components |
+| **TypeScript 5** | Full type safety across 53+ source files, interfaces, and strict typing |
+| **Vite 5** | Lightning-fast HMR, optimized builds, and modern ES module bundling |
+| **Tailwind CSS 3** | Utility-first styling with custom design system |
+| **React Router 7** | Client-side routing with protected routes |
+| **Lucide React** | Modern icon system |
+
+### Backend & Infrastructure
+| Technology | Purpose |
+|------------|---------|
+| **Supabase** | Backend-as-a-Service with PostgreSQL, Auth, RLS, and Edge Functions |
+| **PostgreSQL** | Relational database with custom enums, foreign keys, triggers, and stored procedures |
+| **Deno Runtime** | Edge Functions for serverless AI API routing |
+| **Cloudflare Workers** | Edge deployment with Wrangler CLI (alternative hosting) |
+
+### AI Integration (Multi-Provider Architecture)
+- **45+ AI Models** from 5 providers in a unified interface
+- **Providers:** Claude (Anthropic), DeepSeek, Mistral, Groq, Qwen (Alibaba)
+- **SSE Streaming** for real-time AI responses
+- **Model Tiering System** (Light/Medium/Heavy) with automatic cost classification
+- **Provider Routing** via Edge Functions with OpenAI-compatible API patterns
+
+### Payment & Monetization
+| Technology | Purpose |
+|------------|---------|
+| **Stripe Checkout** | Secure payment processing for subscriptions and bundles |
+| **Stripe Webhooks** | Real-time subscription status updates |
+| **Stripe Customer Portal** | Self-service billing management |
+| **Token/Credit System** | Custom credit-based billing with tiered pricing |
+
+### Security & Best Practices
+- **Row-Level Security (RLS)** - Database-level access control policies
+- **Content Security Policy (CSP)** - XSS protection via meta headers
+- **JWT Authentication** - Secure session management via Supabase Auth
+- **Environment Variable Management** - Runtime env injection for multi-platform deployment
+
+### UI/UX Design Patterns
+- **Glassmorphism Design System** - 15+ glass effect utilities with backdrop-blur
+- **iOS-Inspired Components** - Modern panels, toolbars, chips, and pressable effects
+- **Dynamic Theme Engine** - 10+ themes with light/dark mode support
+- **CSS Custom Properties** - Design tokens for colors, typography, spacing, and shadows
+- **Responsive Design** - Mobile-first with adaptive layouts
+- **Accessibility** - Reduced motion support, custom scrollbars, focus states
+
+### Architecture Patterns
+- **Context API State Management** - AuthContext, ThemeContext, MessageContext
+- **Custom Hooks** - `useSubscription`, `useMessages` for reusable logic
+- **Service Layer Pattern** - Dedicated services for Stripe, Supabase, and chat
+- **Model Registry Pattern** - Centralized AI model configuration with capabilities
+- **Database Migration System** - Versioned schema migrations
+
+### DevOps & Infrastructure
+- **ESLint 9** - Code quality with React and TypeScript rules
+- **PostCSS & Autoprefixer** - CSS processing pipeline
+- **Multi-Platform Deployment** - Vercel, Cloudflare Pages/Workers support
+- **Supabase CLI** - Database migrations and Edge Function deployment
+
+### SEO & Performance
+- **Structured Data (JSON-LD)** - WebSite, Organization, and SoftwareApplication schemas
+- **Open Graph & Twitter Cards** - Social media preview optimization
+- **Semantic HTML5** - Proper heading hierarchy and accessibility
+- **Content-Visibility** - CSS containment for large content optimization
+- **Lazy Loading** - Deferred rendering for performance
+
+### Database Schema Highlights
+```sql
+-- Custom PostgreSQL enums
+CREATE TYPE subscription_tier AS ENUM ('free', 'pro', 'enterprise');
+CREATE TYPE message_type AS ENUM ('user', 'ai');
+CREATE TYPE subscription_status AS ENUM ('active', 'inactive', 'cancelled', 'past_due');
+
+-- Trigger-based automation
+-- Auto user creation, timestamp updates, message counting
+-- Share ID generation with cryptographically secure random bytes
+```
+
+### Project Statistics
+- **53+ Source Files** in `/src`
+- **18 React Components** with modular architecture
+- **15 Library Modules** for services and utilities
+- **13 Supabase Edge Functions** for serverless API
+- **11 Database Migrations** with full version control
+- **1,400+ Lines** in main App component
+
+---
+
+*This project demonstrates full-stack development expertise across modern React architecture, serverless computing, multi-provider AI integration, payment processing, and enterprise-grade security patterns.*
