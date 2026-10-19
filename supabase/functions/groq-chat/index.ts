@@ -1,4 +1,5 @@
 import { corsHeaders } from '../_shared/cors.ts'
+import { createAdminClient, enforceAnonymousQuota, getAuthenticatedUser } from '../_shared/anonymous-quota.ts'
 
 interface ChatRequest {
   messages: Array<{ type?: 'user' | 'ai'; role?: 'user' | 'assistant' | 'system'; content: string }>;
@@ -16,11 +17,18 @@ Deno.serve(async (req) => {
     console.log('🚀 Groq Edge Function called at:', new Date().toISOString());
     console.log('📝 Request method:', req.method);
 
-    // Auth headers (not strictly required for Groq call; used for potential future persistence)
-    const authHeader = req.headers.get('Authorization')
-    const apiKey = req.headers.get('apikey')
-    console.log('🔑 Auth header present:', !!authHeader);
-    console.log('🔑 API key present:', !!apiKey);
+    // Signed-in users keep their existing (unlimited here) path; anonymous
+    // callers are subject to the server-side per-IP daily quota.
+    const supabaseAdmin = createAdminClient()
+    if (!supabaseAdmin) {
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error: Supabase environment is not set' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    const user = await getAuthenticatedUser(req, supabaseAdmin)
+    const isAnonymous = !user
+    console.log('🔑 Caller:', isAnonymous ? 'anonymous' : 'authenticated');
 
     // Parse request body
     console.log('📥 Parsing request body...');
@@ -29,6 +37,13 @@ Deno.serve(async (req) => {
 
     if (!messages || !Array.isArray(messages)) {
       throw new Error('Messages array is required')
+    }
+
+    // Anonymous callers share the owner's provider key: enforce the server-side
+    // per-IP daily quota before spending it (the localStorage counter is only a hint).
+    if (isAnonymous) {
+      const limited = await enforceAnonymousQuota(req, supabaseAdmin, corsHeaders)
+      if (limited) return limited
     }
 
     // Convert to OpenAI-compatible format for Groq

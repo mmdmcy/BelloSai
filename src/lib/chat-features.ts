@@ -415,10 +415,10 @@ class ChatFeaturesService {
   // ========================================
 
   /**
-   * Save user's API keys (encrypted)
+   * Save user's API keys (Base64-encoded, not encrypted; see encryptAPIKeys)
    */
   async saveUserAPIKeys(userId: string, keys: Partial<UserAPIKeys>): Promise<void> {
-    // Encrypt keys before storing
+    // Encode keys before storing (not encryption; see encryptAPIKeys)
     const encryptedKeys = await this.encryptAPIKeys(keys);
     
     const { error } = await supabase
@@ -471,29 +471,43 @@ class ChatFeaturesService {
     }
   }
 
+  /**
+   * NOT ENCRYPTION. Keys are only Base64-encoded before being written to the
+   * user_api_keys table (RLS limits reads to the owning user, but anyone with
+   * database or service-role access can decode them instantly). The UI and
+   * README say so; do not describe this as "encrypted".
+   *
+   * Proper path when BYOK is taken further: keep the plaintext key out of the
+   * browser and the public schema entirely. Store it with Supabase Vault
+   * (`select vault.create_secret(key, name)`), which encrypts at rest with a
+   * server-held key, and have an edge function look it up via
+   * `vault.decrypted_secrets` using the service role when it calls the
+   * provider. The repository's migrations do not enable Vault/pgsodium yet;
+   * add a migration for that before implementing it.
+   */
   private async encryptAPIKeys(keys: Partial<UserAPIKeys>): Promise<any> {
-    // Simple encryption - in production, use proper encryption
-    const encrypted: any = {};
+    const encoded: any = {};
     for (const [key, value] of Object.entries(keys)) {
       if (value && typeof value === 'string') {
-        encrypted[key] = btoa(value); // Base64 encoding (use proper encryption in production)
+        encoded[key] = btoa(value); // Base64 encoding only; see note above
       }
     }
-    return encrypted;
+    return encoded;
   }
 
-  private async decryptAPIKeys(encryptedData: any): Promise<UserAPIKeys> {
-    const decrypted: any = {};
-    for (const [key, value] of Object.entries(encryptedData)) {
+  private async decryptAPIKeys(encodedData: any): Promise<UserAPIKeys> {
+    const decoded: any = {};
+    for (const [key, value] of Object.entries(encodedData)) {
       if (value && typeof value === 'string' && key.endsWith('_key')) {
         try {
-          decrypted[key] = atob(value as string); // Base64 decoding
+          decoded[key] = atob(value as string); // Base64 decoding only; see note above
         } catch (error) {
-          console.error(`Failed to decrypt ${key}:`, error);
+          console.error(`Failed to decode ${key}:`, error);
         }
       }
     }
-    return { ...decrypted, encrypted: true };
+    // `encrypted` is the legacy column/flag name; it only means "encoded".
+    return { ...decoded, encrypted: true };
   }
 
   // ========================================

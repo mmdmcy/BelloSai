@@ -1,4 +1,12 @@
 import { corsHeaders } from '../_shared/cors.ts'
+import { createAdminClient, enforceAnonymousQuota, getAuthenticatedUser } from '../_shared/anonymous-quota.ts'
+
+interface ChatRequest {
+  messages: Array<{ type?: 'user' | 'ai'; role?: 'user' | 'assistant' | 'system'; content: string }>;
+  model: string;
+  conversationId?: string;
+  webSearch?: boolean;
+}
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
@@ -10,25 +18,18 @@ Deno.serve(async (req) => {
     console.log('🚀 Mistral Edge Function called at:', new Date().toISOString());
     console.log('📝 Request method:', req.method);
     
-    // Get authorization header or apikey for anonymous users - but allow all requests
-    const authHeader = req.headers.get('Authorization')
-    const apiKey = req.headers.get('apikey')
-    console.log('🔑 Auth header present:', !!authHeader);
-    console.log('🔑 API key present:', !!apiKey);
-    
-    // DEBUG: Log all headers (excluding sensitive data)
-    const headers = Object.fromEntries(req.headers.entries());
-    console.log('📋 All request headers:', {
-      ...headers,
-      'authorization': authHeader ? 'Bearer [REDACTED]' : undefined,
-      'apikey': apiKey ? '[API KEY PRESENT]' : undefined
-    });
-    
-    // PRODUCTION: Allow all requests without authentication
-    console.log('🔓 PRODUCTION MODE: Allowing all requests (anonymous mode)');
-    let user = null;
-    let userData = null;
-    let isAnonymous = true; // Always treat as anonymous in production for now
+    // Signed-in users keep their existing path; anonymous callers are subject
+    // to the server-side per-IP daily quota.
+    const supabaseAdmin = createAdminClient()
+    if (!supabaseAdmin) {
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error: Supabase environment is not set' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    const user = await getAuthenticatedUser(req, supabaseAdmin)
+    const isAnonymous = !user
+    console.log('🔑 Caller:', isAnonymous ? 'anonymous' : 'authenticated');
 
     // Parse request body
     console.log('📥 Parsing request body...');
@@ -37,6 +38,13 @@ Deno.serve(async (req) => {
 
     if (!messages || !Array.isArray(messages)) {
       throw new Error('Messages array is required')
+    }
+
+    // Anonymous callers share the owner's provider key: enforce the server-side
+    // per-IP daily quota before spending it (the localStorage counter is only a hint).
+    if (isAnonymous) {
+      const limited = await enforceAnonymousQuota(req, supabaseAdmin, corsHeaders)
+      if (limited) return limited
     }
 
     // Convert to Mistral's expected format

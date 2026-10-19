@@ -5,7 +5,7 @@
  * Features:
  * - Add/edit/delete API keys
  * - Test key validity
- * - Secure storage with encryption
+ * - Keys are stored Base64-encoded (not encrypted); the UI says so
  * - Support for multiple providers
  */
 
@@ -264,8 +264,10 @@ export default function APIKeyManager({
               <div className="text-sm">
                 <p className="font-medium mb-1">Bring Your Own Key (BYOK)</p>
                 <p className={isDark ? 'text-blue-200' : 'text-blue-700'}>
-                  Use your own API keys for direct access to AI providers. 
-                  Keys are securely encrypted and stored for your use only.
+                  Use your own API keys for direct access to AI providers.
+                  Keys are stored encoded, not encrypted, and are readable by
+                  anyone with database access. Use at your own risk and prefer
+                  keys with a spending limit that you can revoke.
                 </p>
               </div>
             </div>
@@ -415,8 +417,9 @@ export default function APIKeyManager({
             isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600'
           }`}>
             <p>
-              🔒 Your API keys are encrypted and stored for your use only. 
-              BelloSai has no access to your keys and cannot view them.
+              ⚠️ Your API keys are stored Base64-encoded, not encrypted. They are
+              only readable through your own account, but database operators could
+              decode them. Only add keys you are comfortable revoking.
             </p>
           </div>
         </div>

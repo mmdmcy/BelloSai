@@ -224,6 +224,14 @@ export async function sendChatMessage(
       }
       
       if (response.status === 429) {
+        // Server-side anonymous quota (supabase/functions/_shared/anonymous-quota.ts)
+        if (errorData?.sign_in_required) {
+          const limit = typeof errorData.limit === 'number' ? errorData.limit : undefined;
+          throw new Error(
+            `You have used ${limit !== undefined ? `all ${limit}` : 'all'} free messages for today. ` +
+            'Sign in to keep chatting, or try again tomorrow.'
+          );
+        }
         throw new Error('Rate limit exceeded. Please wait a moment and try again.');
       }
       

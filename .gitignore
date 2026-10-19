@@ -12,12 +12,10 @@ dist
 dist-ssr
 *.local
 
-# Environment variables (sensitive data)
+# Environment variables (sensitive data) - only the example template is tracked
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
 
 # Supabase sensitive files
 supabase/.temp/

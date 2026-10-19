@@ -1,4 +1,5 @@
 import { corsHeaders } from '../_shared/cors.ts'
+import { createAdminClient, enforceAnonymousQuota, getAuthenticatedUser } from '../_shared/anonymous-quota.ts'
 
 interface ChatRequest {
   messages: Array<{ type?: 'user' | 'ai'; role?: 'user' | 'assistant' | 'system'; content: string }>;
@@ -14,6 +15,24 @@ Deno.serve(async (req) => {
     const { messages, model, webSearch }: ChatRequest = await req.json()
     if (!messages || !Array.isArray(messages)) {
       return new Response(JSON.stringify({ error: 'Messages array is required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    // Signed-in users keep their existing path; anonymous callers are subject
+    // to the server-side per-IP daily quota.
+    const supabaseAdmin = createAdminClient()
+    if (!supabaseAdmin) {
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error: Supabase environment is not set' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+    const user = await getAuthenticatedUser(req, supabaseAdmin)
+    const isAnonymous = !user
+    // Anonymous callers share the owner's provider key: enforce the server-side
+    // per-IP daily quota before spending it (the localStorage counter is only a hint).
+    if (isAnonymous) {
+      const limited = await enforceAnonymousQuota(req, supabaseAdmin, corsHeaders)
+      if (limited) return limited
     }
 
     const qwenApiKey = Deno.env.get('QWEN_API_KEY') || Deno.env.get('DASHSCOPE_API_KEY') || ''

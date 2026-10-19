@@ -1,5 +1,5 @@
 import { corsHeaders } from '../_shared/cors.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createAdminClient, enforceAnonymousQuota } from '../_shared/anonymous-quota.ts'
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
@@ -17,20 +17,15 @@ Deno.serve(async (req) => {
     console.log('🔑 Auth header present:', !!authHeader);
     console.log('🔑 API key present:', !!apiKey);
     
-    // DEBUG: Log all headers (excluding sensitive data)
-    const headers = Object.fromEntries(req.headers.entries());
-    console.log('📋 All request headers:', {
-      ...headers,
-      'authorization': authHeader ? 'Bearer [REDACTED]' : undefined,
-      'apikey': apiKey ? '[API KEY PRESENT]' : undefined
-    });
-    
     // Create Supabase client for authenticated operations
     console.log('🔧 Creating Supabase client');
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? 'https://uxqrdnotdkcwfwcifajf.supabase.co',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    )
+    const supabaseAdmin = createAdminClient()
+    if (!supabaseAdmin) {
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error: Supabase environment is not set' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
     
     let user = null;
     let userData = null;
@@ -101,6 +96,13 @@ Deno.serve(async (req) => {
 
     if (!messages || !Array.isArray(messages)) {
       throw new Error('Messages array is required')
+    }
+
+    // Anonymous callers share the owner's provider key: enforce the server-side
+    // per-IP daily quota before spending it (the localStorage counter is only a hint).
+    if (isAnonymous) {
+      const limited = await enforceAnonymousQuota(req, supabaseAdmin, corsHeaders)
+      if (limited) return limited
     }
 
     // Convert to Claude's expected format

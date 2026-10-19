@@ -1,9 +1,13 @@
 /**
  * Anonymous Usage Service - Message Tracking for Non-Authenticated Users
  * 
- * This service manages message limits and usage tracking for users who access
- * BelloSai without creating an account. It implements robust anti-abuse measures
- * to prevent limit circumvention while providing a fair trial experience.
+ * This service manages the client-side view of message limits for users who
+ * access BelloSai without creating an account. It is a UX hint only: it lives
+ * in localStorage and can be cleared. The real limit is enforced server-side
+ * per client IP per UTC day by the chat edge functions
+ * (supabase/functions/_shared/anonymous-quota.ts, ANON_DAILY_MESSAGE_LIMIT),
+ * which return 429 when it is exhausted. Keep DAILY_LIMIT in sync with that
+ * setting so the indicator matches what the server allows.
  * 
  * Features:
  * - Daily message limit enforcement (10 messages/day)

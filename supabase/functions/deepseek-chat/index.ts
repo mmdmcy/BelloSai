@@ -24,7 +24,7 @@
  * 4. Updates message count after successful response
  * 
  * Rate Limiting:
- * - Anonymous: 10 messages/day (resets at 2 AM)
+ * - Anonymous: ANON_DAILY_MESSAGE_LIMIT requests per IP per UTC day (default 3), enforced server-side
  * - Free tier: 20 messages/month
  * - Pro tier: Unlimited messages
  * 
@@ -36,7 +36,7 @@
  */
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4"
+import { createAdminClient, enforceAnonymousQuota } from "../_shared/anonymous-quota.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -81,20 +81,15 @@ serve(async (req) => {
     console.log('🔑 Auth header present:', !!authHeader);
     console.log('🔑 API key present:', !!apiKey);
     
-    // DEBUG: Log all headers (excluding sensitive data)
-    const headers = Object.fromEntries(req.headers.entries());
-    console.log('📋 All request headers:', {
-      ...headers,
-      'authorization': authHeader ? 'Bearer [REDACTED]' : undefined,
-      'apikey': apiKey ? '[API KEY PRESENT]' : undefined
-    });
-    
     // Create Supabase client for authenticated operations
     console.log('🔧 Creating Supabase client');
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? 'https://uxqrdnotdkcwfwcifajf.supabase.co',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    )
+    const supabaseAdmin = createAdminClient()
+    if (!supabaseAdmin) {
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error: Supabase environment is not set' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
     
     let user = null;
     let userData = null;
@@ -168,6 +163,13 @@ serve(async (req) => {
         JSON.stringify({ error: 'Messages array is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    // Anonymous callers share the owner's provider key: enforce the server-side
+    // per-IP daily quota before spending it (the localStorage counter is only a hint).
+    if (isAnonymous) {
+      const limited = await enforceAnonymousQuota(req, supabaseAdmin, corsHeaders)
+      if (limited) return limited
     }
 
     // Convert messages to DeepSeek format - optimized conversion
