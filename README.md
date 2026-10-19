@@ -48,23 +48,32 @@ npm install
 ```
 
 2) Env vars
-Create `.env.local`:
+Copy `.env.example` to `.env.local` and fill in the frontend values (there are
+no hardcoded fallbacks; the app refuses to start without them):
 ```bash
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+VITE_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
 ```
+For the Cloudflare deployment the same three values live in `wrangler.jsonc`
+`vars` and are injected at serve time. Provider API keys are never put in the
+frontend; the browser only ever talks to the edge functions.
 
 3) Supabase (CLI)
 ```bash
-supabase db push
-# Secrets
+supabase db push   # includes the anonymous-quota table and the sync-function permission fix
+# Secrets (provider keys stay server-side)
+supabase secrets set DEEPSEEK_API_KEY=...
 supabase secrets set GROQ_API_KEY=...
 supabase secrets set MISTRAL_API_KEY=...
 supabase secrets set CLAUDE_API_KEY=...
 supabase secrets set QWEN_API_KEY=...
 supabase secrets set STRIPE_SECRET_KEY=...
 supabase secrets set STRIPE_WEBHOOK_SECRET=...
+# Optional: anonymous requests per IP per UTC day (default 3) and a hash salt
+supabase secrets set ANON_DAILY_MESSAGE_LIMIT=3 ANON_QUOTA_SALT=...
 # Deploy functions
+supabase functions deploy deepseek-chat
 supabase functions deploy groq-chat
 supabase functions deploy qwen-chat
 supabase functions deploy claude-chat
@@ -134,6 +143,8 @@ MIT
 - **Content Security Policy (CSP)** - XSS protection via meta headers
 - **JWT Authentication** - Secure session management via Supabase Auth
 - **Environment Variable Management** - Runtime env injection for multi-platform deployment
+- **Server-side anonymous quota** - Visitors without an account get `ANON_DAILY_MESSAGE_LIMIT` requests per IP per UTC day (default 3), enforced in the edge functions (`supabase/functions/_shared/anonymous-quota.ts`), not just in the browser
+- **Bring Your Own Key is stored encoded, not encrypted** - User-supplied provider keys in `user_api_keys` are Base64-encoded and protected only by RLS; anyone with database access can decode them. The UI says so. The proper path is Supabase Vault (see the note in `src/lib/chat-features.ts`)
 
 ### UI/UX Design Patterns
 - **Glassmorphism Design System** - 15+ glass effect utilities with backdrop-blur

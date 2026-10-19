@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4"
+import { createAdminClient, enforceAnonymousQuota } from "../_shared/anonymous-quota.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -39,10 +39,13 @@ serve(async (req) => {
     console.log('🔑 Auth header present:', !!authHeader);
     console.log('🔑 API key present:', !!apiKey);
     
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    )
+    const supabaseAdmin = createAdminClient()
+    if (!supabaseAdmin) {
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error: Supabase environment is not set' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
     let user = null;
     let userData = null;
     let isAnonymous = false;
@@ -112,6 +115,13 @@ serve(async (req) => {
         JSON.stringify({ error: 'Berichtenarray is vereist' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
+    }
+
+    // Anonymous callers share the owner's provider key: enforce the server-side
+    // per-IP daily quota before spending it (the localStorage counter is only a hint).
+    if (isAnonymous) {
+      const limited = await enforceAnonymousQuota(req, supabaseAdmin, corsHeaders)
+      if (limited) return limited
     }
 
     // Convert to Gemini format - optimized

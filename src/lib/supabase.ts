@@ -63,7 +63,7 @@ const customStorage = {
 // Derive the correct storage key from the Supabase URL (avoids mismatches across envs)
 let derivedStorageKey = 'sb-auth-token';
 try {
-  const host = new URL(supabaseUrl).host; // e.g. uxqrdnotdkcwfwcifajf.supabase.co
+  const host = new URL(supabaseUrl).host; // e.g. <project-ref>.supabase.co
   const ref = host.split('.')[0];
   if (ref) derivedStorageKey = `sb-${ref}-auth-token`;
 } catch {}
